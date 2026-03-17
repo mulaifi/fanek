@@ -80,10 +80,6 @@ export default function ServiceCatalogPage() {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingTypeId, setEditingTypeId] = useState(null);
 
-  useEffect(() => {
-    loadServiceTypes();
-  }, []);
-
   async function loadServiceTypes() {
     setLoading(true);
     const res = await fetch('/api/service-types');
@@ -92,6 +88,10 @@ export default function ServiceCatalogPage() {
     if (res.ok) setServiceTypes(data.data || []);
     else setError(data.error || 'Failed to load service types');
   }
+
+  useEffect(() => {
+    loadServiceTypes();
+  }, []);
 
   async function handleDelete(st) {
     const res = await fetch(`/api/service-types/${st.id}`, { method: 'DELETE' });
