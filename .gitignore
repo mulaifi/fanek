@@ -1,0 +1,17 @@
+node_modules/
+.next/
+.env
+.env.local
+.env.production
+.env*.local
+*.log
+*.pem
+.DS_Store
+.turbo/
+dist/
+.vercel/
+coverage/
+test-results/
+playwright-report/
+.superpowers/
+docs/superpowers/

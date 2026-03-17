@@ -1,0 +1,29 @@
+import { withAuth } from '@/lib/auth/guard';
+import prisma from '@/lib/prisma';
+import { stringify } from 'csv-stringify/sync';
+
+async function handler(req, res) {
+  if (req.method !== 'GET') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+  const { type } = req.query;
+  const where = {};
+  if (type) where.type = type;
+
+  const partners = await prisma.partner.findMany({ where, orderBy: { name: 'asc' } });
+  const csv = stringify(
+    partners.map((p) => ({
+      Name: p.name,
+      Type: p.type,
+      Notes: p.notes || '',
+      Created: p.createdAt.toISOString().split('T')[0],
+    })),
+    { header: true }
+  );
+
+  res.setHeader('Content-Type', 'text/csv');
+  res.setHeader('Content-Disposition', 'attachment; filename="partners.csv"');
+  return res.send(csv);
+}
+
+export default withAuth(handler);

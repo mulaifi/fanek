@@ -1,0 +1,31 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: clik
+      POSTGRES_PASSWORD: clik
+      POSTGRES_DB: clik
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U clik"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://clik:clik@db:5432/clik
+      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_SECRET: change-me-generate-with-openssl-rand-hex-32
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:
