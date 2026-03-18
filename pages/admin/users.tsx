@@ -3,35 +3,29 @@ import { useSession } from 'next-auth/react';
 import { getServerSession } from 'next-auth/next';
 import type { GetServerSidePropsContext } from 'next';
 import { getAuthOptions } from '@/lib/auth/options';
-import {
-  Alert,
-  Badge,
-  Button,
-  Code,
-  Group,
-  Loader,
-  Paper,
-  Select,
-  Stack,
-  Text,
-  TextInput,
-} from '@mantine/core';
-import { notifications } from '@mantine/notifications';
-import { DataTable } from 'mantine-datatable';
-import {
-  IconPlus,
-  IconDots,
-  IconPencil,
-  IconKey,
-  IconLogout,
-  IconTrash,
-} from '@tabler/icons-react';
+import type { ColumnDef } from '@tanstack/react-table';
+import { toast } from 'sonner';
+import { Plus, Pencil, Key, LogOut, Trash2, Loader2 } from 'lucide-react';
 import AppShell from '@/components/AppShell';
+import { DataTable } from '@/components/ui/data-table';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
-const ROLE_COLORS = {
-  ADMIN: 'red',
-  EDITOR: 'blue',
-  VIEWER: 'gray',
+const ROLE_VARIANT: Record<string, 'default' | 'secondary' | 'outline' | 'destructive'> = {
+  ADMIN: 'destructive',
+  EDITOR: 'default',
+  VIEWER: 'secondary',
 };
 
 type UserRole = 'ADMIN' | 'EDITOR' | 'VIEWER';
@@ -59,15 +53,20 @@ interface InlineConfirmButtonProps {
   onConfirm: () => void;
   label: string;
   confirmLabel?: string;
-  color?: string;
   icon?: React.ReactNode;
-  size?: string;
-  variant?: string;
   disabled?: boolean;
+  variant?: 'ghost' | 'outline' | 'destructive';
 }
 
 /** Two-click inline confirm button with 3-second auto-revert */
-function InlineConfirmButton({ onConfirm, label, confirmLabel = 'Confirm?', color = 'red', icon, size = 'xs', variant = 'subtle', disabled = false }: InlineConfirmButtonProps) {
+function InlineConfirmButton({
+  onConfirm,
+  label,
+  confirmLabel = 'Confirm?',
+  icon,
+  disabled = false,
+  variant = 'ghost',
+}: InlineConfirmButtonProps) {
   const [confirming, setConfirming] = useState<boolean>(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -89,20 +88,33 @@ function InlineConfirmButton({ onConfirm, label, confirmLabel = 'Confirm?', colo
   }, []);
 
   useEffect(() => {
-    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
   }, []);
 
   if (confirming) {
     return (
-      <Group gap={4}>
-        <Button size="xs" color={color} variant="filled" onClick={handleConfirm}>{confirmLabel}</Button>
-        <Button size="xs" variant="default" onClick={handleCancel}>Cancel</Button>
-      </Group>
+      <div className="flex items-center gap-1">
+        <Button size="sm" variant="destructive" onClick={handleConfirm}>
+          {confirmLabel}
+        </Button>
+        <Button size="sm" variant="outline" onClick={handleCancel}>
+          Cancel
+        </Button>
+      </div>
     );
   }
 
   return (
-    <Button variant={variant} size={size} color={color} leftSection={icon} onClick={startConfirm} disabled={disabled}>
+    <Button
+      variant={variant}
+      size="sm"
+      onClick={startConfirm}
+      disabled={disabled}
+      className="gap-1"
+    >
+      {icon}
       {label}
     </Button>
   );
@@ -115,7 +127,6 @@ export default function AdminUsersPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
 
-  // Inline states
   const [showInviteForm, setShowInviteForm] = useState<boolean>(false);
   const [inviteResult, setInviteResult] = useState<InviteResult | null>(null);
   const [editingRoleUserId, setEditingRoleUserId] = useState<string | null>(null);
@@ -146,7 +157,7 @@ export default function AdminUsersPage() {
   function handleRoleUpdated(userId: string, newRole: UserRole) {
     setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u)));
     setEditingRoleUserId(null);
-    notifications.show({ color: 'green', message: 'Role updated successfully.' });
+    toast.success('Role updated successfully.');
   }
 
   async function handleResetPassword(user: UserRow) {
@@ -155,7 +166,7 @@ export default function AdminUsersPage() {
     if (res.ok) {
       setResetPasswordResult({ userId: user.id, userName: user.name, tempPassword: data.tempPassword });
     } else {
-      notifications.show({ color: 'red', message: data.error || 'Failed to reset password.' });
+      toast.error(data.error || 'Failed to reset password.');
     }
   }
 
@@ -163,147 +174,198 @@ export default function AdminUsersPage() {
     try {
       const res = await fetch(`/api/admin/users/${user.id}/revoke-sessions`, { method: 'POST' });
       if (res.ok) {
-        notifications.show({ color: 'green', message: `Sessions revoked for ${user.name}.` });
+        toast.success(`Sessions revoked for ${user.name}.`);
       } else {
         const data = await res.json();
-        notifications.show({ color: 'red', message: data.error || 'Failed to revoke sessions.' });
+        toast.error(data.error || 'Failed to revoke sessions.');
       }
-    } catch (err) {
-      notifications.show({ color: 'red', message: 'Network error: failed to revoke sessions.' });
+    } catch {
+      toast.error('Network error: failed to revoke sessions.');
     }
   }
 
   async function handleDelete(user: UserRow) {
     if (user.id === session?.user?.id) {
-      notifications.show({ color: 'red', message: 'You cannot delete your own account.' });
+      toast.error('You cannot delete your own account.');
       return;
     }
     const res = await fetch(`/api/admin/users/${user.id}`, { method: 'DELETE' });
     if (res.ok) {
       setUsers((prev) => prev.filter((u) => u.id !== user.id));
-      notifications.show({ color: 'green', message: 'User deleted.' });
+      toast.success('User deleted.');
     } else {
       const data = await res.json();
-      notifications.show({ color: 'red', message: data.error || 'Failed to delete user.' });
+      toast.error(data.error || 'Failed to delete user.');
     }
   }
+
+  const columns: ColumnDef<UserRow>[] = [
+    {
+      accessorKey: 'name',
+      header: 'Name',
+      cell: ({ row }) => <span className="font-medium">{row.original.name}</span>,
+    },
+    {
+      accessorKey: 'email',
+      header: 'Email',
+    },
+    {
+      accessorKey: 'role',
+      header: 'Role',
+      cell: ({ row }) => {
+        const user = row.original;
+        if (editingRoleUserId === user.id) {
+          return (
+            <InlineEditRole
+              user={user}
+              onSave={handleRoleUpdated}
+              onCancel={() => setEditingRoleUserId(null)}
+            />
+          );
+        }
+        return (
+          <Badge variant={ROLE_VARIANT[user.role] || 'secondary'}>
+            {user.role}
+          </Badge>
+        );
+      },
+    },
+    {
+      accessorKey: 'createdAt',
+      header: 'Created',
+      cell: ({ row }) => new Date(row.original.createdAt).toLocaleDateString(),
+    },
+    {
+      id: 'actions',
+      header: '',
+      cell: ({ row }) => {
+        const user = row.original;
+        return (
+          <div className="flex items-center gap-1 justify-end flex-wrap">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-1"
+              onClick={() => setEditingRoleUserId(user.id)}
+            >
+              <Pencil className="h-3.5 w-3.5" />
+              Edit Role
+            </Button>
+            <InlineConfirmButton
+              onConfirm={() => handleResetPassword(user)}
+              label="Reset Password"
+              confirmLabel="Reset?"
+              icon={<Key className="h-3.5 w-3.5" />}
+              variant="ghost"
+            />
+            <InlineConfirmButton
+              onConfirm={() => handleRevokeSessions(user)}
+              label="Revoke Sessions"
+              confirmLabel="Revoke?"
+              icon={<LogOut className="h-3.5 w-3.5" />}
+              variant="ghost"
+            />
+            <InlineConfirmButton
+              onConfirm={() => handleDelete(user)}
+              label="Delete"
+              confirmLabel="Confirm?"
+              icon={<Trash2 className="h-3.5 w-3.5" />}
+              variant="ghost"
+              disabled={user.id === session?.user?.id}
+            />
+          </div>
+        );
+      },
+    },
+  ];
 
   return (
     <AppShell title="Users">
       {error && (
-        <Alert color="red" mb="md">{error}</Alert>
+        <Alert variant="destructive" className="mb-4">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       )}
 
       {/* Invite result banner */}
       {inviteResult && (
-        <Alert color="green" mb="md" withCloseButton onClose={() => setInviteResult(null)} title="User Created">
-          <Text size="sm">Share this temporary password with the user. It will not be shown again.</Text>
-          <Code block mt="xs">{inviteResult.tempPassword}</Code>
+        <Alert className="mb-4">
+          <AlertTitle>User Created</AlertTitle>
+          <AlertDescription>
+            <p className="text-sm mb-2">Share this temporary password with the user. It will not be shown again.</p>
+            <code className="font-mono bg-muted px-2 py-1 rounded text-sm block mt-1">
+              {inviteResult.tempPassword}
+            </code>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="mt-2"
+              onClick={() => setInviteResult(null)}
+            >
+              Dismiss
+            </Button>
+          </AlertDescription>
         </Alert>
       )}
 
       {/* Reset password result banner */}
       {resetPasswordResult && (
-        <Alert color="green" mb="md" withCloseButton onClose={() => setResetPasswordResult(null)} title="Password Reset">
-          <Text size="sm">New temporary password for {resetPasswordResult.userName} (shown once only):</Text>
-          <Code block mt="xs">{resetPasswordResult.tempPassword}</Code>
+        <Alert className="mb-4">
+          <AlertTitle>Password Reset</AlertTitle>
+          <AlertDescription>
+            <p className="text-sm mb-2">
+              New temporary password for {resetPasswordResult.userName} (shown once only):
+            </p>
+            <code className="font-mono bg-muted px-2 py-1 rounded text-sm block mt-1">
+              {resetPasswordResult.tempPassword}
+            </code>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="mt-2"
+              onClick={() => setResetPasswordResult(null)}
+            >
+              Dismiss
+            </Button>
+          </AlertDescription>
         </Alert>
       )}
 
-      <Group justify="flex-end" mb="md">
+      <div className="flex justify-end mb-4">
         {!showInviteForm && (
-          <Button leftSection={<IconPlus size={16} />} onClick={() => setShowInviteForm(true)}>
+          <Button onClick={() => setShowInviteForm(true)} className="gap-2">
+            <Plus className="h-4 w-4" />
             Invite User
           </Button>
         )}
-      </Group>
+      </div>
 
       {/* Inline invite form */}
       {showInviteForm && (
-        <Paper withBorder p="md" mb="md" style={{ borderColor: 'var(--mantine-color-brand-5)', borderWidth: 2 }}>
-          <Text fw={600} size="sm" mb="md">Invite New User</Text>
-          <InviteUserForm onClose={() => setShowInviteForm(false)} onSuccess={handleInviteSuccess} />
-        </Paper>
+        <Card className="mb-4 border-2 border-primary">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">Invite New User</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <InviteUserForm
+              onClose={() => setShowInviteForm(false)}
+              onSuccess={handleInviteSuccess}
+            />
+          </CardContent>
+        </Card>
       )}
 
-      <DataTable
-        records={users}
-        fetching={loading}
-        minHeight={200}
-        columns={[
-          {
-            accessor: 'name',
-            title: 'Name',
-            render: (user) => <Text fw={500}>{user.name}</Text>,
-          },
-          { accessor: 'email', title: 'Email' },
-          {
-            accessor: 'role',
-            title: 'Role',
-            render: (user) => {
-              if (editingRoleUserId === user.id) {
-                return (
-                  <InlineEditRole
-                    user={user}
-                    onSave={handleRoleUpdated}
-                    onCancel={() => setEditingRoleUserId(null)}
-                  />
-                );
-              }
-              return (
-                <Badge variant="light" color={ROLE_COLORS[user.role] || 'gray'}>
-                  {user.role}
-                </Badge>
-              );
-            },
-          },
-          {
-            accessor: 'createdAt',
-            title: 'Created',
-            render: (user) => new Date(user.createdAt).toLocaleDateString(),
-          },
-          {
-            accessor: 'actions',
-            title: '',
-            textAlign: 'right',
-            render: (user) => (
-              <Group gap={4} justify="flex-end" wrap="nowrap">
-                <Button
-                  variant="subtle"
-                  size="xs"
-                  leftSection={<IconPencil size={14} />}
-                  onClick={() => setEditingRoleUserId(user.id)}
-                >
-                  Edit Role
-                </Button>
-                <InlineConfirmButton
-                  onConfirm={() => handleResetPassword(user)}
-                  label="Reset Password"
-                  confirmLabel="Reset?"
-                  color="orange"
-                  icon={<IconKey size={14} />}
-                />
-                <InlineConfirmButton
-                  onConfirm={() => handleRevokeSessions(user)}
-                  label="Revoke Sessions"
-                  confirmLabel="Revoke?"
-                  color="orange"
-                  icon={<IconLogout size={14} />}
-                />
-                <InlineConfirmButton
-                  onConfirm={() => handleDelete(user)}
-                  label="Delete"
-                  confirmLabel="Confirm?"
-                  color="red"
-                  icon={<IconTrash size={14} />}
-                  disabled={user.id === session?.user?.id}
-                />
-              </Group>
-            ),
-          },
-        ]}
-        noRecordsText="No users found"
-      />
+      {loading ? (
+        <div className="flex justify-center py-12">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+      ) : (
+        <DataTable
+          columns={columns}
+          data={users}
+          emptyMessage="No users found"
+        />
+      )}
     </AppShell>
   );
 }
@@ -330,31 +392,35 @@ function InlineEditRole({ user, onSave, onCancel }: InlineEditRoleProps) {
         onSave(user.id, role);
       } else {
         const data = await res.json();
-        notifications.show({ color: 'red', message: data.error || 'Failed to update role.' });
+        toast.error(data.error || 'Failed to update role.');
       }
-    } catch (err) {
-      notifications.show({ color: 'red', message: 'Network error: failed to update role.' });
+    } catch {
+      toast.error('Network error: failed to update role.');
     } finally {
       setSaving(false);
     }
   }
 
   return (
-    <Group gap={4} wrap="nowrap">
-      <Select
-        size="xs"
-        value={role}
-        onChange={(v) => { if (v) setRole(v as UserRole); }}
-        data={[
-          { value: 'VIEWER', label: 'Viewer' },
-          { value: 'EDITOR', label: 'Editor' },
-          { value: 'ADMIN', label: 'Admin' },
-        ]}
-        style={{ width: 120 }}
-      />
-      <Button size="xs" onClick={handleSave} loading={saving}>Save</Button>
-      <Button size="xs" variant="default" onClick={onCancel}>Cancel</Button>
-    </Group>
+    <div className="flex items-center gap-1 flex-wrap">
+      <Select value={role} onValueChange={(v) => setRole(v as UserRole)}>
+        <SelectTrigger className="h-7 w-28 text-xs">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="VIEWER">Viewer</SelectItem>
+          <SelectItem value="EDITOR">Editor</SelectItem>
+          <SelectItem value="ADMIN">Admin</SelectItem>
+        </SelectContent>
+      </Select>
+      <Button size="sm" onClick={handleSave} disabled={saving} className="h-7 text-xs">
+        {saving && <Loader2 className="h-3 w-3 animate-spin mr-1" />}
+        Save
+      </Button>
+      <Button size="sm" variant="outline" onClick={onCancel} className="h-7 text-xs">
+        Cancel
+      </Button>
+    </div>
   );
 }
 
@@ -370,7 +436,11 @@ interface InviteFormErrors {
 }
 
 function InviteUserForm({ onClose, onSuccess }: InviteUserFormProps) {
-  const [form, setForm] = useState<{ name: string; email: string; role: UserRole }>({ name: '', email: '', role: 'VIEWER' });
+  const [form, setForm] = useState<{ name: string; email: string; role: UserRole }>({
+    name: '',
+    email: '',
+    role: 'VIEWER',
+  });
   const [errors, setErrors] = useState<InviteFormErrors>({});
   const [inviting, setInviting] = useState<boolean>(false);
 
@@ -399,38 +469,61 @@ function InviteUserForm({ onClose, onSuccess }: InviteUserFormProps) {
   }
 
   return (
-    <Stack>
-      {errors._form && <Alert color="red">{errors._form}</Alert>}
-      <TextInput
-        label="Full Name"
-        required
-        value={form.name}
-        onChange={(e) => setForm({ ...form, name: e.target.value })}
-        error={errors.name}
-      />
-      <TextInput
-        label="Email Address"
-        type="email"
-        required
-        value={form.email}
-        onChange={(e) => setForm({ ...form, email: e.target.value })}
-        error={errors.email}
-      />
-      <Select
-        label="Role"
-        value={form.role}
-        onChange={(v) => { if (v) setForm({ ...form, role: v as UserRole }); }}
-        data={[
-          { value: 'VIEWER', label: 'Viewer' },
-          { value: 'EDITOR', label: 'Editor' },
-          { value: 'ADMIN', label: 'Admin' },
-        ]}
-      />
-      <Group justify="flex-end">
-        <Button variant="default" onClick={onClose}>Cancel</Button>
-        <Button onClick={handleSubmit} loading={inviting}>Send Invite</Button>
-      </Group>
-    </Stack>
+    <div className="flex flex-col gap-4">
+      {errors._form && (
+        <Alert variant="destructive">
+          <AlertDescription>{errors._form}</AlertDescription>
+        </Alert>
+      )}
+      <div className="flex flex-col gap-1">
+        <Label htmlFor="invite-name">
+          Full Name <span className="text-destructive">*</span>
+        </Label>
+        <Input
+          id="invite-name"
+          value={form.name}
+          onChange={(e) => setForm({ ...form, name: e.target.value })}
+        />
+        {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
+      </div>
+      <div className="flex flex-col gap-1">
+        <Label htmlFor="invite-email">
+          Email Address <span className="text-destructive">*</span>
+        </Label>
+        <Input
+          id="invite-email"
+          type="email"
+          value={form.email}
+          onChange={(e) => setForm({ ...form, email: e.target.value })}
+        />
+        {errors.email && <p className="text-xs text-destructive">{errors.email}</p>}
+      </div>
+      <div className="flex flex-col gap-1">
+        <Label htmlFor="invite-role">Role</Label>
+        <Select
+          value={form.role}
+          onValueChange={(v) => setForm({ ...form, role: v as UserRole })}
+        >
+          <SelectTrigger id="invite-role">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="VIEWER">Viewer</SelectItem>
+            <SelectItem value="EDITOR">Editor</SelectItem>
+            <SelectItem value="ADMIN">Admin</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="flex justify-end gap-2">
+        <Button variant="outline" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button onClick={handleSubmit} disabled={inviting}>
+          {inviting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+          Send Invite
+        </Button>
+      </div>
+    </div>
   );
 }
 
