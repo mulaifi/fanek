@@ -46,6 +46,7 @@ export default function DynamicForm({
                 <Select
                   value={(value as string) || undefined}
                   onValueChange={(val) => handleChange(field.name, val === '__none__' ? '' : val)}
+                  disabled={disabled}
                 >
                   <SelectTrigger id={field.name}>
                     <SelectValue placeholder="Select an option" />
@@ -74,6 +75,7 @@ export default function DynamicForm({
                   id={field.name}
                   checked={Boolean(value)}
                   onCheckedChange={(checked) => handleChange(field.name, Boolean(checked))}
+                  disabled={disabled}
                 />
                 <Label htmlFor={field.name}>{field.label}</Label>
                 {error && <p className="text-sm text-destructive">{error}</p>}
@@ -105,6 +107,7 @@ export default function DynamicForm({
                     step="0.01"
                     className="rounded-l-none"
                     required={field.required}
+                    disabled={disabled}
                   />
                 </div>
                 {error && <p className="text-sm text-destructive">{error}</p>}
@@ -129,6 +132,7 @@ export default function DynamicForm({
                     )
                   }
                   required={field.required}
+                  disabled={disabled}
                 />
                 {error && <p className="text-sm text-destructive">{error}</p>}
               </div>
@@ -147,6 +151,7 @@ export default function DynamicForm({
                   value={value as string}
                   onChange={(e) => handleChange(field.name, e.currentTarget.value)}
                   required={field.required}
+                  disabled={disabled}
                 />
                 {error && <p className="text-sm text-destructive">{error}</p>}
               </div>
@@ -165,6 +170,7 @@ export default function DynamicForm({
                   value={value as string}
                   onChange={(e) => handleChange(field.name, e.currentTarget.value)}
                   required={field.required}
+                  disabled={disabled}
                 />
                 {error && <p className="text-sm text-destructive">{error}</p>}
               </div>

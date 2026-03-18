@@ -18,6 +18,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { Plus, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
+import { useCallback, useRef, useState } from 'react';
 import type { ServiceTypeFieldInput } from '@/lib/validation';
 
 interface ServiceTypeEditorProps {
@@ -38,12 +39,42 @@ function newField(): ServiceTypeFieldInput {
   return { name: '', label: '', type: 'text', required: false, options: [] };
 }
 
+let globalNextId = 0;
+
 export default function ServiceTypeEditor({ fieldSchema = [], onChange }: ServiceTypeEditorProps) {
+  const [fieldKeys, setFieldKeys] = useState<string[]>(() =>
+    fieldSchema.map(() => `field-${globalNextId++}`)
+  );
+  const nextIdRef = useRef(globalNextId);
+
+  // Ensure keys array stays in sync with fieldSchema length
+  const getKeys = useCallback(() => {
+    if (fieldKeys.length < fieldSchema.length) {
+      const newKeys = [...fieldKeys];
+      while (newKeys.length < fieldSchema.length) {
+        newKeys.push(`field-${nextIdRef.current++}`);
+      }
+      setFieldKeys(newKeys);
+      return newKeys;
+    }
+    if (fieldKeys.length > fieldSchema.length) {
+      const trimmed = fieldKeys.slice(0, fieldSchema.length);
+      setFieldKeys(trimmed);
+      return trimmed;
+    }
+    return fieldKeys;
+  }, [fieldKeys, fieldSchema.length]);
+
+  const currentKeys = getKeys();
+
   function addField() {
+    const newKey = `field-${nextIdRef.current++}`;
+    setFieldKeys((prev) => [...prev, newKey]);
     onChange([...fieldSchema, newField()]);
   }
 
   function removeField(index: number) {
+    setFieldKeys((prev) => prev.filter((_, i) => i !== index));
     onChange(fieldSchema.filter((_, i) => i !== index));
   }
 
@@ -56,6 +87,11 @@ export default function ServiceTypeEditor({ fieldSchema = [], onChange }: Servic
     if (target < 0 || target >= fieldSchema.length) return;
     const next = [...fieldSchema];
     [next[index], next[target]] = [next[target], next[index]];
+    setFieldKeys((prev) => {
+      const newKeys = [...prev];
+      [newKeys[index], newKeys[target]] = [newKeys[target], newKeys[index]];
+      return newKeys;
+    });
     onChange(next);
   }
 
@@ -80,7 +116,7 @@ export default function ServiceTypeEditor({ fieldSchema = [], onChange }: Servic
       )}
 
       {fieldSchema.map((field, index) => (
-        <Card key={index} className="mb-4">
+        <Card key={currentKeys[index]} className="mb-4">
           <CardContent className="pt-4">
             <div className="flex items-center justify-between mb-3">
               <span className="text-sm text-muted-foreground">Field {index + 1}</span>

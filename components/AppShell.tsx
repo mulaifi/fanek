@@ -82,17 +82,22 @@ const adminNavItems: NavItemDef[] = [
 ];
 
 function useIsDesktop(): boolean {
+  // Default to true to match SSR output; updated after mount to avoid hydration mismatch
   const [isDesktop, setIsDesktop] = useState(true);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     const mql = window.matchMedia('(min-width: 768px)');
     setIsDesktop(mql.matches);
+    setMounted(true);
 
     const handler = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
     mql.addEventListener('change', handler);
     return () => mql.removeEventListener('change', handler);
   }, []);
 
+  // Before mount, return true (matches SSR) to prevent hydration mismatch
+  if (!mounted) return true;
   return isDesktop;
 }
 

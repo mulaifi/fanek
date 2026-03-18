@@ -82,7 +82,7 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse): Promise
 
   res.json({
     data: logs,
-    nextCursor: hasMore ? logs[logs.length - 1].id : null,
+    nextCursor: hasMore && logs.length > 0 ? logs[logs.length - 1].id : null,
   });
 }
 

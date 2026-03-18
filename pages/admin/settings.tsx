@@ -5,7 +5,7 @@ import { getAuthOptions } from '@/lib/auth/options';
 import { toast } from 'sonner';
 import { Download, Loader2 } from 'lucide-react';
 import AppShell from '@/components/AppShell';
-import AuthProviderConfig from '@/components/admin/AuthProviderConfig';
+import AuthProviderConfig, { type AuthSettingsInput } from '@/components/admin/AuthProviderConfig';
 import StatusManager from '@/components/admin/StatusManager';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -211,9 +211,8 @@ export default function AdminSettingsPage() {
         <TabsContent value="authentication">
           <div className="flex flex-col gap-4 max-w-lg">
             <h2 className="text-base font-semibold">Authentication Providers</h2>
-            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
             <AuthProviderConfig
-              settings={settings as any}
+              settings={settings as AuthSettingsInput}
               onSave={(updated) =>
                 setSettings((prev) => ({ ...prev, ...(updated as SettingsShape) }))
               }

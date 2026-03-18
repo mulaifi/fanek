@@ -13,7 +13,7 @@ interface OAuthProviderSettings {
   tenantId?: string;
 }
 
-interface AuthSettingsInput {
+export interface AuthSettingsInput {
   googleOAuthEnabled?: boolean;
   microsoftOAuthEnabled?: boolean;
   authProviders?: {

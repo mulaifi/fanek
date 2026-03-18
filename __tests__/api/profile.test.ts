@@ -1,6 +1,7 @@
 import handler from '../../pages/api/profile';
 import prisma from '@/lib/prisma';
 import { verifyPassword, hashPassword, checkStrength } from '@/lib/password';
+import { createRateLimiter } from '@/lib/rateLimit';
 
 jest.mock('@/lib/prisma', () => ({
   __esModule: true,
@@ -34,11 +35,17 @@ jest.mock('@/lib/logger', () => ({
   default: { info: jest.fn(), error: jest.fn(), warn: jest.fn() },
 }));
 
+const mockCheck = jest.fn();
+jest.mock('@/lib/rateLimit', () => ({
+  createRateLimiter: jest.fn(() => ({ check: (...args: unknown[]) => mockCheck(...args) })),
+}));
+
 function mockReqRes({ method = 'PUT', body = {} } = {}) {
   const req = { method, body };
   const res = {
     status: jest.fn().mockReturnThis(),
     json: jest.fn().mockReturnThis(),
+    setHeader: jest.fn(),
   };
   return { req, res };
 }
@@ -55,6 +62,7 @@ const mockCheckStrength = checkStrength as jest.Mock;
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockCheck.mockReturnValue({ allowed: true, remaining: 4 });
 });
 
 describe('PUT /api/profile', () => {
@@ -119,5 +127,60 @@ describe('PUT /api/profile', () => {
     await handler(req as never, res as never);
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.json.mock.calls[0][0].error).toMatch(/OAuth/i);
+  });
+
+  test('returns 429 when rate limited', async () => {
+    mockCheck.mockReturnValue({ allowed: false, remaining: 0 });
+
+    const { req, res } = mockReqRes({ body: { currentPassword: 'OldPass1!', newPassword: 'NewPass1!' } });
+    await handler(req as never, res as never);
+    expect(res.status).toHaveBeenCalledWith(429);
+    expect(res.json.mock.calls[0][0].error).toMatch(/too many/i);
+  });
+
+  test('updates name only', async () => {
+    mockPrisma.user.update.mockResolvedValue({ name: 'New Name' });
+
+    const { req, res } = mockReqRes({ body: { name: 'New Name' } });
+    await handler(req as never, res as never);
+    expect(mockPrisma.user.update).toHaveBeenCalledWith({
+      where: { id: 'u1' },
+      data: { name: 'New Name' },
+      select: { name: true },
+    });
+    expect(res.json).toHaveBeenCalledWith({ success: true, name: 'New Name' });
+  });
+
+  test('updates name and password together', async () => {
+    mockPrisma.user.update.mockResolvedValue({ name: 'New Name' });
+    mockPrisma.user.findUnique.mockResolvedValue({ id: 'u1', passwordHash: 'oldhash' });
+    mockVerifyPassword.mockResolvedValue(true);
+    mockCheckStrength.mockReturnValue({ valid: true, errors: [] });
+    mockHashPassword.mockResolvedValue('newhash');
+
+    const { req, res } = mockReqRes({
+      body: { name: 'New Name', currentPassword: 'OldPass1!', newPassword: 'NewPass1!' },
+    });
+    await handler(req as never, res as never);
+
+    // Name update call
+    expect(mockPrisma.user.update).toHaveBeenCalledWith({
+      where: { id: 'u1' },
+      data: { name: 'New Name' },
+      select: { name: true },
+    });
+    // Password update call
+    expect(mockPrisma.user.update).toHaveBeenCalledWith({
+      where: { id: 'u1' },
+      data: { passwordHash: 'newhash', firstLogin: false },
+    });
+    expect(res.json).toHaveBeenCalledWith({ success: true, name: 'New Name', firstLogin: false });
+  });
+
+  test('rejects empty body with 400', async () => {
+    const { req, res } = mockReqRes({ body: {} });
+    await handler(req as never, res as never);
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json.mock.calls[0][0].error).toMatch(/no update/i);
   });
 });

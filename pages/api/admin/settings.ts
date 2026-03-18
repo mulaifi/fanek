@@ -85,6 +85,14 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse): Promise
     }
 
     if (authProviders !== undefined) {
+      // Check if any client secret needs encryption
+      const needsEncryption = !!(authProviders.google?.clientSecret || authProviders.microsoft?.clientSecret);
+      const secret = process.env.NEXTAUTH_SECRET;
+      if (needsEncryption && !secret) {
+        res.status(500).json({ error: 'NEXTAUTH_SECRET is not configured. Cannot encrypt OAuth credentials.' });
+        return;
+      }
+
       const existingProviders =
         existing.authProviders && typeof existing.authProviders === 'object' && !Array.isArray(existing.authProviders)
           ? (existing.authProviders as Record<string, OAuthProviderConfig>)
@@ -97,7 +105,7 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse): Promise
         if (authProviders.google.clientSecret) {
           providers.google.clientSecret = encrypt(
             authProviders.google.clientSecret,
-            process.env.NEXTAUTH_SECRET!
+            secret!
           );
         }
       }
@@ -107,7 +115,7 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse): Promise
         if (authProviders.microsoft.clientSecret) {
           providers.microsoft.clientSecret = encrypt(
             authProviders.microsoft.clientSecret,
-            process.env.NEXTAUTH_SECRET!
+            secret!
           );
         }
       }
