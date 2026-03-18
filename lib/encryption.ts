@@ -1,31 +1,37 @@
-import { createCipheriv, createDecipheriv, randomBytes, createHash } from 'crypto';
+import { createCipheriv, createDecipheriv, randomBytes, pbkdf2Sync } from 'crypto';
 
 const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 16;
 const TAG_LENGTH = 16;
+const SALT_LENGTH = 16;
+const PBKDF2_ITERATIONS = 100_000;
 
-function deriveKey(secret: string): Buffer {
-  return createHash('sha256').update(secret).digest();
+function deriveKey(secret: string, salt: Buffer): Buffer {
+  return pbkdf2Sync(secret, salt, PBKDF2_ITERATIONS, 32, 'sha256');
 }
 
 export function encrypt(plaintext: string, secret: string): string {
-  const key: Buffer = deriveKey(secret);
+  const salt: Buffer = randomBytes(SALT_LENGTH);
+  const key: Buffer = deriveKey(secret, salt);
   const iv: Buffer = randomBytes(IV_LENGTH);
   const cipher = createCipheriv(ALGORITHM, key, iv);
   const encrypted: Buffer = Buffer.concat([cipher.update(plaintext, 'utf8'), cipher.final()]);
   const tag: Buffer = cipher.getAuthTag();
-  return Buffer.concat([iv, tag, encrypted]).toString('base64');
+  // Format: salt || iv || tag || ciphertext
+  return Buffer.concat([salt, iv, tag, encrypted]).toString('base64');
 }
 
 export function decrypt(ciphertext: string, secret: string): string {
-  const key: Buffer = deriveKey(secret);
   const buf: Buffer = Buffer.from(ciphertext, 'base64');
-  if (buf.length < IV_LENGTH + TAG_LENGTH) {
+  const minLength = SALT_LENGTH + IV_LENGTH + TAG_LENGTH;
+  if (buf.length < minLength) {
     throw new Error('Invalid ciphertext: too short');
   }
-  const iv: Buffer = buf.subarray(0, IV_LENGTH);
-  const tag: Buffer = buf.subarray(IV_LENGTH, IV_LENGTH + TAG_LENGTH);
-  const encrypted: Buffer = buf.subarray(IV_LENGTH + TAG_LENGTH);
+  const salt: Buffer = buf.subarray(0, SALT_LENGTH);
+  const iv: Buffer = buf.subarray(SALT_LENGTH, SALT_LENGTH + IV_LENGTH);
+  const tag: Buffer = buf.subarray(SALT_LENGTH + IV_LENGTH, SALT_LENGTH + IV_LENGTH + TAG_LENGTH);
+  const encrypted: Buffer = buf.subarray(SALT_LENGTH + IV_LENGTH + TAG_LENGTH);
+  const key: Buffer = deriveKey(secret, salt);
   const decipher = createDecipheriv(ALGORITHM, key, iv);
   decipher.setAuthTag(tag);
   return decipher.update(encrypted, undefined, 'utf8') + decipher.final('utf8');

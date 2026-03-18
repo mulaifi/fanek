@@ -173,6 +173,10 @@ describe('PUT /api/admin/settings - customerStatuses', () => {
 });
 
 describe('PUT /api/admin/settings - authProviders', () => {
+  const originalSecret = process.env.NEXTAUTH_SECRET;
+  beforeAll(() => { process.env.NEXTAUTH_SECRET = 'test-secret-for-encryption'; });
+  afterAll(() => { process.env.NEXTAUTH_SECRET = originalSecret; });
+
   test('encrypts clientSecret before storing', async () => {
     const updated = { ...mockSettings };
     prisma.settings.update.mockResolvedValue(updated);

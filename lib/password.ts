@@ -1,4 +1,5 @@
 import bcrypt from 'bcryptjs';
+import { randomInt } from 'crypto';
 
 const SALT_ROUNDS = 12;
 const MIN_LENGTH = 8;
@@ -60,16 +61,16 @@ export function generateTempPassword(): string {
   const special = '!@#$%';
   const all = upper + lower + digits + special;
   const password: string[] = [
-    upper[Math.floor(Math.random() * upper.length)] as string,
-    lower[Math.floor(Math.random() * lower.length)] as string,
-    digits[Math.floor(Math.random() * digits.length)] as string,
-    special[Math.floor(Math.random() * special.length)] as string,
+    upper[randomInt(upper.length)] as string,
+    lower[randomInt(lower.length)] as string,
+    digits[randomInt(digits.length)] as string,
+    special[randomInt(special.length)] as string,
   ];
   for (let i = 4; i < 16; i++) {
-    password.push(all[Math.floor(Math.random() * all.length)] as string);
+    password.push(all[randomInt(all.length)] as string);
   }
   for (let i = password.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = randomInt(i + 1);
     [password[i], password[j]] = [password[j] as string, password[i] as string];
   }
   return password.join('');

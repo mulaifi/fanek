@@ -39,6 +39,7 @@ function mockReqRes({ method = 'PUT', body = {} } = {}) {
   const res = {
     status: jest.fn().mockReturnThis(),
     json: jest.fn().mockReturnThis(),
+    setHeader: jest.fn(),
   };
   return { req, res };
 }
@@ -119,5 +120,21 @@ describe('PUT /api/profile', () => {
     await handler(req as never, res as never);
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.json.mock.calls[0][0].error).toMatch(/OAuth/i);
+  });
+
+  test('returns 429 after too many password change attempts', async () => {
+    const body = { currentPassword: 'OldPass1!', newPassword: 'NewPass1!' };
+    // Exhaust the rate limit (5 attempts)
+    for (let i = 0; i < 5; i++) {
+      const { req, res } = mockReqRes({ body });
+      mockPrisma.user.findUnique.mockResolvedValue({ id: 'u1', passwordHash: 'hashed' });
+      mockVerifyPassword.mockResolvedValue(false);
+      await handler(req as never, res as never);
+    }
+    // 6th attempt should be rate limited
+    const { req, res } = mockReqRes({ body });
+    await handler(req as never, res as never);
+    expect(res.status).toHaveBeenCalledWith(429);
+    expect(res.json.mock.calls[0][0].error).toMatch(/too many/i);
   });
 });
