@@ -1,14 +1,16 @@
+import type { NextApiResponse } from 'next';
+import type { AuthenticatedRequest } from '@/types';
 import { withAuth } from '@/lib/auth/guard';
 import prisma from '@/lib/prisma';
 import { stringify } from 'csv-stringify/sync';
 
-async function handler(req, res) {
+async function handler(req: AuthenticatedRequest, res: NextApiResponse): Promise<void> {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
   const { type } = req.query;
-  const where = {};
-  if (type) where.type = type;
+  const where: Record<string, unknown> = {};
+  if (type) where.type = Array.isArray(type) ? type[0] : type;
 
   const partners = await prisma.partner.findMany({ where, orderBy: { name: 'asc' } });
   const csv = stringify(

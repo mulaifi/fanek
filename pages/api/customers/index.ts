@@ -1,3 +1,5 @@
+import type { NextApiResponse } from 'next';
+import type { AuthenticatedRequest } from '@/types';
 import { withAuth } from '@/lib/auth/guard';
 import prisma from '@/lib/prisma';
 import { customerSchema } from '@/lib/validation';
@@ -5,20 +7,26 @@ import { logAudit } from '@/lib/audit';
 import { getSettings } from '@/lib/settings';
 import logger from '@/lib/logger';
 
-async function handler(req, res) {
+async function handler(req: AuthenticatedRequest, res: NextApiResponse): Promise<void> {
   if (req.method === 'GET') {
     const ALLOWED_SORT_FIELDS = ['name', 'clientCode', 'status', 'vertical', 'createdAt', 'updatedAt'];
     const { page = '1', limit = '25', status, search, sort = 'name', order = 'asc' } = req.query;
-    const validSort = ALLOWED_SORT_FIELDS.includes(sort) ? sort : 'name';
-    const validOrder = ['asc', 'desc'].includes(order?.toLowerCase()) ? order.toLowerCase() : 'asc';
-    const take = Math.min(parseInt(limit, 10) || 25, 100);
-    const skip = (Math.max(parseInt(page, 10) || 1, 1) - 1) * take;
-    const where = {};
-    if (status) where.status = status;
+    const sortVal = Array.isArray(sort) ? sort[0] : sort;
+    const orderVal = Array.isArray(order) ? order[0] : order;
+    const limitVal = Array.isArray(limit) ? limit[0] : limit;
+    const pageVal = Array.isArray(page) ? page[0] : page;
+    const validSort = ALLOWED_SORT_FIELDS.includes(sortVal ?? '') ? (sortVal ?? 'name') : 'name';
+    const validOrder: 'asc' | 'desc' =
+      ['asc', 'desc'].includes(orderVal?.toLowerCase() ?? '') ? (orderVal!.toLowerCase() as 'asc' | 'desc') : 'asc';
+    const take = Math.min(parseInt(limitVal ?? '25', 10) || 25, 100);
+    const skip = (Math.max(parseInt(pageVal ?? '1', 10) || 1, 1) - 1) * take;
+    const where: Record<string, unknown> = {};
+    if (status) where.status = Array.isArray(status) ? status[0] : status;
     if (search) {
+      const searchVal = Array.isArray(search) ? search[0] : search;
       where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { clientCode: { contains: search, mode: 'insensitive' } },
+        { name: { contains: searchVal, mode: 'insensitive' } },
+        { clientCode: { contains: searchVal, mode: 'insensitive' } },
       ];
     }
     const [customers, total] = await Promise.all([
@@ -26,7 +34,7 @@ async function handler(req, res) {
         where,
         take,
         skip,
-        orderBy: { [validSort]: validOrder },
+        orderBy: { [validSort]: validOrder } as Record<string, 'asc' | 'desc'>,
         include: { _count: { select: { services: true } } },
       }),
       prisma.customer.count({ where }),
@@ -44,7 +52,7 @@ async function handler(req, res) {
     }
     const settings = await getSettings();
     if (parsed.data.status) {
-      const validStatuses = settings?.customerStatuses || [];
+      const validStatuses: string[] = settings?.customerStatuses ?? [];
       if (!validStatuses.includes(parsed.data.status)) {
         return res.status(400).json({ error: `Invalid status. Must be one of: ${validStatuses.join(', ')}` });
       }
@@ -60,8 +68,8 @@ async function handler(req, res) {
       });
       logger.info({ customerId: customer.id }, 'Customer created');
       return res.status(201).json(customer);
-    } catch (err) {
-      if (err.code === 'P2002') {
+    } catch (err: unknown) {
+      if (err && typeof err === 'object' && 'code' in err && (err as { code: string }).code === 'P2002') {
         return res.status(409).json({ error: 'A customer with that client code already exists' });
       }
       throw err;

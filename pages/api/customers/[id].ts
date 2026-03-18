@@ -1,11 +1,13 @@
+import type { NextApiResponse } from 'next';
+import type { AuthenticatedRequest } from '@/types';
 import { withAuth } from '@/lib/auth/guard';
 import prisma from '@/lib/prisma';
 import { customerSchema } from '@/lib/validation';
 import { logAudit } from '@/lib/audit';
 import { getSettings } from '@/lib/settings';
 
-async function handler(req, res) {
-  const { id } = req.query;
+async function handler(req: AuthenticatedRequest, res: NextApiResponse): Promise<void> {
+  const id = req.query.id as string;
 
   if (req.method === 'GET') {
     const customer = await prisma.customer.findUnique({
@@ -31,7 +33,7 @@ async function handler(req, res) {
     }
     if (parsed.data.status) {
       const settings = await getSettings();
-      const validStatuses = settings?.customerStatuses || [];
+      const validStatuses: string[] = settings?.customerStatuses ?? [];
       if (!validStatuses.includes(parsed.data.status)) {
         return res.status(400).json({ error: 'Invalid status' });
       }

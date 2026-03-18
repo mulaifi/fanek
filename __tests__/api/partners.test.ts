@@ -20,7 +20,8 @@ jest.mock('@/lib/prisma', () => ({
 }));
 
 jest.mock('@/lib/auth/guard', () => ({
-  withAuth: (handler) => (req, res) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  withAuth: (handler: any) => (req: any, res: any) => {
     req.session = { user: { id: 'u1', role: req._testRole || 'ADMIN' } };
     return handler(req, res);
   },
@@ -34,7 +35,8 @@ jest.mock('@/lib/logger', () => ({
 }));
 
 jest.mock('csv-stringify/sync', () => ({
-  stringify: jest.fn((rows) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  stringify: jest.fn((rows: any[]) => {
     if (rows.length === 0) return '';
     const headers = Object.keys(rows[0]).join(',');
     const lines = rows.map((r) => Object.values(r).join(','));
@@ -42,8 +44,15 @@ jest.mock('csv-stringify/sync', () => ({
   }),
 }));
 
-function mockReqRes({ method = 'GET', body = {}, query = {}, role } = {}) {
-  const req = { method, body, query };
+interface MockReqResOptions {
+  method?: string;
+  body?: Record<string, unknown>;
+  query?: Record<string, string>;
+  role?: string;
+}
+
+function mockReqRes({ method = 'GET', body = {}, query = {}, role }: MockReqResOptions = {}) {
+  const req: Record<string, unknown> = { method, body, query };
   if (role) req._testRole = role;
   const res = {
     status: jest.fn().mockReturnThis(),
@@ -145,8 +154,7 @@ describe('POST /api/partners', () => {
   });
 
   test('returns 409 on duplicate name (P2002)', async () => {
-    const err = new Error('Unique constraint');
-    err.code = 'P2002';
+    const err = Object.assign(new Error('Unique constraint'), { code: 'P2002' });
     prisma.partner.create.mockRejectedValue(err);
     const { req, res } = mockReqRes({ method: 'POST', body: validBody });
     await indexHandler(req, res);
