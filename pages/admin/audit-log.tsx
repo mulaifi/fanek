@@ -2,23 +2,25 @@ import { useState, useEffect, useCallback } from 'react';
 import { getServerSession } from 'next-auth/next';
 import type { GetServerSidePropsContext } from 'next';
 import { getAuthOptions } from '@/lib/auth/options';
-import {
-  Alert,
-  Badge,
-  Code,
-  Group,
-  Select,
-  Stack,
-  Text,
-  TextInput,
-} from '@mantine/core';
-import { DataTable } from 'mantine-datatable';
+import type { ColumnDef, Row } from '@tanstack/react-table';
 import AppShell from '@/components/AppShell';
+import { DataTable } from '@/components/ui/data-table';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
-const ACTION_COLORS: Record<string, string> = {
-  CREATE: 'green',
-  UPDATE: 'yellow',
-  DELETE: 'red',
+const ACTION_BADGE_VARIANT: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+  CREATE: 'default',
+  UPDATE: 'outline',
+  DELETE: 'destructive',
 };
 
 const RESOURCES = ['customer', 'service', 'partner', 'user', 'settings', 'serviceType'];
@@ -44,12 +46,10 @@ export default function AuditLogPage() {
   const [currentPage, setCurrentPage] = useState<number>(0);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
 
-  const [filterAction, setFilterAction] = useState<string | null>(null);
-  const [filterResource, setFilterResource] = useState<string | null>(null);
+  const [filterAction, setFilterAction] = useState<string>('');
+  const [filterResource, setFilterResource] = useState<string>('');
   const [filterFrom, setFilterFrom] = useState<string>('');
   const [filterTo, setFilterTo] = useState<string>('');
-
-  const [expandedRecordIds, setExpandedRecordIds] = useState<string[]>([]);
 
   const buildUrl = useCallback(
     (cursor: string | null) => {
@@ -84,122 +84,171 @@ export default function AuditLogPage() {
   useEffect(() => {
     setCursors([null]);
     setCurrentPage(0);
-    setExpandedRecordIds([]);
     loadPage(null);
   }, [loadPage]);
 
-  function handlePageChange(page: number) {
-    if (page > currentPage) {
+  function handlePageChange(pageIndex: number) {
+    if (pageIndex > currentPage) {
       if (!nextCursor) return;
       const newCursors = [...cursors, nextCursor];
       setCursors(newCursors);
-      setCurrentPage(page);
+      setCurrentPage(pageIndex);
       loadPage(nextCursor);
-    } else if (page < currentPage) {
-      setCurrentPage(page);
-      loadPage(cursors[page]);
+    } else if (pageIndex < currentPage) {
+      setCurrentPage(pageIndex);
+      loadPage(cursors[pageIndex]);
     }
+  }
+
+  // Calculate total page count for DataTable
+  const totalRecords = nextCursor
+    ? (currentPage + 2) * PAGE_SIZE
+    : (currentPage + 1) * PAGE_SIZE;
+  const pageCount = Math.ceil(totalRecords / PAGE_SIZE);
+
+  const columns: ColumnDef<AuditLogEntry>[] = [
+    {
+      accessorKey: 'createdAt',
+      header: 'Timestamp',
+      cell: ({ row }) => (
+        <span className="text-xs whitespace-nowrap">
+          {new Date(row.original.createdAt).toLocaleString()}
+        </span>
+      ),
+    },
+    {
+      accessorKey: 'user',
+      header: 'User',
+      cell: ({ row }) => (
+        <div className="flex flex-col gap-0">
+          <span className="text-sm">{row.original.user?.name || '-'}</span>
+          <span className="text-xs text-muted-foreground">{row.original.user?.email}</span>
+        </div>
+      ),
+    },
+    {
+      accessorKey: 'action',
+      header: 'Action',
+      cell: ({ row }) => (
+        <Badge variant={ACTION_BADGE_VARIANT[row.original.action] || 'secondary'}>
+          {row.original.action}
+        </Badge>
+      ),
+    },
+    {
+      accessorKey: 'resource',
+      header: 'Resource',
+    },
+    {
+      accessorKey: 'resourceId',
+      header: 'Resource ID',
+      cell: ({ row }) => (
+        <span className="font-mono text-xs">
+          {row.original.resourceId
+            ? `${row.original.resourceId.substring(0, 12)}...`
+            : '-'}
+        </span>
+      ),
+    },
+  ];
+
+  function renderSubComponent({ row }: { row: Row<AuditLogEntry> }) {
+    if (!row.original.details) {
+      return (
+        <p className="text-sm text-muted-foreground p-4">No details available.</p>
+      );
+    }
+    return (
+      <pre className="font-mono bg-muted p-3 rounded text-sm overflow-auto whitespace-pre-wrap">
+        {JSON.stringify(row.original.details, null, 2)}
+      </pre>
+    );
   }
 
   return (
     <AppShell title="Audit Log">
-      {error && <Alert color="red" mb="md">{error}</Alert>}
+      {error && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
 
-      <Group mb="md" gap="sm" wrap="wrap">
-        <Select
-          placeholder="Action: All"
-          clearable
-          value={filterAction}
-          onChange={setFilterAction}
-          data={ACTIONS.map((a) => ({ value: a, label: a }))}
-          style={{ width: 150 }}
-        />
-        <Select
-          placeholder="Resource: All"
-          clearable
-          value={filterResource}
-          onChange={setFilterResource}
-          data={RESOURCES.map((r) => ({ value: r, label: r }))}
-          style={{ width: 160 }}
-        />
-        <TextInput
-          type="date"
-          placeholder="From"
-          value={filterFrom}
-          onChange={(e) => setFilterFrom(e.target.value)}
-          style={{ width: 160 }}
-        />
-        <TextInput
-          type="date"
-          placeholder="To"
-          value={filterTo}
-          onChange={(e) => setFilterTo(e.target.value)}
-          style={{ width: 160 }}
-        />
-      </Group>
+      <div className="flex flex-wrap gap-3 mb-4">
+        <div className="flex flex-col gap-1">
+          <Label className="text-xs text-muted-foreground">Action</Label>
+          <Select
+            value={filterAction || '_all'}
+            onValueChange={(v) => setFilterAction(v === '_all' ? '' : v)}
+          >
+            <SelectTrigger className="w-36">
+              <SelectValue placeholder="All" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="_all">All actions</SelectItem>
+              {ACTIONS.map((a) => (
+                <SelectItem key={a} value={a}>
+                  {a}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex flex-col gap-1">
+          <Label className="text-xs text-muted-foreground">Resource</Label>
+          <Select
+            value={filterResource || '_all'}
+            onValueChange={(v) => setFilterResource(v === '_all' ? '' : v)}
+          >
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="All" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="_all">All resources</SelectItem>
+              {RESOURCES.map((r) => (
+                <SelectItem key={r} value={r}>
+                  {r}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex flex-col gap-1">
+          <Label htmlFor="filter-from" className="text-xs text-muted-foreground">
+            From
+          </Label>
+          <Input
+            id="filter-from"
+            type="date"
+            value={filterFrom}
+            onChange={(e) => setFilterFrom(e.target.value)}
+            className="w-40"
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <Label htmlFor="filter-to" className="text-xs text-muted-foreground">
+            To
+          </Label>
+          <Input
+            id="filter-to"
+            type="date"
+            value={filterTo}
+            onChange={(e) => setFilterTo(e.target.value)}
+            className="w-40"
+          />
+        </div>
+      </div>
 
       <DataTable
-        records={logs}
-        fetching={loading}
-        minHeight={200}
-        page={currentPage + 1}
-        onPageChange={(p) => handlePageChange(p - 1)}
-        recordsPerPage={PAGE_SIZE}
-        totalRecords={nextCursor ? (currentPage + 2) * PAGE_SIZE : (currentPage + 1) * PAGE_SIZE}
-        columns={[
-          {
-            accessor: 'createdAt',
-            title: 'Timestamp',
-            render: (log) => (
-              <Text size="xs" style={{ whiteSpace: 'nowrap' }}>
-                {new Date(log.createdAt).toLocaleString()}
-              </Text>
-            ),
-          },
-          {
-            accessor: 'user',
-            title: 'User',
-            render: (log) => (
-              <Stack gap={0}>
-                <Text size="sm">{log.user?.name || '-'}</Text>
-                <Text size="xs" c="dimmed">{log.user?.email}</Text>
-              </Stack>
-            ),
-          },
-          {
-            accessor: 'action',
-            title: 'Action',
-            render: (log) => (
-              <Badge variant="light" color={ACTION_COLORS[log.action] || 'gray'}>
-                {log.action}
-              </Badge>
-            ),
-          },
-          { accessor: 'resource', title: 'Resource' },
-          {
-            accessor: 'resourceId',
-            title: 'Resource ID',
-            render: (log) => (
-              <Text size="xs" ff="monospace">
-                {log.resourceId ? `${log.resourceId.substring(0, 12)}...` : '-'}
-              </Text>
-            ),
-          },
-        ]}
-        rowExpansion={{
-          allowMultiple: false,
-          expanded: { recordIds: expandedRecordIds, onRecordIdsChange: setExpandedRecordIds },
-          collapseProps: { transitionDuration: 150 },
-          content: ({ record }) =>
-            record.details ? (
-              <Code block p="md" style={{ borderRadius: 0, fontSize: '0.75rem' }}>
-                {JSON.stringify(record.details, null, 2)}
-              </Code>
-            ) : (
-              <Text size="sm" c="dimmed" p="md">No details available.</Text>
-            ),
-        }}
-        noRecordsText="No audit log entries found"
+        columns={columns}
+        data={logs}
+        isLoading={loading}
+        emptyMessage="No audit log entries found"
+        pageCount={pageCount}
+        pageIndex={currentPage}
+        pageSize={PAGE_SIZE}
+        onPageChange={handlePageChange}
+        getRowCanExpand={() => true}
+        renderSubComponent={renderSubComponent}
       />
     </AppShell>
   );
