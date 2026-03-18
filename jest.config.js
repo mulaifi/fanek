@@ -4,13 +4,14 @@ const config = {
   moduleNameMapper: {
     '^@/lib/(.*)$': '<rootDir>/lib/$1',
     '^@/components/(.*)$': '<rootDir>/components/$1',
+    '^@/types/(.*)$': '<rootDir>/types/$1',
   },
   transform: {
-    '^.+\\.(js|jsx)$': ['@swc/jest', {
+    '^.+\\.(ts|tsx|js|jsx)$': ['@swc/jest', {
       jsc: {
         parser: {
-          syntax: 'ecmascript',
-          jsx: true,
+          syntax: 'typescript',
+          tsx: true,
         },
         transform: {
           react: {
