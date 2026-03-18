@@ -12,7 +12,8 @@ export interface PasswordInputProps extends Omit<React.ComponentProps<'input'>, 
 const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputProps>(
   ({ className, label, error, id, ...props }, ref) => {
     const [visible, setVisible] = React.useState(false);
-    const inputId = id || React.useId();
+    const generatedId = React.useId();
+    const inputId = id || generatedId;
 
     return (
       <div className="space-y-2">
@@ -36,6 +37,7 @@ const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputProps>(
             className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
             onClick={() => setVisible(!visible)}
             tabIndex={-1}
+            aria-label={visible ? 'Hide password' : 'Show password'}
           >
             {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </Button>

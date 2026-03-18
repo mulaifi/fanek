@@ -23,6 +23,7 @@ export default function DynamicForm({
   values = {},
   onChange,
   errors = {},
+  disabled = false,
 }: DynamicFormProps) {
   function handleChange(fieldName: string, value: unknown) {
     onChange({ ...values, [fieldName]: value });
@@ -44,14 +45,14 @@ export default function DynamicForm({
                 </Label>
                 <Select
                   value={(value as string) || undefined}
-                  onValueChange={(val) => handleChange(field.name, val)}
+                  onValueChange={(val) => handleChange(field.name, val === '__none__' ? '' : val)}
                 >
                   <SelectTrigger id={field.name}>
                     <SelectValue placeholder="Select an option" />
                   </SelectTrigger>
                   <SelectContent>
                     {!field.required && (
-                      <SelectItem value="">
+                      <SelectItem value="__none__">
                         <span className="text-muted-foreground">None</span>
                       </SelectItem>
                     )}

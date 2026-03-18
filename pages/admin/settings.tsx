@@ -188,7 +188,7 @@ export default function AdminSettingsPage() {
                       Remove
                     </Button>
                   )}
-                  <p className="text-xs text-muted-foreground">Max 256 KB. PNG or JPG.</p>
+                  <p className="text-xs text-muted-foreground">Max 256 KB. PNG, JPG, GIF, or WebP.</p>
                 </div>
               </div>
               <input

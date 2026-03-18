@@ -114,8 +114,9 @@ export default function AuthProviderConfig({ settings, onSave }: AuthProviderCon
           <Separator className="mb-4" />
           <div className="space-y-3">
             <div className="space-y-1">
-              <Label>Client ID</Label>
+              <Label htmlFor="google-client-id">Client ID</Label>
               <Input
+                id="google-client-id"
                 value={googleClientId}
                 onChange={(e) => setGoogleClientId(e.currentTarget.value)}
                 disabled={!googleEnabled}
@@ -150,16 +151,18 @@ export default function AuthProviderConfig({ settings, onSave }: AuthProviderCon
           <Separator className="mb-4" />
           <div className="space-y-3">
             <div className="space-y-1">
-              <Label>Client ID</Label>
+              <Label htmlFor="ms-client-id">Client ID</Label>
               <Input
+                id="ms-client-id"
                 value={msClientId}
                 onChange={(e) => setMsClientId(e.currentTarget.value)}
                 disabled={!msEnabled}
               />
             </div>
             <div className="space-y-1">
-              <Label>Tenant ID</Label>
+              <Label htmlFor="ms-tenant-id">Tenant ID</Label>
               <Input
+                id="ms-tenant-id"
                 value={msTenantId}
                 onChange={(e) => setMsTenantId(e.currentTarget.value)}
                 disabled={!msEnabled}

@@ -48,7 +48,15 @@ export default function StepTemplate({ selected, onSelect }: StepTemplateProps) 
         return (
           <Card
             key={String(id)}
+            role="button"
+            tabIndex={0}
             onClick={() => onSelect(id)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onSelect(id);
+              }
+            }}
             className={`cursor-pointer transition-colors ${
               isSelected
                 ? 'border-2 border-primary'

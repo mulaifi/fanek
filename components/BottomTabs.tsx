@@ -41,6 +41,7 @@ export default function BottomTabs() {
           const Icon = tab.icon;
           return (
             <button
+              type="button"
               key={tab.href}
               onClick={() => router.push(tab.href)}
               className={[

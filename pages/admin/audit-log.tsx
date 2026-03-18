@@ -145,7 +145,9 @@ export default function AuditLogPage() {
       cell: ({ row }) => (
         <span className="font-mono text-xs">
           {row.original.resourceId
-            ? `${row.original.resourceId.substring(0, 12)}...`
+            ? row.original.resourceId.length > 12
+              ? `${row.original.resourceId.substring(0, 12)}...`
+              : row.original.resourceId
             : '-'}
         </span>
       ),
