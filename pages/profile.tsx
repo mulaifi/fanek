@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/router';
 import { useSession } from 'next-auth/react';
 import { getServerSession } from 'next-auth/next';
+import type { GetServerSidePropsContext } from 'next';
 import { getAuthOptions } from '@/lib/auth/options';
 import {
   Alert,
@@ -24,7 +25,7 @@ import { useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
 import AppShell from '@/components/AppShell';
 
-function getPasswordStrength(password) {
+function getPasswordStrength(password: string): number {
   let strength = 0;
   if (password.length >= 8) strength += 25;
   if (password.length >= 12) strength += 25;
@@ -33,13 +34,13 @@ function getPasswordStrength(password) {
   return strength;
 }
 
-function getStrengthColor(strength) {
+function getStrengthColor(strength: number): string {
   if (strength < 50) return 'red';
   if (strength < 75) return 'yellow';
   return 'green';
 }
 
-function getStrengthLabel(strength) {
+function getStrengthLabel(strength: number): string {
   if (strength < 25) return 'Too short';
   if (strength < 50) return 'Weak';
   if (strength < 75) return 'Fair';
@@ -47,18 +48,27 @@ function getStrengthLabel(strength) {
   return 'Strong';
 }
 
-function NameForm({ user, onUpdate }) {
-  const [saving, setSaving] = useState(false);
-  const [success, setSuccess] = useState(false);
+interface NameFormProps {
+  user?: { name?: string | null };
+  onUpdate: (updates: { name: string }) => Promise<void>;
+}
 
-  const form = useForm({
+interface NameFormValues {
+  name: string;
+}
+
+function NameForm({ user, onUpdate }: NameFormProps) {
+  const [saving, setSaving] = useState<boolean>(false);
+  const [success, setSuccess] = useState<boolean>(false);
+
+  const form = useForm<NameFormValues>({
     initialValues: { name: user?.name || '' },
     validate: {
       name: (v) => (v.trim() ? null : 'Name is required'),
     },
   });
 
-  async function handleSubmit(values) {
+  async function handleSubmit(values: NameFormValues) {
     setSuccess(false);
     setSaving(true);
     const res = await fetch('/api/profile', {
@@ -96,12 +106,23 @@ function NameForm({ user, onUpdate }) {
   );
 }
 
-function PasswordForm({ onSuccess, successMessage }) {
-  const [saving, setSaving] = useState(false);
-  const [apiError, setApiError] = useState('');
-  const [success, setSuccess] = useState(false);
+interface PasswordFormProps {
+  onSuccess?: (data: { firstLogin?: boolean }) => void;
+  successMessage?: string;
+}
 
-  const form = useForm({
+interface PasswordFormValues {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
+function PasswordForm({ onSuccess, successMessage }: PasswordFormProps) {
+  const [saving, setSaving] = useState<boolean>(false);
+  const [apiError, setApiError] = useState<string>('');
+  const [success, setSuccess] = useState<boolean>(false);
+
+  const form = useForm<PasswordFormValues>({
     initialValues: {
       currentPassword: '',
       newPassword: '',
@@ -118,7 +139,7 @@ function PasswordForm({ onSuccess, successMessage }) {
 
   const strength = getPasswordStrength(form.values.newPassword);
 
-  async function handleSubmit(values) {
+  async function handleSubmit(values: PasswordFormValues) {
     setApiError('');
     setSuccess(false);
     setSaving(true);
@@ -200,7 +221,7 @@ export default function ProfilePage() {
   const user = session?.user;
   const isFirstLogin = user?.firstLogin;
 
-  const roleColors = { ADMIN: 'red', EDITOR: 'blue', VIEWER: 'gray' };
+  const roleColors: Record<string, string> = { ADMIN: 'red', EDITOR: 'blue', VIEWER: 'gray' };
 
   const content = (
     <Stack gap="md" maw={600}>
@@ -221,7 +242,7 @@ export default function ProfilePage() {
             </Box>
             <Box>
               <Text size="xs" c="dimmed" fw={600} tt="uppercase" mb={4}>Role</Text>
-              <Badge color={roleColors[user?.role] || 'gray'}>{user?.role}</Badge>
+              <Badge color={roleColors[user?.role ?? ''] || 'gray'}>{user?.role}</Badge>
             </Box>
           </SimpleGrid>
         </Paper>
@@ -281,7 +302,7 @@ export default function ProfilePage() {
   return <AppShell title="My Profile">{content}</AppShell>;
 }
 
-export async function getServerSideProps(context) {
+export async function getServerSideProps(context: GetServerSidePropsContext) {
   const options = await getAuthOptions();
   const session = await getServerSession(context.req, context.res, options);
   if (!session) {

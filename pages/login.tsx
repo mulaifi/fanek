@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { signIn, getSession } from 'next-auth/react';
+import type { GetServerSidePropsContext } from 'next';
 import {
   Alert,
   Avatar,
@@ -20,14 +21,14 @@ export default function LoginPage() {
   const router = useRouter();
   const { error: queryError } = router.query;
 
-  const [orgName, setOrgName] = useState('Fanek');
-  const [orgLogo, setOrgLogo] = useState(null);
-  const [googleEnabled, setGoogleEnabled] = useState(false);
+  const [orgName, setOrgName] = useState<string>('Fanek');
+  const [orgLogo, setOrgLogo] = useState<string | null>(null);
+  const [googleEnabled, setGoogleEnabled] = useState<boolean>(false);
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [formError, setFormError] = useState(null);
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
+  const [submitting, setSubmitting] = useState<boolean>(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadSettings() {
@@ -55,11 +56,12 @@ export default function LoginPage() {
     Default: 'An error occurred during sign-in. Please try again.',
   };
 
+  const queryErrorStr = Array.isArray(queryError) ? queryError[0] : queryError;
   const displayError =
     formError ||
-    (queryError ? (errorMessages[queryError] ?? errorMessages.Default) : null);
+    (queryErrorStr ? (errorMessages[queryErrorStr as keyof typeof errorMessages] ?? errorMessages.Default) : null);
 
-  async function handleCredentialsSubmit(e) {
+  async function handleCredentialsSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setFormError(null);
     setSubmitting(true);
@@ -184,7 +186,7 @@ export default function LoginPage() {
   );
 }
 
-export async function getServerSideProps(context) {
+export async function getServerSideProps(context: GetServerSidePropsContext) {
   const session = await getSession(context);
   if (session) {
     return { redirect: { destination: '/dashboard', permanent: false } };

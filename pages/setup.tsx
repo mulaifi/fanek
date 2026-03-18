@@ -24,17 +24,17 @@ const STEPS = ['Admin Account', 'Organization', 'Service Template', 'Complete'];
 
 export default function SetupPage() {
   const router = useRouter();
-  const [activeStep, setActiveStep] = useState(0);
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState(null);
+  const [activeStep, setActiveStep] = useState<number>(0);
+  const [submitting, setSubmitting] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const [adminData, setAdminData] = useState({ name: '', email: '', password: '' });
-  const [orgData, setOrgData] = useState({ name: '', logo: null });
-  const [template, setTemplate] = useState(null);
-  const [fieldErrors, setFieldErrors] = useState({});
+  const [adminData, setAdminData] = useState<{ name: string; email: string; password: string }>({ name: '', email: '', password: '' });
+  const [orgData, setOrgData] = useState<{ name: string; logo: string | null }>({ name: '', logo: null });
+  const [template, setTemplate] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
-  function validateAdmin() {
-    const errors = {};
+  function validateAdmin(): Record<string, string> {
+    const errors: Record<string, string> = {};
     if (!adminData.name.trim()) errors.name = 'Name is required';
     if (!adminData.email.trim()) errors.email = 'Email is required';
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(adminData.email)) errors.email = 'Enter a valid email address';
@@ -42,8 +42,8 @@ export default function SetupPage() {
     return errors;
   }
 
-  function validateOrg() {
-    const errors = {};
+  function validateOrg(): Record<string, string> {
+    const errors: Record<string, string> = {};
     if (!orgData.name.trim()) errors.orgName = 'Organization name is required';
     return errors;
   }
@@ -150,10 +150,10 @@ export default function SetupPage() {
 
           <Box style={{ minHeight: 240 }}>
             {activeStep === 0 && (
-              <StepAdmin data={adminData} onChange={setAdminData} errors={fieldErrors} />
+              <StepAdmin data={adminData} onChange={(d) => setAdminData((prev) => ({ ...prev, name: d.name ?? prev.name, email: d.email ?? prev.email, password: d.password ?? prev.password }))} errors={fieldErrors} />
             )}
             {activeStep === 1 && (
-              <StepOrg data={orgData} onChange={setOrgData} errors={fieldErrors} />
+              <StepOrg data={orgData} onChange={(d) => setOrgData((prev) => ({ name: d.name ?? prev.name, logo: d.logo !== undefined ? d.logo : prev.logo }))} errors={fieldErrors} />
             )}
             {activeStep === 2 && (
               <StepTemplate selected={template} onSelect={setTemplate} />
