@@ -3,52 +3,53 @@ import { useRouter } from 'next/router';
 import { getServerSession } from 'next-auth/next';
 import { useSession } from 'next-auth/react';
 import type { GetServerSidePropsContext } from 'next';
-import type { DataTableSortStatus } from 'mantine-datatable';
+import type { ColumnDef, SortingState } from '@tanstack/react-table';
 import { getAuthOptions } from '@/lib/auth/options';
-import {
-  Badge,
-  Button,
-  Group,
-  Select,
-  Stack,
-  Text,
-  TextInput,
-} from '@mantine/core';
-import { DataTable } from 'mantine-datatable';
-import { IconSearch, IconPlus, IconDownload } from '@tabler/icons-react';
+import { Search, Plus, Download } from 'lucide-react';
 import dayjs from 'dayjs';
 import AppShell from '@/components/AppShell';
+import { DataTable } from '@/components/ui/data-table';
+import { Badge } from '@/components/ui/badge';
+import { Button, buttonVariants } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 const PAGE_SIZE = 25;
 const PARTNER_TYPES = ['Reseller', 'Distributor', 'Technology', 'Service', 'Referral', 'Other'];
 
 const TYPE_COLORS: Record<string, string> = {
-  Reseller: 'blue',
-  Distributor: 'cyan',
-  Technology: 'violet',
-  Service: 'teal',
-  Referral: 'orange',
-  Other: 'gray',
+  Reseller: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
+  Distributor: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-400',
+  Technology: 'bg-violet-100 text-violet-800 dark:bg-violet-900/30 dark:text-violet-400',
+  Service: 'bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-400',
+  Referral: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400',
+  Other: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
 };
+
+interface PartnerRow {
+  id: string;
+  name: string;
+  type?: string | null;
+  notes?: string | null;
+  updatedAt: string;
+}
 
 export default function PartnersIndexPage() {
   const router = useRouter();
   const { data: session } = useSession();
   const canCreate = ['ADMIN', 'EDITOR'].includes(session?.user?.role ?? '');
 
-  interface PartnerRow {
-    id: string;
-    name: string;
-    type?: string | null;
-    notes?: string | null;
-    updatedAt: string;
-  }
-
   const [records, setRecords] = useState<PartnerRow[]>([]);
   const [totalRecords, setTotalRecords] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(true);
   const [page, setPage] = useState<number>(1);
-  const [sortStatus, setSortStatus] = useState<DataTableSortStatus<PartnerRow>>({ columnAccessor: 'updatedAt', direction: 'desc' });
+  const [sorting, setSorting] = useState<SortingState>([{ id: 'updatedAt', desc: true }]);
 
   const [searchInput, setSearchInput] = useState<string>('');
   const [search, setSearch] = useState<string>('');
@@ -56,11 +57,13 @@ export default function PartnersIndexPage() {
 
   const fetchData = useCallback(() => {
     setLoading(true);
+    const sortCol = sorting[0]?.id ?? 'updatedAt';
+    const sortDir = sorting[0]?.desc ? 'desc' : 'asc';
     const params = new URLSearchParams({
       page: String(page),
       limit: String(PAGE_SIZE),
-      sort: sortStatus.columnAccessor,
-      order: sortStatus.direction,
+      sort: sortCol,
+      order: sortDir,
     });
     if (typeFilter) params.set('type', typeFilter);
     if (search) params.set('search', search);
@@ -73,7 +76,7 @@ export default function PartnersIndexPage() {
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, [page, sortStatus, typeFilter, search]);
+  }, [page, sorting, typeFilter, search]);
 
   useEffect(() => {
     fetchData();
@@ -86,108 +89,118 @@ export default function PartnersIndexPage() {
     }
   }
 
-  const typeSelectData = [
-    { value: '', label: 'All types' },
-    ...PARTNER_TYPES.map((t) => ({ value: t, label: t })),
-  ];
+  function handleTypeChange(value: string) {
+    setTypeFilter(value === '__all__' ? '' : value);
+    setPage(1);
+  }
 
-  const columns: import('mantine-datatable').DataTableColumn<PartnerRow>[] = [
+  const pageCount = Math.ceil(totalRecords / PAGE_SIZE);
+
+  const columns: ColumnDef<PartnerRow>[] = [
     {
-      accessor: 'name',
-      title: 'Name',
-      sortable: true,
-      render: (row) => (
-        <Text size="sm" fw={500}>
-          {row.name}
-        </Text>
+      accessorKey: 'name',
+      header: 'Name',
+      enableSorting: true,
+      cell: ({ row }) => (
+        <span className="text-sm font-medium">{row.original.name}</span>
       ),
     },
     {
-      accessor: 'type',
-      title: 'Type',
-      render: (row) =>
-        row.type ? (
-          <Badge color={TYPE_COLORS[row.type] || 'gray'}>{row.type}</Badge>
+      accessorKey: 'type',
+      header: 'Type',
+      enableSorting: false,
+      cell: ({ row }) =>
+        row.original.type ? (
+          <Badge className={`border-0 ${TYPE_COLORS[row.original.type] || 'bg-gray-100 text-gray-600'}`}>
+            {row.original.type}
+          </Badge>
         ) : (
-          <Text size="sm" c="dimmed">-</Text>
+          <span className="text-sm text-muted-foreground">-</span>
         ),
     },
     {
-      accessor: 'notes',
-      title: 'Notes',
-      render: (row) => (
-        <Text size="sm" c="dimmed" lineClamp={1}>
-          {row.notes || '-'}
-        </Text>
+      accessorKey: 'notes',
+      header: 'Notes',
+      enableSorting: false,
+      cell: ({ row }) => (
+        <span className="text-sm text-muted-foreground line-clamp-1">
+          {row.original.notes || '-'}
+        </span>
       ),
     },
     {
-      accessor: 'updatedAt',
-      title: 'Last Updated',
-      sortable: true,
-      render: (row) => dayjs(row.updatedAt).format('DD MMM YYYY'),
+      accessorKey: 'updatedAt',
+      header: 'Last Updated',
+      enableSorting: true,
+      cell: ({ row }) => dayjs(row.original.updatedAt).format('DD MMM YYYY'),
     },
   ];
 
   return (
     <AppShell title="Partners">
-      <Stack gap="md">
-        <Group justify="space-between">
-          <Group gap="sm">
-            <TextInput
-              placeholder="Partner name..."
-              leftSection={<IconSearch size={16} />}
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              onKeyDown={handleSearchKeyDown}
-              w={220}
-            />
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div className="flex items-center gap-2">
+            <div className="relative w-[220px]">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Partner name..."
+                className="pl-8"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                onKeyDown={handleSearchKeyDown}
+              />
+            </div>
             <Select
-              placeholder="All types"
-              data={typeSelectData}
-              value={typeFilter}
-              onChange={(v) => { setTypeFilter(v || ''); setPage(1); }}
-              w={160}
-              clearable
-            />
-          </Group>
-          <Group gap="xs">
+              value={typeFilter || '__all__'}
+              onValueChange={handleTypeChange}
+            >
+              <SelectTrigger className="w-[160px]">
+                <SelectValue placeholder="All types" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all__">All types</SelectItem>
+                {PARTNER_TYPES.map((t) => (
+                  <SelectItem key={t} value={t}>{t}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center gap-2">
             {canCreate && (
-              <Button
-                leftSection={<IconPlus size={16} />}
-                color="brand"
-                onClick={() => router.push('/partners/new')}
-              >
+              <Button onClick={() => router.push('/partners/new')}>
+                <Plus className="h-4 w-4 mr-1" />
                 New partner
               </Button>
             )}
-            <Button
-              variant="subtle"
-              leftSection={<IconDownload size={16} />}
-              component="a"
+            <a
               href="/api/partners/export"
+              className={buttonVariants({ variant: 'outline' })}
             >
+              <Download className="h-4 w-4 mr-1" />
               Export CSV
-            </Button>
-          </Group>
-        </Group>
+            </a>
+          </div>
+        </div>
 
         <DataTable
-          records={records}
           columns={columns}
-          fetching={loading}
-          totalRecords={totalRecords}
-          recordsPerPage={PAGE_SIZE}
-          page={page}
-          onPageChange={setPage}
-          sortStatus={sortStatus}
-          onSortStatusChange={(s) => { setSortStatus(s); setPage(1); }}
-          verticalSpacing="md"
-          highlightOnHover
-          onRowClick={({ record }) => router.push(`/partners/${record.id}`)}
-          noRecordsText="No partners found"
+          data={records}
+          sorting={sorting}
+          onSortingChange={(updater) => {
+            const next = typeof updater === 'function' ? updater(sorting) : updater;
+            setSorting(next);
+            setPage(1);
+          }}
+          pageCount={pageCount}
+          pageIndex={page - 1}
+          pageSize={PAGE_SIZE}
+          onPageChange={(idx) => setPage(idx + 1)}
+          isLoading={loading}
+          emptyMessage="No partners found"
+          onRowClick={(row) => router.push(`/partners/${row.id}`)}
         />
-      </Stack>
+      </div>
     </AppShell>
   );
 }

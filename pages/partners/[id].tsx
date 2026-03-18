@@ -3,46 +3,40 @@ import { useRouter } from 'next/router';
 import { useSession } from 'next-auth/react';
 import { getServerSession } from 'next-auth/next';
 import type { GetServerSidePropsContext } from 'next';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { toast } from 'sonner';
 import { getAuthOptions } from '@/lib/auth/options';
 import type { ContactInput } from '@/lib/validation';
-import {
-  ActionIcon,
-  Alert,
-  Badge,
-  Box,
-  Button,
-  Center,
-  Group,
-  Loader,
-  Paper,
-  Select,
-  SimpleGrid,
-  Stack,
-  Text,
-  Textarea,
-  TextInput,
-  Title,
-} from '@mantine/core';
-import { useForm } from '@mantine/form';
-import { notifications } from '@mantine/notifications';
-import {
-  IconArrowLeft,
-  IconEdit,
-  IconTrash,
-} from '@tabler/icons-react';
+import { ArrowLeft, Edit, Trash, Loader2 } from 'lucide-react';
 import dayjs from 'dayjs';
 import AppShell from '@/components/AppShell';
 import ContactsEditor from '@/components/ContactsEditor';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 const PARTNER_TYPES = ['Reseller', 'Distributor', 'Technology', 'Service', 'Referral', 'Other'];
 
 const TYPE_COLORS: Record<string, string> = {
-  Reseller: 'blue',
-  Distributor: 'cyan',
-  Technology: 'violet',
-  Service: 'teal',
-  Referral: 'orange',
-  Other: 'gray',
+  Reseller: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
+  Distributor: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-400',
+  Technology: 'bg-violet-100 text-violet-800 dark:bg-violet-900/30 dark:text-violet-400',
+  Service: 'bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-400',
+  Referral: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400',
+  Other: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
 };
 
 interface PartnerShape {
@@ -57,13 +51,22 @@ interface PartnerShape {
   updatedAt: string;
 }
 
-interface EditPartnerFormValues {
-  name: string;
-  type: string;
-  website: string;
-  address: string;
-  notes: string;
-}
+// ----- EditPartnerForm -----
+
+const editPartnerSchema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  type: z.string().optional(),
+  website: z
+    .string()
+    .optional()
+    .refine((v) => !v || /^https?:\/\/.+/.test(v), {
+      message: 'Website must start with http:// or https://',
+    }),
+  address: z.string().optional(),
+  notes: z.string().optional(),
+});
+
+type EditPartnerFormValues = z.infer<typeof editPartnerSchema>;
 
 interface EditPartnerFormProps {
   partner: PartnerShape;
@@ -72,35 +75,35 @@ interface EditPartnerFormProps {
 }
 
 function EditPartnerForm({ partner, onSave, onClose }: EditPartnerFormProps) {
-  const form = useForm<EditPartnerFormValues>({
-    initialValues: {
+  const [saving, setSaving] = useState<boolean>(false);
+  const [saveError, setSaveError] = useState<string>('');
+
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    formState: { errors },
+  } = useForm<EditPartnerFormValues>({
+    resolver: zodResolver(editPartnerSchema),
+    defaultValues: {
       name: partner.name || '',
       type: partner.type || '',
       website: partner.website || '',
       address: partner.address || '',
       notes: partner.notes || '',
     },
-    validate: {
-      name: (v) => (v.trim() ? null : 'Name is required'),
-      website: (v) =>
-        !v || /^https?:\/\/.+/.test(v) ? null : 'Website must start with http:// or https://',
-    },
   });
 
-  const [saving, setSaving] = useState<boolean>(false);
-  const [saveError, setSaveError] = useState<string>('');
+  const typeValue = watch('type');
 
-  const typeSelectData = [
-    { value: '', label: 'None' },
-    ...PARTNER_TYPES.map((t) => ({ value: t, label: t })),
-  ];
-
-  async function handleSubmit(values: EditPartnerFormValues) {
+  async function onSubmit(values: EditPartnerFormValues) {
     setSaveError('');
     setSaving(true);
-    const payload: Record<string, string | null> = { ...values };
-    (Object.keys(payload) as (keyof typeof payload)[]).forEach((k) => {
-      if (payload[k] === '') payload[k] = null;
+    const payload: Record<string, string | null> = {};
+    (Object.keys(values) as (keyof EditPartnerFormValues)[]).forEach((k) => {
+      const v = values[k];
+      payload[k] = v && v.trim?.() !== '' ? (v as string) : null;
     });
     const res = await fetch(`/api/partners/${partner.id}`, {
       method: 'PUT',
@@ -117,30 +120,73 @@ function EditPartnerForm({ partner, onSave, onClose }: EditPartnerFormProps) {
   }
 
   return (
-    <Paper withBorder p="md" style={{ borderColor: 'var(--mantine-color-brand-5)', borderWidth: 2 }}>
-      <form onSubmit={form.onSubmit(handleSubmit)}>
-        <Stack gap="sm">
+    <div className="rounded-md border-2 border-primary/40 p-4">
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <div className="flex flex-col gap-3">
           {saveError && (
-            <Alert color="red" title="Error">
-              {saveError}
+            <Alert variant="destructive">
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>{saveError}</AlertDescription>
             </Alert>
           )}
-          <SimpleGrid cols={{ base: 1, sm: 2 }}>
-            <TextInput label="Partner Name" required {...form.getInputProps('name')} />
-            <Select label="Type" data={typeSelectData} {...form.getInputProps('type')} />
-          </SimpleGrid>
-          <TextInput label="Website" placeholder="https://example.com" {...form.getInputProps('website')} />
-          <Textarea label="Address" rows={2} {...form.getInputProps('address')} />
-          <Textarea label="Notes" rows={3} {...form.getInputProps('notes')} />
-          <Group justify="flex-end" mt="sm">
-            <Button variant="default" onClick={onClose}>Cancel</Button>
-            <Button type="submit" color="brand" loading={saving}>Save Changes</Button>
-          </Group>
-        </Stack>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label htmlFor="edit-name">
+                Partner Name <span className="text-destructive">*</span>
+              </Label>
+              <Input id="edit-name" {...register('name')} />
+              {errors.name && (
+                <p className="text-sm text-destructive">{errors.name.message}</p>
+              )}
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="edit-type">Type</Label>
+              <Select
+                value={typeValue || '__none__'}
+                onValueChange={(v) => setValue('type', v === '__none__' ? '' : v)}
+              >
+                <SelectTrigger id="edit-type">
+                  <SelectValue placeholder="None" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">None</SelectItem>
+                  {PARTNER_TYPES.map((t) => (
+                    <SelectItem key={t} value={t}>{t}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="edit-website">Website</Label>
+            <Input id="edit-website" placeholder="https://example.com" {...register('website')} />
+            {errors.website && (
+              <p className="text-sm text-destructive">{errors.website.message}</p>
+            )}
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="edit-address">Address</Label>
+            <Textarea id="edit-address" rows={2} {...register('address')} />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="edit-notes">Notes</Label>
+            <Textarea id="edit-notes" rows={3} {...register('notes')} />
+          </div>
+          <div className="flex justify-end gap-2 mt-1">
+            <Button type="button" variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={saving}>
+              {saving ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </div>
+        </div>
       </form>
-    </Paper>
+    </div>
   );
 }
+
+// ----- InlineDeleteButton -----
 
 interface InlineDeleteButtonProps {
   onConfirm: () => void;
@@ -168,24 +214,38 @@ function InlineDeleteButton({ onConfirm }: InlineDeleteButtonProps) {
   }, []);
 
   useEffect(() => {
-    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
   }, []);
 
   if (confirming) {
     return (
-      <Group gap={4}>
-        <Button size="xs" color="red" variant="filled" onClick={handleConfirm}>Confirm?</Button>
-        <Button size="xs" variant="default" onClick={handleCancel}>Cancel</Button>
-      </Group>
+      <div className="flex items-center gap-1">
+        <Button size="sm" variant="destructive" onClick={handleConfirm}>
+          Confirm?
+        </Button>
+        <Button size="sm" variant="outline" onClick={handleCancel}>
+          Cancel
+        </Button>
+      </div>
     );
   }
 
   return (
-    <ActionIcon variant="default" size="lg" color="red" onClick={startConfirm} title="Delete">
-      <IconTrash size={16} />
-    </ActionIcon>
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={startConfirm}
+      title="Delete"
+      className="text-destructive hover:text-destructive"
+    >
+      <Trash className="h-4 w-4" />
+    </Button>
   );
 }
+
+// ----- PartnerDetailPage -----
 
 export default function PartnerDetailPage() {
   const router = useRouter();
@@ -230,10 +290,10 @@ export default function PartnerDetailPage() {
         router.push('/partners');
       } else {
         const data = await res.json().catch(() => ({}));
-        notifications.show({ title: 'Error', message: data.error || 'Failed to delete partner.', color: 'red' });
+        toast.error('Error', { description: data.error || 'Failed to delete partner.' });
       }
-    } catch (err) {
-      notifications.show({ title: 'Error', message: 'Network error: failed to delete partner.', color: 'red' });
+    } catch {
+      toast.error('Error', { description: 'Network error: failed to delete partner.' });
     }
   }
 
@@ -247,20 +307,20 @@ export default function PartnerDetailPage() {
     const data = await res.json();
     setContactsSaving(false);
     if (res.ok) {
-      setPartner((prev) => prev ? ({ ...prev, contacts: data.contacts }) : prev);
+      setPartner((prev) => (prev ? { ...prev, contacts: data.contacts } : prev));
       setContactsValue(data.contacts || []);
-      notifications.show({ title: 'Contacts saved', message: 'Contacts updated.', color: 'green' });
+      toast.success('Contacts saved', { description: 'Contacts updated.' });
     } else {
-      notifications.show({ title: 'Error', message: 'Failed to save contacts.', color: 'red' });
+      toast.error('Error', { description: 'Failed to save contacts.' });
     }
   }
 
   if (loading) {
     return (
       <AppShell title="Partner">
-        <Center mt="xl">
-          <Loader />
-        </Center>
+        <div className="flex items-center justify-center mt-12">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
       </AppShell>
     );
   }
@@ -268,8 +328,9 @@ export default function PartnerDetailPage() {
   if (error || !partner) {
     return (
       <AppShell title="Partner">
-        <Alert color="red" title="Error">
-          {error || 'Partner not found'}
+        <Alert variant="destructive">
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{error || 'Partner not found'}</AlertDescription>
         </Alert>
       </AppShell>
     );
@@ -277,109 +338,147 @@ export default function PartnerDetailPage() {
 
   return (
     <AppShell title={partner.name}>
-      <Stack gap="md">
+      <div className="flex flex-col gap-4">
         {/* Header */}
         {editingPartner ? (
-          <Box>
-            <Group gap="sm" mb="md">
-              <ActionIcon variant="subtle" onClick={() => router.push('/partners')} mt={4}>
-                <IconArrowLeft size={18} />
-              </ActionIcon>
-              <Title order={3}>Edit Partner</Title>
-            </Group>
+          <div>
+            <div className="flex items-center gap-2 mb-4">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => router.push('/partners')}
+                className="mt-1"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+              <h2 className="text-lg font-semibold">Edit Partner</h2>
+            </div>
             <EditPartnerForm
               partner={partner}
               onSave={(data) => {
-                setPartner((prev) => prev ? ({ ...prev, ...data }) : prev);
+                setPartner((prev) => (prev ? { ...prev, ...data } : prev));
                 setEditingPartner(false);
-                notifications.show({ title: 'Saved', message: 'Partner updated.', color: 'green' });
+                toast.success('Saved', { description: 'Partner updated.' });
               }}
               onClose={() => setEditingPartner(false)}
             />
-          </Box>
+          </div>
         ) : (
-          <Group justify="space-between" align="flex-start" wrap="wrap">
-            <Group gap="sm" align="flex-start">
-              <ActionIcon variant="subtle" onClick={() => router.push('/partners')} mt={4}>
-                <IconArrowLeft size={18} />
-              </ActionIcon>
-              <Box>
-                <Title order={3}>{partner.name}</Title>
+          <div className="flex items-start justify-between flex-wrap gap-2">
+            <div className="flex items-start gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => router.push('/partners')}
+                className="mt-1"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+              <div>
+                <h2 className="text-lg font-semibold">{partner.name}</h2>
                 {partner.type && (
-                  <Badge color={TYPE_COLORS[partner.type] || 'gray'} mt={4}>
+                  <Badge
+                    className={`border-0 mt-1 ${TYPE_COLORS[partner.type] || 'bg-gray-100 text-gray-600'}`}
+                  >
                     {partner.type}
                   </Badge>
                 )}
-              </Box>
-            </Group>
+              </div>
+            </div>
             {canEdit && (
-              <Group gap="xs">
-                <ActionIcon variant="default" size="lg" onClick={() => setEditingPartner(true)} title="Edit">
-                  <IconEdit size={16} />
-                </ActionIcon>
-                {isAdmin && (
-                  <InlineDeleteButton onConfirm={handleDeletePartner} />
-                )}
-              </Group>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setEditingPartner(true)}
+                  title="Edit"
+                >
+                  <Edit className="h-4 w-4" />
+                </Button>
+                {isAdmin && <InlineDeleteButton onConfirm={handleDeletePartner} />}
+              </div>
             )}
-          </Group>
+          </div>
         )}
 
         {/* Details + Notes */}
         {!editingPartner && (
           <>
-            <SimpleGrid cols={{ base: 1, md: 2 }} spacing="md">
-              <Paper p="md">
-                <Title order={6} mb="md">Details</Title>
-                <Stack gap="sm">
-                  <Box>
-                    <Text size="xs" tt="uppercase" c="dimmed" fw={600} mb={4}>Website</Text>
-                    <Text size="sm">
-                      {partner.website ? (
-                        <a href={partner.website} target="_blank" rel="noopener noreferrer">
-                          {partner.website}
-                        </a>
-                      ) : '-'}
-                    </Text>
-                  </Box>
-                  <Box>
-                    <Text size="xs" tt="uppercase" c="dimmed" fw={600} mb={4}>Address</Text>
-                    <Text size="sm">{partner.address || '-'}</Text>
-                  </Box>
-                  <SimpleGrid cols={2}>
-                    <Box>
-                      <Text size="xs" tt="uppercase" c="dimmed" fw={600} mb={4}>Created</Text>
-                      <Text size="sm">{dayjs(partner.createdAt).format('DD MMM YYYY')}</Text>
-                    </Box>
-                    <Box>
-                      <Text size="xs" tt="uppercase" c="dimmed" fw={600} mb={4}>Updated</Text>
-                      <Text size="sm">{dayjs(partner.updatedAt).format('DD MMM YYYY')}</Text>
-                    </Box>
-                  </SimpleGrid>
-                </Stack>
-              </Paper>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Card>
+                <CardContent className="pt-6">
+                  <h3 className="text-sm font-semibold mb-4">Details</h3>
+                  <div className="flex flex-col gap-3">
+                    <div>
+                      <p className="text-xs text-muted-foreground font-semibold uppercase mb-1">
+                        Website
+                      </p>
+                      <p className="text-sm">
+                        {partner.website ? (
+                          <a
+                            href={partner.website}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="underline"
+                          >
+                            {partner.website}
+                          </a>
+                        ) : (
+                          '-'
+                        )}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground font-semibold uppercase mb-1">
+                        Address
+                      </p>
+                      <p className="text-sm">{partner.address || '-'}</p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-xs text-muted-foreground font-semibold uppercase mb-1">
+                          Created
+                        </p>
+                        <p className="text-sm">{dayjs(partner.createdAt).format('DD MMM YYYY')}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground font-semibold uppercase mb-1">
+                          Updated
+                        </p>
+                        <p className="text-sm">{dayjs(partner.updatedAt).format('DD MMM YYYY')}</p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
 
-              <Paper p="md">
-                <Title order={6} mb="md">Notes</Title>
-                <Text size="sm" style={{ whiteSpace: 'pre-wrap' }} c={partner.notes ? undefined : 'dimmed'}>
-                  {partner.notes || 'No notes.'}
-                </Text>
-              </Paper>
-            </SimpleGrid>
+              <Card>
+                <CardContent className="pt-6">
+                  <h3 className="text-sm font-semibold mb-4">Notes</h3>
+                  <p
+                    className={`text-sm whitespace-pre-wrap ${partner.notes ? '' : 'text-muted-foreground'}`}
+                  >
+                    {partner.notes || 'No notes.'}
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
 
             {/* Contacts */}
-            <Paper p="md">
-              <Title order={6} mb="md">Contacts</Title>
-              <ContactsEditor
-                contacts={contactsValue}
-                onChange={canEdit ? setContactsValue : undefined}
-                onSave={canEdit ? handleSaveContacts : undefined}
-                saving={contactsSaving}
-              />
-            </Paper>
+            <Card>
+              <CardContent className="pt-6">
+                <h3 className="text-sm font-semibold mb-4">Contacts</h3>
+                <ContactsEditor
+                  contacts={contactsValue}
+                  onChange={canEdit ? setContactsValue : undefined}
+                  onSave={canEdit ? handleSaveContacts : undefined}
+                  saving={contactsSaving}
+                />
+              </CardContent>
+            </Card>
           </>
         )}
-      </Stack>
+      </div>
     </AppShell>
   );
 }
