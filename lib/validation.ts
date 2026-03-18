@@ -18,7 +18,7 @@ export const serviceTypeSchema = z.object({
   active: z.boolean().optional(),
 });
 
-const contactSchema = z.object({
+export const contactSchema = z.object({
   name: z.string(),
   title: z.string().optional(),
   emails: z.array(z.object({ value: z.string().email(), category: z.string() })).optional(),
@@ -55,3 +55,10 @@ export const serviceSchema = z.object({
   endDate: z.string().datetime().optional().nullable(),
   notes: z.string().optional(),
 });
+
+export type ServiceTypeFieldInput = z.infer<typeof serviceTypeFieldSchema>;
+export type ServiceTypeInput = z.infer<typeof serviceTypeSchema>;
+export type ContactInput = z.infer<typeof contactSchema>;
+export type CustomerInput = z.infer<typeof customerSchema>;
+export type PartnerInput = z.infer<typeof partnerSchema>;
+export type ServiceInput = z.infer<typeof serviceSchema>;

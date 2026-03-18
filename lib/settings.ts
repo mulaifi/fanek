@@ -1,8 +1,11 @@
 import prisma from '@/lib/prisma';
-let cache = null;
-let cacheTime = 0;
+import type { Settings } from '@prisma/client';
+
+let cache: Settings | null = null;
+let cacheTime: number = 0;
 const CACHE_TTL = 30000;
-export async function getSettings() {
+
+export async function getSettings(): Promise<Settings | null> {
   const now = Date.now();
   if (cache && now - cacheTime < CACHE_TTL) return cache;
   const settings = await prisma.settings.findUnique({ where: { id: 'default' } });
@@ -12,7 +15,8 @@ export async function getSettings() {
   }
   return settings;
 }
-export function invalidateSettingsCache() {
+
+export function invalidateSettingsCache(): void {
   cache = null;
   cacheTime = 0;
 }
