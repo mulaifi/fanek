@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="public/fanek-logo.png" alt="Fanek" width="120" />
+  <img src="public/fanek-logo.png" alt="Fanek" width="180" />
 </p>
 
 <h1 align="center">Fanek</h1>
@@ -20,8 +20,6 @@
   Track your clients, their services, and contacts in one place.<br />
   A living inventory of <em>"who has what"</em> for IT, cloud, telecom, and MSP service providers.
 </p>
-
----
 
 ## What Fanek Is
 

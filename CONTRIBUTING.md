@@ -17,7 +17,7 @@ cp .env.example .env
 # Edit .env: set DATABASE_URL (PostgreSQL) and NEXTAUTH_SECRET
 
 # 4. Apply database migrations
-npx prisma migrate deploy
+npx prisma db push
 
 # 5. Start the dev server
 npm run dev
