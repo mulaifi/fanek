@@ -1,0 +1,54 @@
+when:
+  - event: [push, pull_request]
+    branch: main
+
+steps:
+  - name: install
+    image: node:24
+    commands:
+      - npm ci --prefer-offline 2>/dev/null || npm ci
+      - npx prisma generate
+
+  - name: lint
+    image: node:24
+    commands:
+      - npm run lint
+      - npm run format:check
+    depends_on: [install]
+
+  - name: typecheck
+    image: node:24
+    commands:
+      - npx tsc --noEmit
+    depends_on: [install]
+
+  - name: test
+    image: node:24
+    commands:
+      - npm run test
+    depends_on: [install]
+
+  - name: build
+    image: node:24
+    commands:
+      - npm run build
+    depends_on: [lint, typecheck, test]
+
+  - name: e2e
+    image: node:24
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/test_db?schema=public
+      E2E_TEST_MODE: "true"
+    commands:
+      - npx playwright install --with-deps chromium
+      - npx prisma db push
+      - npx playwright test
+    depends_on: [build]
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: test_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
