@@ -3,11 +3,13 @@ import reactPlugin from 'eslint-plugin-react';
 import hooksPlugin from 'eslint-plugin-react-hooks';
 import nextPlugin from '@next/eslint-plugin-next';
 import globals from 'globals';
+import tseslint from 'typescript-eslint';
 
 export default [
   js.configs.recommended,
+  ...tseslint.configs.recommended,
   {
-    files: ['**/*.{js,jsx,mjs}'],
+    files: ['**/*.{js,jsx,mjs,ts,tsx}'],
     plugins: {
       react: reactPlugin,
       'react-hooks': hooksPlugin,
@@ -19,7 +21,6 @@ export default [
       globals: {
         ...globals.browser,
         ...globals.node,
-        ...globals.jest,
       },
       parserOptions: {
         ecmaFeatures: { jsx: true },
@@ -35,9 +36,31 @@ export default [
       ...nextPlugin.configs['core-web-vitals'].rules,
       'react/react-in-jsx-scope': 'off',
       'react/prop-types': 'off',
-      'no-unused-vars': ['warn', { argsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }],
+      'no-unused-vars': 'off',
+      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }],
       'react-hooks/exhaustive-deps': 'warn',
       'react-hooks/set-state-in-effect': 'off',
+      '@typescript-eslint/no-explicit-any': 'warn',
+    },
+  },
+  {
+    files: ['__tests__/**/*.{ts,tsx}', '**/*.test.{ts,tsx}', '**/*.spec.{ts,tsx}'],
+    languageOptions: {
+      globals: {
+        ...globals.jest,
+      },
+    },
+  },
+  {
+    files: ['**/*.cjs', 'playwright.config.js', '__tests__/e2e/**/*.js'],
+    languageOptions: {
+      sourceType: 'commonjs',
+      globals: {
+        ...globals.node,
+      },
+    },
+    rules: {
+      '@typescript-eslint/no-require-imports': 'off',
     },
   },
   {
