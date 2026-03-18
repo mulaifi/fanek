@@ -18,14 +18,13 @@ import {
 import { useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
 import AppShell from '@/components/AppShell';
-
-const DEFAULT_STATUSES = ['Active', 'Inactive', 'Suspended', 'Prospect', 'Churned'];
+import { DEFAULT_CUSTOMER_STATUSES } from '@/lib/constants';
 
 export default function NewCustomerPage() {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
   const [apiError, setApiError] = useState('');
-  const [statuses, setStatuses] = useState(DEFAULT_STATUSES);
+  const [statuses, setStatuses] = useState(DEFAULT_CUSTOMER_STATUSES);
 
   useEffect(() => {
     fetch('/api/settings')

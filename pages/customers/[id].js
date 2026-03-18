@@ -36,8 +36,7 @@ import ContactsEditor from '@/components/ContactsEditor';
 import DynamicForm from '@/components/DynamicForm';
 import DynamicFieldDisplay from '@/components/DynamicFieldDisplay';
 import { statusColors } from '@/lib/theme';
-
-const DEFAULT_STATUSES = ['Active', 'Inactive', 'Suspended', 'Prospect', 'Churned'];
+import { DEFAULT_CUSTOMER_STATUSES } from '@/lib/constants';
 
 function EditCustomerForm({ customer, statuses, onSave, onClose }) {
   const form = useForm({
@@ -343,7 +342,7 @@ export default function CustomerDetailPage() {
   const [customer, setCustomer] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [statuses, setStatuses] = useState(DEFAULT_STATUSES);
+  const [statuses, setStatuses] = useState(DEFAULT_CUSTOMER_STATUSES);
   const [serviceTypes, setServiceTypes] = useState([]);
 
   const [notesValue, setNotesValue] = useState('');

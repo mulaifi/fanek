@@ -49,7 +49,7 @@ export default function DynamicForm({ fieldSchema = [], values = {}, onChange, e
                 min={0}
                 decimalScale={2}
                 fixedDecimalScale
-                leftSection={<Text size="sm" c="dimmed">$</Text>}
+                leftSection={<Text size="sm" c="dimmed">{field.currencySymbol || '$'}</Text>}
               />
             );
 

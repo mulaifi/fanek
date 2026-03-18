@@ -18,9 +18,9 @@ import { IconSearch, IconPlus, IconDownload } from '@tabler/icons-react';
 import dayjs from 'dayjs';
 import AppShell from '@/components/AppShell';
 import { statusColors } from '@/lib/theme';
+import { DEFAULT_CUSTOMER_STATUSES } from '@/lib/constants';
 
 const PAGE_SIZE = 25;
-const DEFAULT_STATUSES = ['Active', 'Inactive', 'Suspended', 'Prospect', 'Churned'];
 
 export default function CustomersIndexPage() {
   const router = useRouter();
@@ -36,7 +36,7 @@ export default function CustomersIndexPage() {
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('Active');
-  const [statuses, setStatuses] = useState(DEFAULT_STATUSES);
+  const [statuses, setStatuses] = useState(DEFAULT_CUSTOMER_STATUSES);
 
   useEffect(() => {
     fetch('/api/settings')
