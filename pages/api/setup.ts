@@ -16,8 +16,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     res.status(500).json({ error: 'NEXTAUTH_SECRET is not set. See .env.example for instructions.' });
     return;
   }
-  const existing = await getSettings();
-  if (existing?.setupComplete) {
+  const cachedSettings = await getSettings();
+  if (cachedSettings?.setupComplete) {
     res.status(400).json({ error: 'Setup already completed' });
     return;
   }
@@ -28,6 +28,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   };
   if (!admin?.name || !admin?.email || !admin?.password) {
     res.status(400).json({ error: 'Admin name, email, and password are required' });
+    return;
+  }
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(admin.email)) {
+    res.status(400).json({ error: 'Invalid admin email format' });
     return;
   }
   const strength = checkStrength(admin.password);
@@ -42,6 +47,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     const passwordHash = await hashPassword(admin.password);
     await prisma.$transaction(async (tx) => {
+      const existing = await tx.settings.findUnique({ where: { id: 'default' } });
+      if (existing?.setupComplete) {
+        throw new Error('SETUP_ALREADY_COMPLETED');
+      }
       await tx.settings.upsert({
         where: { id: 'default' },
         create: { id: 'default', orgName: org.name as string, orgLogo: org.logo ?? null, setupComplete: true },
@@ -62,6 +71,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     logger.info({ email: admin.email, org: org.name, template }, 'Setup completed');
     res.status(200).json({ success: true });
   } catch (err) {
+    if (err instanceof Error && err.message === 'SETUP_ALREADY_COMPLETED') {
+      res.status(400).json({ error: 'Setup already completed' });
+      return;
+    }
     logger.error({ err }, 'Setup failed');
     if ((err as { code?: string }).code === 'P2002') {
       res.status(400).json({ error: 'A user with that email already exists' });

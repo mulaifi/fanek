@@ -12,15 +12,16 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse): Promise
     return;
   }
 
-  const {
-    cursor,
-    limit = '25',
-    action,
-    resource,
-    userId,
-    from,
-    to,
-  } = req.query as Record<string, string | undefined>;
+  const raw = req.query as Record<string, string | string[] | undefined>;
+  const pick = (v: string | string[] | undefined): string | undefined =>
+    Array.isArray(v) ? v[0] : v;
+  const cursor = pick(raw.cursor);
+  const limit = pick(raw.limit) ?? '25';
+  const action = pick(raw.action);
+  const resource = pick(raw.resource);
+  const userId = pick(raw.userId);
+  const from = pick(raw.from);
+  const to = pick(raw.to);
 
   const take = Math.min(parseInt(limit ?? '25', 10) || 25, 100);
   const where: Record<string, unknown> = {};
@@ -47,8 +48,22 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse): Promise
 
   if (from || to) {
     const createdAt: { gte?: Date; lte?: Date } = {};
-    if (from) createdAt.gte = new Date(from);
-    if (to) createdAt.lte = new Date(to);
+    if (from) {
+      const d = new Date(from);
+      if (isNaN(d.getTime())) {
+        res.status(400).json({ error: 'Invalid "from" date format' });
+        return;
+      }
+      createdAt.gte = d;
+    }
+    if (to) {
+      const d = new Date(to);
+      if (isNaN(d.getTime())) {
+        res.status(400).json({ error: 'Invalid "to" date format' });
+        return;
+      }
+      createdAt.lte = d;
+    }
     where.createdAt = createdAt;
   }
 

@@ -20,10 +20,13 @@ export function encrypt(plaintext: string, secret: string): string {
 export function decrypt(ciphertext: string, secret: string): string {
   const key: Buffer = deriveKey(secret);
   const buf: Buffer = Buffer.from(ciphertext, 'base64');
+  if (buf.length < IV_LENGTH + TAG_LENGTH) {
+    throw new Error('Invalid ciphertext: too short');
+  }
   const iv: Buffer = buf.subarray(0, IV_LENGTH);
   const tag: Buffer = buf.subarray(IV_LENGTH, IV_LENGTH + TAG_LENGTH);
   const encrypted: Buffer = buf.subarray(IV_LENGTH + TAG_LENGTH);
   const decipher = createDecipheriv(ALGORITHM, key, iv);
   decipher.setAuthTag(tag);
-  return decipher.update(encrypted) + decipher.final('utf8');
+  return decipher.update(encrypted, undefined, 'utf8') + decipher.final('utf8');
 }
