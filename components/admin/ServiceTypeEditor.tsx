@@ -1,5 +1,23 @@
-import { ActionIcon, Badge, Box, Button, Checkbox, Group, Paper, Select, Text, TextInput, Tooltip } from '@mantine/core';
-import { IconArrowDown, IconArrowUp, IconPlus, IconTrash } from '@tabler/icons-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { Plus, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
 import type { ServiceTypeFieldInput } from '@/lib/validation';
 
 interface ServiceTypeEditorProps {
@@ -50,119 +68,159 @@ export default function ServiceTypeEditor({ fieldSchema = [], onChange }: Servic
   }
 
   return (
-    <Box>
-      <Text size="sm" c="dimmed" mb="md">
+    <div>
+      <p className="text-sm text-muted-foreground mb-4">
         Define the fields for this service type. Field names must be unique and use only letters, numbers, and underscores.
-      </Text>
+      </p>
 
       {fieldSchema.length === 0 && (
-        <Text size="sm" c="dimmed" mb="md">
+        <p className="text-sm text-muted-foreground mb-4">
           No fields defined. Add a field to get started.
-        </Text>
+        </p>
       )}
 
       {fieldSchema.map((field, index) => (
-        <Paper key={index} withBorder p="md" mb="md">
-          <Group justify="space-between" align="center" mb="sm">
-            <Text size="sm" c="dimmed">
-              Field {index + 1}
-            </Text>
-            <Group gap={4}>
-              <Tooltip label="Move up">
-                <ActionIcon
-                  size="sm"
-                  variant="subtle"
-                  onClick={() => moveField(index, -1)}
-                  disabled={index === 0}
-                >
-                  <IconArrowUp size={14} />
-                </ActionIcon>
-              </Tooltip>
-              <Tooltip label="Move down">
-                <ActionIcon
-                  size="sm"
-                  variant="subtle"
-                  onClick={() => moveField(index, 1)}
-                  disabled={index === fieldSchema.length - 1}
-                >
-                  <IconArrowDown size={14} />
-                </ActionIcon>
-              </Tooltip>
-              <Tooltip label="Remove field">
-                <ActionIcon size="sm" variant="subtle" color="red" onClick={() => removeField(index)}>
-                  <IconTrash size={14} />
-                </ActionIcon>
-              </Tooltip>
-            </Group>
-          </Group>
+        <Card key={index} className="mb-4">
+          <CardContent className="pt-4">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm text-muted-foreground">Field {index + 1}</span>
+              <TooltipProvider>
+                <div className="flex items-center gap-1">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={() => moveField(index, -1)}
+                        disabled={index === 0}
+                      >
+                        <ArrowUp className="h-3.5 w-3.5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Move up</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={() => moveField(index, 1)}
+                        disabled={index === fieldSchema.length - 1}
+                      >
+                        <ArrowDown className="h-3.5 w-3.5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Move down</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-destructive hover:text-destructive"
+                        onClick={() => removeField(index)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Remove field</TooltipContent>
+                  </Tooltip>
+                </div>
+              </TooltipProvider>
+            </div>
 
-          <Group align="flex-end" grow>
-            <TextInput
-              label="Field Name"
-              value={field.name}
-              onChange={(e) =>
-                updateField(index, {
-                  ...field,
-                  name: e.currentTarget.value.replace(/\s/g, '_').toLowerCase(),
-                })
-              }
-              size="sm"
-              placeholder="e.g. contract_value"
-              description="Unique identifier, no spaces"
-            />
-            <TextInput
-              label="Display Label"
-              value={field.label}
-              onChange={(e) => updateField(index, { ...field, label: e.currentTarget.value })}
-              size="sm"
-              placeholder="e.g. Contract Value"
-            />
-            <Select
-              label="Type"
-              value={field.type}
-              onChange={(val) =>
-                updateField(index, {
-                  ...field,
-                  type: (val ?? 'text') as ServiceTypeFieldInput['type'],
-                  options: [],
-                })
-              }
-              data={FIELD_TYPES}
-              size="sm"
-            />
-            <Checkbox
-              label={<Text size="xs">Req.</Text>}
-              checked={field.required}
-              onChange={(e) => updateField(index, { ...field, required: e.currentTarget.checked })}
-              mt="xl"
-            />
-          </Group>
+            <div className="grid grid-cols-3 gap-3 items-end">
+              <div className="space-y-1">
+                <Label>Field Name</Label>
+                <Input
+                  value={field.name}
+                  onChange={(e) =>
+                    updateField(index, {
+                      ...field,
+                      name: e.currentTarget.value.replace(/\s/g, '_').toLowerCase(),
+                    })
+                  }
+                  placeholder="e.g. contract_value"
+                />
+                <p className="text-xs text-muted-foreground">Unique identifier, no spaces</p>
+              </div>
+              <div className="space-y-1">
+                <Label>Display Label</Label>
+                <Input
+                  value={field.label}
+                  onChange={(e) => updateField(index, { ...field, label: e.currentTarget.value })}
+                  placeholder="e.g. Contract Value"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>Type</Label>
+                <Select
+                  value={field.type}
+                  onValueChange={(val) =>
+                    updateField(index, {
+                      ...field,
+                      type: val as ServiceTypeFieldInput['type'],
+                      options: [],
+                    })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {FIELD_TYPES.map((ft) => (
+                      <SelectItem key={ft.value} value={ft.value}>
+                        {ft.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
 
-          {field.type === 'select' && (
-            <Box mt="sm">
-              <TextInput
-                label="Options (comma-separated)"
-                value={(field.options || []).join(', ')}
-                onChange={(e) => handleOptionsChange(index, e.currentTarget.value)}
-                size="sm"
-                placeholder="Option A, Option B, Option C"
-                description="Enter options separated by commas"
+            <div className="flex items-center gap-2 mt-3">
+              <Checkbox
+                id={`field-required-${index}`}
+                checked={field.required}
+                onCheckedChange={(checked) =>
+                  updateField(index, { ...field, required: Boolean(checked) })
+                }
               />
-              <Group gap={4} mt="xs" style={{ flexWrap: 'wrap' }}>
-                {(field.options || []).map((opt) => (
-                  <Badge key={opt} variant="light" size="sm">
-                    {opt}
-                  </Badge>
-                ))}
-              </Group>
-            </Box>
-          )}
-        </Paper>
+              <Label htmlFor={`field-required-${index}`} className="text-xs">
+                Req.
+              </Label>
+            </div>
+
+            {field.type === 'select' && (
+              <div className="mt-3 space-y-2">
+                <div className="space-y-1">
+                  <Label>Options (comma-separated)</Label>
+                  <Input
+                    value={(field.options || []).join(', ')}
+                    onChange={(e) => handleOptionsChange(index, e.currentTarget.value)}
+                    placeholder="Option A, Option B, Option C"
+                  />
+                  <p className="text-xs text-muted-foreground">Enter options separated by commas</p>
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {(field.options || []).map((opt) => (
+                    <Badge key={opt} variant="secondary" className="text-xs">
+                      {opt}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       ))}
 
-      <Button variant="light" leftSection={<IconPlus size={14} />} onClick={addField} size="sm">
+      <Button variant="outline" size="sm" onClick={addField}>
+        <Plus className="h-3.5 w-3.5 mr-1.5" />
         Add Field
       </Button>
-    </Box>
+    </div>
   );
 }
