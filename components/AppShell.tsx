@@ -1,45 +1,58 @@
 import { useEffect, useState } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/router';
+import { useDebounce } from 'use-debounce';
 import {
-  Box,
-  Text,
+  LayoutDashboard,
+  Users,
+  Handshake,
+  UserPlus,
+  LayoutGrid,
+  Settings,
+  History,
+  Search,
+  LogOut,
+  User,
+  Pin,
+  PinOff,
+  type LucideIcon,
+} from 'lucide-react';
+import {
   Avatar,
-  Menu,
-  Tooltip,
-  Divider,
-  UnstyledButton,
-  useMantineTheme,
-  Group,
-  type MantineTheme,
-} from '@mantine/core';
-import { useMediaQuery, useDebouncedValue } from '@mantine/hooks';
-import { Spotlight, spotlight } from '@mantine/spotlight';
+  AvatarFallback,
+} from '@/components/ui/avatar';
 import {
-  IconLayoutDashboard,
-  IconUsers,
-  IconHeartHandshake,
-  IconUserPlus,
-  IconCategory,
-  IconSettings,
-  IconHistory,
-  IconSearch,
-  IconLogout,
-  IconUser,
-  IconPin,
-  IconPinFilled,
-  type TablerIcon,
-} from '@tabler/icons-react';
-import ColorSchemeToggle from './ColorSchemeToggle';
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+  TooltipProvider,
+} from '@/components/ui/tooltip';
+import { Separator } from '@/components/ui/separator';
+import {
+  CommandDialog,
+  CommandInput,
+  CommandList,
+  CommandGroup,
+  CommandItem,
+  CommandEmpty,
+} from '@/components/ui/command';
+import { ColorSchemeToggle } from './ColorSchemeToggle';
 import BottomTabs from './BottomTabs';
 
 const RAIL_WIDTH = 56;
-const EXPANDED_WIDTH = 200;
+const EXPANDED_WIDTH = 240;
 
 interface NavItemDef {
   href: string;
   label: string;
-  icon: TablerIcon;
+  icon: LucideIcon;
 }
 
 interface AppShellProps {
@@ -56,65 +69,66 @@ interface SpotlightAction {
 }
 
 const mainNavItems: NavItemDef[] = [
-  { href: '/dashboard', label: 'Dashboard', icon: IconLayoutDashboard },
-  { href: '/customers', label: 'Customers', icon: IconUsers },
-  { href: '/partners', label: 'Partners', icon: IconHeartHandshake },
+  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/customers', label: 'Customers', icon: Users },
+  { href: '/partners', label: 'Partners', icon: Handshake },
 ];
 
 const adminNavItems: NavItemDef[] = [
-  { href: '/admin/users', label: 'Users', icon: IconUserPlus },
-  { href: '/admin/service-catalog', label: 'Service Catalog', icon: IconCategory },
-  { href: '/admin/settings', label: 'Settings', icon: IconSettings },
-  { href: '/admin/audit-log', label: 'Audit Log', icon: IconHistory },
+  { href: '/admin/users', label: 'Users', icon: UserPlus },
+  { href: '/admin/service-catalog', label: 'Service Catalog', icon: LayoutGrid },
+  { href: '/admin/settings', label: 'Settings', icon: Settings },
+  { href: '/admin/audit-log', label: 'Audit Log', icon: History },
 ];
+
+function useIsDesktop(): boolean {
+  const [isDesktop, setIsDesktop] = useState(true);
+
+  useEffect(() => {
+    const mql = window.matchMedia('(min-width: 768px)');
+    setIsDesktop(mql.matches);
+
+    const handler = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+    mql.addEventListener('change', handler);
+    return () => mql.removeEventListener('change', handler);
+  }, []);
+
+  return isDesktop;
+}
 
 interface NavItemProps extends NavItemDef {
   expanded: boolean;
-  brandColor: string;
-  theme: MantineTheme;
 }
 
-function NavItem({ href, label, icon: Icon, expanded, brandColor, theme }: NavItemProps) {
+function NavItem({ href, label, icon: Icon, expanded }: NavItemProps) {
   const router = useRouter();
   const active = router.pathname === href || router.pathname.startsWith(href + '/');
 
   const button = (
-    <UnstyledButton
+    <button
       onClick={() => router.push(href)}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 12,
-        width: '100%',
-        padding: '10px 12px',
-        borderRadius: 6,
-        background: active
-          ? `color-mix(in srgb, ${brandColor} 15%, transparent)`
-          : 'transparent',
-        color: active ? brandColor : theme.colors.dark[2],
-        transition: 'background 150ms ease',
-        overflow: 'hidden',
-      }}
-      onMouseEnter={(e) => {
-        if (!active) e.currentTarget.style.background = theme.colors.dark[7];
-      }}
-      onMouseLeave={(e) => {
-        if (!active)
-          e.currentTarget.style.background = 'transparent';
-      }}
+      className={[
+        'flex items-center gap-3 w-full px-3 py-2.5 rounded-md transition-colors text-left overflow-hidden',
+        active
+          ? 'bg-primary/10 text-primary font-semibold'
+          : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+      ].join(' ')}
     >
-      <Icon size={20} style={{ flexShrink: 0, color: active ? brandColor : 'inherit' }} />
+      <Icon size={20} className="shrink-0" />
       {expanded && (
-        <Text size="sm" fw={active ? 600 : 400} style={{ whiteSpace: 'nowrap', color: 'inherit' }}>
+        <span className="text-sm whitespace-nowrap overflow-hidden text-ellipsis">
           {label}
-        </Text>
+        </span>
       )}
-    </UnstyledButton>
+    </button>
   );
 
+  if (expanded) return button;
+
   return (
-    <Tooltip label={label} position="right" withArrow disabled={expanded}>
-      {button}
+    <Tooltip>
+      <TooltipTrigger asChild>{button}</TooltipTrigger>
+      <TooltipContent side="right">{label}</TooltipContent>
     </Tooltip>
   );
 }
@@ -122,8 +136,7 @@ function NavItem({ href, label, icon: Icon, expanded, brandColor, theme }: NavIt
 export default function AppShell({ children, title }: AppShellProps) {
   const router = useRouter();
   const { data: session, status } = useSession();
-  const theme = useMantineTheme();
-  const isDesktop = useMediaQuery(`(min-width: ${theme.breakpoints.md})`, true);
+  const isDesktop = useIsDesktop();
 
   const [hovered, setHovered] = useState(false);
   const [pinned, setPinned] = useState(false);
@@ -141,11 +154,11 @@ export default function AppShell({ children, title }: AppShellProps) {
     });
   };
 
+  const [spotlightOpen, setSpotlightOpen] = useState(false);
   const [spotlightQuery, setSpotlightQuery] = useState('');
-  const [debouncedQuery] = useDebouncedValue(spotlightQuery, 300);
+  const [debouncedQuery] = useDebounce(spotlightQuery, 300);
   const [spotlightActions, setSpotlightActions] = useState<SpotlightAction[]>([]);
 
-  const brandColor = theme.colors.brand?.[5] ?? theme.colors.violet[5];
   const isAdmin = session?.user?.role === 'ADMIN';
   const expanded = pinned || hovered;
   const sidebarWidth = expanded ? EXPANDED_WIDTH : RAIL_WIDTH;
@@ -157,6 +170,18 @@ export default function AppShell({ children, title }: AppShellProps) {
       router.replace('/profile');
     }
   }, [status, session, router]);
+
+  // Keyboard shortcut: Ctrl+K / Cmd+K
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        setSpotlightOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
 
   useEffect(() => {
     if (!debouncedQuery || debouncedQuery.length < 2) {
@@ -180,7 +205,10 @@ export default function AppShell({ children, title }: AppShellProps) {
               label: c.name,
               description: c.clientCode ?? 'Customer',
               group: 'Customers',
-              onClick: () => router.push(`/customers/${c.id}`),
+              onClick: () => {
+                router.push(`/customers/${c.id}`);
+                setSpotlightOpen(false);
+              },
             });
           });
         }
@@ -192,7 +220,10 @@ export default function AppShell({ children, title }: AppShellProps) {
               label: p.name,
               description: 'Partner',
               group: 'Partners',
-              onClick: () => router.push(`/partners/${p.id}`),
+              onClick: () => {
+                router.push(`/partners/${p.id}`);
+                setSpotlightOpen(false);
+              },
             });
           });
         }
@@ -204,7 +235,10 @@ export default function AppShell({ children, title }: AppShellProps) {
               label: s.name,
               description: s.type ?? 'Service',
               group: 'Services',
-              onClick: () => router.push(`/services/${s.id}`),
+              onClick: () => {
+                router.push(`/services/${s.id}`);
+                setSpotlightOpen(false);
+              },
             });
           });
         }
@@ -220,232 +254,216 @@ export default function AppShell({ children, title }: AppShellProps) {
 
   const userInitial = session?.user?.name?.charAt(0)?.toUpperCase() ?? '?';
 
+  // Group actions by group label
+  const groupedActions = spotlightActions.reduce<Record<string, SpotlightAction[]>>((acc, action) => {
+    if (!acc[action.group]) acc[action.group] = [];
+    acc[action.group].push(action);
+    return acc;
+  }, {});
+
   return (
-    <Box style={{ display: 'flex', minHeight: '100vh', background: 'var(--mantine-color-body)' }}>
-      <Spotlight
-        actions={spotlightActions}
-        query={spotlightQuery}
-        onQueryChange={setSpotlightQuery}
-        searchProps={{ placeholder: 'Search customers, partners, services...' }}
-        nothingFound="No results"
-        shortcut={null}
-      />
+    <TooltipProvider>
+      <div className="flex min-h-screen bg-background">
 
-      {/* Desktop sidebar */}
-      {isDesktop && (
-        <Box
-          onMouseEnter={() => !pinned && setHovered(true)}
-          onMouseLeave={() => !pinned && setHovered(false)}
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            bottom: 0,
-            width: sidebarWidth,
-            background: 'var(--mantine-color-dark-9)',
-            display: 'flex',
-            flexDirection: 'column',
-            zIndex: 100,
-            transition: 'width 200ms ease',
-            overflow: 'hidden',
+        {/* Spotlight search dialog */}
+        <CommandDialog
+          open={spotlightOpen}
+          onOpenChange={(open) => {
+            setSpotlightOpen(open);
+            if (!open) setSpotlightQuery('');
           }}
+          title="Search"
+          description="Search customers, partners, and services"
+          showCloseButton={false}
         >
-          {/* Logo mark */}
-          <Box
-            style={{
-              height: 52,
-              display: 'flex',
-              alignItems: 'center',
-              padding: '0 12px',
-              gap: 12,
-              flexShrink: 0,
-            }}
-          >
-            <img
-              src="/fanek-logo.svg"
-              alt="Fanek"
-              style={{ width: 32, height: 32, flexShrink: 0 }}
-            />
-            {expanded && (
-              <Text size="sm" fw={700} style={{ color: theme.colors.dark[0], whiteSpace: 'nowrap' }}>
-                Fanek
-              </Text>
+          <CommandInput
+            placeholder="Search customers, partners, services..."
+            value={spotlightQuery}
+            onValueChange={setSpotlightQuery}
+          />
+          <CommandList>
+            {spotlightQuery.length >= 2 && spotlightActions.length === 0 && (
+              <CommandEmpty>No results found.</CommandEmpty>
             )}
-          </Box>
-
-          {/* Main nav */}
-          <Box style={{ flex: 1, padding: '8px 8px 0', overflowY: 'auto', overflowX: 'hidden' }}>
-            {mainNavItems.map((item) => (
-              <NavItem
-                key={item.href}
-                {...item}
-                expanded={expanded}
-                brandColor={brandColor}
-                theme={theme}
-              />
-            ))}
-
-            {isAdmin && (
-              <>
-                <Divider my="xs" color={theme.colors.dark[5]} />
-                {expanded && (
-                  <Text
-                    style={{
-                      fontSize: 10,
-                      fontWeight: 600,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.08em',
-                      color: '#5c5f66',
-                      padding: '6px 14px 2px',
-                      whiteSpace: 'nowrap',
-                    }}
+            {spotlightQuery.length < 2 && (
+              <CommandEmpty>Type at least 2 characters to search...</CommandEmpty>
+            )}
+            {Object.entries(groupedActions).map(([group, actions]) => (
+              <CommandGroup key={group} heading={group}>
+                {actions.map((action) => (
+                  <CommandItem
+                    key={action.id}
+                    onSelect={action.onClick}
                   >
-                    Administration
-                  </Text>
-                )}
-                {adminNavItems.map((item) => (
-                  <NavItem
-                    key={item.href}
-                    {...item}
-                    expanded={expanded}
-                    brandColor={brandColor}
-                    theme={theme}
-                  />
+                    <div className="flex flex-col">
+                      <span>{action.label}</span>
+                      <span className="text-xs text-muted-foreground">{action.description}</span>
+                    </div>
+                  </CommandItem>
                 ))}
-              </>
-            )}
-          </Box>
+              </CommandGroup>
+            ))}
+          </CommandList>
+        </CommandDialog>
 
-          {/* Bottom: pin toggle + avatar */}
-          <Box style={{ padding: '8px', flexShrink: 0 }}>
-            {expanded && (
-              <Tooltip label={pinned ? 'Unpin sidebar' : 'Pin sidebar'} position="right" withArrow>
-                <UnstyledButton
-                  onClick={togglePin}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 12,
-                    width: '100%',
-                    padding: '8px 12px',
-                    borderRadius: 6,
-                    color: theme.colors.dark[3],
-                  }}
-                >
-                  {pinned ? <IconPinFilled size={18} /> : <IconPin size={18} />}
-                  <Text size="xs" style={{ whiteSpace: 'nowrap' }}>
-                    {pinned ? 'Unpin' : 'Pin sidebar'}
-                  </Text>
-                </UnstyledButton>
-              </Tooltip>
-            )}
-            <Menu position="right-end" withArrow offset={8}>
-              <Menu.Target>
-                <Tooltip label={session?.user?.name ?? 'Account'} position="right" disabled={expanded} withArrow>
-                  <UnstyledButton
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 12,
-                      width: '100%',
-                      padding: '8px 12px',
-                      borderRadius: 6,
-                    }}
-                  >
-                    <Avatar size={32} style={{ flexShrink: 0, background: brandColor, fontSize: 14 }}>
-                      {userInitial}
-                    </Avatar>
-                    {expanded && (
-                      <Text size="sm" style={{ color: theme.colors.dark[1], whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {session?.user?.name}
-                      </Text>
-                    )}
-                  </UnstyledButton>
+        {/* Desktop sidebar */}
+        {isDesktop && (
+          <div
+            onMouseEnter={() => !pinned && setHovered(true)}
+            onMouseLeave={() => !pinned && setHovered(false)}
+            style={{
+              width: sidebarWidth,
+              transition: 'width 200ms ease',
+            }}
+            className="fixed top-0 left-0 bottom-0 z-[100] flex flex-col overflow-hidden bg-sidebar border-r border-sidebar-border"
+          >
+            {/* Logo */}
+            <div className="h-[52px] flex items-center px-3 gap-3 shrink-0">
+              <img
+                src="/fanek-logo.svg"
+                alt="Fanek"
+                style={{ width: 64, height: 64, flexShrink: 0 }}
+              />
+              {expanded && (
+                <span className="text-sm font-bold text-sidebar-foreground whitespace-nowrap">
+                  Fanek
+                </span>
+              )}
+            </div>
+
+            {/* Main nav */}
+            <div className="flex-1 px-2 pt-2 overflow-y-auto overflow-x-hidden">
+              {mainNavItems.map((item) => (
+                <NavItem
+                  key={item.href}
+                  {...item}
+                  expanded={expanded}
+                />
+              ))}
+
+              {isAdmin && (
+                <>
+                  <Separator className="my-2" />
+                  {expanded && (
+                    <span className="block text-[10px] font-semibold uppercase tracking-widest text-muted-foreground px-3.5 py-1 whitespace-nowrap">
+                      Administration
+                    </span>
+                  )}
+                  {adminNavItems.map((item) => (
+                    <NavItem
+                      key={item.href}
+                      {...item}
+                      expanded={expanded}
+                    />
+                  ))}
+                </>
+              )}
+            </div>
+
+            {/* Bottom: pin toggle + avatar */}
+            <div className="p-2 shrink-0">
+              {expanded && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={togglePin}
+                      className="flex items-center gap-3 w-full px-3 py-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-sidebar-accent transition-colors"
+                    >
+                      {pinned ? <PinOff size={18} /> : <Pin size={18} />}
+                      <span className="text-xs whitespace-nowrap">
+                        {pinned ? 'Unpin' : 'Pin sidebar'}
+                      </span>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">
+                    {pinned ? 'Unpin sidebar' : 'Pin sidebar'}
+                  </TooltipContent>
                 </Tooltip>
-              </Menu.Target>
-              <Menu.Dropdown>
-                <Menu.Item
-                  leftSection={<IconUser size={16} />}
-                  onClick={() => router.push('/profile')}
-                >
-                  Profile
-                </Menu.Item>
-                <Menu.Item
-                  leftSection={<IconLogout size={16} />}
-                  color="red"
-                  onClick={() => signOut({ callbackUrl: '/login' })}
-                >
-                  Sign out
-                </Menu.Item>
-              </Menu.Dropdown>
-            </Menu>
-          </Box>
-        </Box>
-      )}
+              )}
 
-      {/* Top bar */}
-      <Box
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: isDesktop ? (pinned ? EXPANDED_WIDTH : RAIL_WIDTH) : 0,
-          right: 0,
-          height: 52,
-          background: 'var(--mantine-color-body)',
-          borderBottom: '1px solid var(--mantine-color-default-border)',
-          display: 'flex',
-          alignItems: 'center',
-          padding: '0 16px',
-          gap: 12,
-          zIndex: 99,
-          transition: isDesktop ? 'left 200ms ease' : undefined,
-        }}
-      >
-        {/* Page title */}
-        <Text size="18px" fw={600} style={{ flex: 1, color: 'var(--mantine-color-text)' }}>
-          {title}
-        </Text>
+              <DropdownMenu>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <DropdownMenuTrigger asChild>
+                      <button className="flex items-center gap-3 w-full px-3 py-2 rounded-md hover:bg-sidebar-accent transition-colors">
+                        <Avatar className="size-8 shrink-0 bg-primary text-primary-foreground">
+                          <AvatarFallback className="bg-primary text-primary-foreground text-sm font-semibold">
+                            {userInitial}
+                          </AvatarFallback>
+                        </Avatar>
+                        {expanded && (
+                          <span className="text-sm text-sidebar-foreground whitespace-nowrap overflow-hidden text-ellipsis">
+                            {session?.user?.name}
+                          </span>
+                        )}
+                      </button>
+                    </DropdownMenuTrigger>
+                  </TooltipTrigger>
+                  {!expanded && (
+                    <TooltipContent side="right">
+                      {session?.user?.name ?? 'Account'}
+                    </TooltipContent>
+                  )}
+                </Tooltip>
+                <DropdownMenuContent side="right" align="end" sideOffset={8}>
+                  <DropdownMenuItem onClick={() => router.push('/profile')}>
+                    <User size={16} />
+                    Profile
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    variant="destructive"
+                    onClick={() => signOut({ callbackUrl: '/login' })}
+                  >
+                    <LogOut size={16} />
+                    Sign out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+        )}
 
-        {/* Search trigger */}
-        <UnstyledButton
-          onClick={() => spotlight.open()}
+        {/* Top bar */}
+        <div
           style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            padding: '6px 12px',
-            borderRadius: 6,
-            background: 'var(--mantine-color-default)',
-            border: '1px solid var(--mantine-color-default-border)',
-            color: 'var(--mantine-color-dimmed)',
-            minWidth: 180,
+            left: isDesktop ? (pinned ? EXPANDED_WIDTH : RAIL_WIDTH) : 0,
+            transition: isDesktop ? 'left 200ms ease' : undefined,
           }}
+          className="fixed top-0 right-0 h-[52px] z-[99] flex items-center gap-3 px-4 bg-background border-b border-border"
         >
-          <IconSearch size={16} />
-          <Text size="sm">Search...</Text>
-        </UnstyledButton>
+          {/* Page title */}
+          <span className="flex-1 text-[18px] font-semibold text-foreground">
+            {title}
+          </span>
 
-        <ColorSchemeToggle />
-      </Box>
+          {/* Search trigger */}
+          <button
+            onClick={() => setSpotlightOpen(true)}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-muted border border-border text-muted-foreground min-w-[180px] hover:bg-accent hover:text-accent-foreground transition-colors"
+          >
+            <Search size={16} />
+            <span className="text-sm">Search...</span>
+          </button>
 
-      {/* Content area */}
-      <Box
-        component="main"
-        style={{
-          flex: 1,
-          marginLeft: isDesktop ? (pinned ? EXPANDED_WIDTH : RAIL_WIDTH) : 0,
-          marginTop: 52,
-          padding: isDesktop ? 24 : 16,
-          paddingBottom: isDesktop ? 24 : 72,
-          minWidth: 0,
-          transition: isDesktop ? 'margin-left 200ms ease' : undefined,
-        }}
-      >
-        {children}
-      </Box>
+          <ColorSchemeToggle />
+        </div>
 
-      {/* Mobile bottom tabs */}
-      {!isDesktop && <BottomTabs />}
-    </Box>
+        {/* Content area */}
+        <main
+          style={{
+            marginLeft: isDesktop ? (pinned ? EXPANDED_WIDTH : RAIL_WIDTH) : 0,
+            transition: isDesktop ? 'margin-left 200ms ease' : undefined,
+            paddingBottom: isDesktop ? 24 : 72,
+          }}
+          className="flex-1 mt-[52px] min-w-0 p-4 md:p-6"
+        >
+          {children}
+        </main>
+
+        {/* Mobile bottom tabs */}
+        {!isDesktop && <BottomTabs />}
+      </div>
+    </TooltipProvider>
   );
 }
