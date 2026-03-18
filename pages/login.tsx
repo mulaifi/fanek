@@ -2,20 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { signIn, getSession } from 'next-auth/react';
 import type { GetServerSidePropsContext } from 'next';
-import {
-  Alert,
-  Avatar,
-  Box,
-  Button,
-  Container,
-  Divider,
-  Paper,
-  PasswordInput,
-  Stack,
-  Text,
-  TextInput,
-  Title,
-} from '@mantine/core';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { PasswordInput } from '@/components/ui/password-input';
+import { Separator } from '@/components/ui/separator';
+import { Loader2 } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -59,7 +54,9 @@ export default function LoginPage() {
   const queryErrorStr = Array.isArray(queryError) ? queryError[0] : queryError;
   const displayError =
     formError ||
-    (queryErrorStr ? (errorMessages[queryErrorStr as keyof typeof errorMessages] ?? errorMessages.Default) : null);
+    (queryErrorStr
+      ? (errorMessages[queryErrorStr as keyof typeof errorMessages] ?? errorMessages.Default)
+      : null);
 
   async function handleCredentialsSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -86,103 +83,90 @@ export default function LoginPage() {
   }
 
   return (
-    <Box
-      style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '2rem 0',
-      }}
-    >
-      <Container size={420} w="100%">
-        <Paper p="xl" radius="md">
-          <Stack align="center" mb="lg" gap="xs">
-            {orgLogo ? (
-              <Avatar
-                src={orgLogo}
-                alt={orgName}
-                radius="sm"
-                size={72}
-              />
-            ) : (
-              <Avatar
-                radius="sm"
-                size={72}
-                color="brand"
-                style={{ fontSize: '1.75rem', fontWeight: 700 }}
-              >
-                {orgName.charAt(0).toUpperCase()}
+    <div className="min-h-screen flex items-center justify-center py-8 px-4">
+      <div className="w-full max-w-[420px]">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex flex-col items-center gap-2 mb-6">
+              <Avatar className="h-[72px] w-[72px] rounded-sm">
+                {orgLogo ? (
+                  <AvatarImage src={orgLogo} alt={orgName} />
+                ) : null}
+                <AvatarFallback className="rounded-sm text-2xl font-bold bg-primary text-primary-foreground">
+                  {orgName.charAt(0).toUpperCase()}
+                </AvatarFallback>
               </Avatar>
+              <h2 className="text-xl font-bold text-center">{orgName}</h2>
+              <p className="text-sm text-muted-foreground text-center">Sign in to your account</p>
+            </div>
+
+            {displayError && (
+              <Alert variant="destructive" className="mb-4">
+                <AlertDescription>{displayError}</AlertDescription>
+              </Alert>
             )}
-            <Title order={2} fw={700} ta="center">
-              {orgName}
-            </Title>
-            <Text size="sm" c="dimmed" ta="center">
-              Sign in to your account
-            </Text>
-          </Stack>
 
-          {displayError && (
-            <Alert color="red" mb="md">
-              {displayError}
-            </Alert>
-          )}
+            <form onSubmit={handleCredentialsSubmit}>
+              <div className="flex flex-col gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email address</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    autoComplete="email"
+                    autoFocus
+                  />
+                </div>
+                <PasswordInput
+                  label="Password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  autoComplete="current-password"
+                />
+                <Button type="submit" className="w-full mt-1" size="lg" disabled={submitting}>
+                  {submitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Signing in...
+                    </>
+                  ) : (
+                    'Sign in'
+                  )}
+                </Button>
+              </div>
+            </form>
 
-          <Box component="form" onSubmit={handleCredentialsSubmit}>
-            <Stack gap="md">
-              <TextInput
-                label="Email address"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                autoComplete="email"
-                autoFocus
-              />
-              <PasswordInput
-                label="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                autoComplete="current-password"
-              />
-              <Button
-                type="submit"
-                fullWidth
-                size="md"
-                loading={submitting}
-                mt="xs"
-              >
-                {submitting ? 'Signing in...' : 'Sign in'}
-              </Button>
-            </Stack>
-          </Box>
-
-          {googleEnabled && (
-            <>
-              <Divider my="md" label="OR" labelPosition="center" />
-              <Button
-                variant="outline"
-                fullWidth
-                size="md"
-                onClick={handleGoogleSignIn}
-                leftSection={
-                  <Box
-                    component="img"
+            {googleEnabled && (
+              <>
+                <div className="relative my-4">
+                  <Separator />
+                  <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2 text-sm text-muted-foreground">
+                    OR
+                  </span>
+                </div>
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  size="lg"
+                  onClick={handleGoogleSignIn}
+                >
+                  <img
                     src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
                     alt="Google"
-                    style={{ width: 20, height: 20 }}
+                    className="w-5 h-5 mr-2"
                   />
-                }
-              >
-                Sign in with Google
-              </Button>
-            </>
-          )}
-        </Paper>
-      </Container>
-    </Box>
+                  Sign in with Google
+                </Button>
+              </>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   );
 }
 

@@ -1,18 +1,10 @@
 import { useState } from 'react';
 import { useRouter } from 'next/router';
-import {
-  Alert,
-  Box,
-  Button,
-  Container,
-  Group,
-  Paper,
-  Stack,
-  Stepper,
-  Text,
-  Title,
-} from '@mantine/core';
-import { IconArrowLeft, IconArrowRight } from '@tabler/icons-react';
+import { ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Stepper } from '@/components/ui/stepper';
 
 import StepAdmin from '@/components/SetupWizard/StepAdmin';
 import StepOrg from '@/components/SetupWizard/StepOrg';
@@ -20,7 +12,12 @@ import StepTemplate from '@/components/SetupWizard/StepTemplate';
 import StepComplete from '@/components/SetupWizard/StepComplete';
 import { getSettings } from '@/lib/settings';
 
-const STEPS = ['Admin Account', 'Organization', 'Service Template', 'Complete'];
+const STEPS = [
+  { label: 'Admin Account' },
+  { label: 'Organization' },
+  { label: 'Service Template' },
+  { label: 'Complete' },
+];
 
 export default function SetupPage() {
   const router = useRouter();
@@ -28,8 +25,15 @@ export default function SetupPage() {
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [adminData, setAdminData] = useState<{ name: string; email: string; password: string }>({ name: '', email: '', password: '' });
-  const [orgData, setOrgData] = useState<{ name: string; logo: string | null }>({ name: '', logo: null });
+  const [adminData, setAdminData] = useState<{ name: string; email: string; password: string }>({
+    name: '',
+    email: '',
+    password: '',
+  });
+  const [orgData, setOrgData] = useState<{ name: string; logo: string | null }>({
+    name: '',
+    logo: null,
+  });
   const [template, setTemplate] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
@@ -37,7 +41,8 @@ export default function SetupPage() {
     const errors: Record<string, string> = {};
     if (!adminData.name.trim()) errors.name = 'Name is required';
     if (!adminData.email.trim()) errors.email = 'Email is required';
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(adminData.email)) errors.email = 'Enter a valid email address';
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(adminData.email))
+      errors.email = 'Enter a valid email address';
     if (!adminData.password) errors.password = 'Password is required';
     return errors;
   }
@@ -115,74 +120,95 @@ export default function SetupPage() {
   const isComplete = activeStep === 3;
 
   return (
-    <Box
-      style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '2rem 0',
-      }}
-    >
-      <Container size="sm" w="100%">
-        <Paper p="xl" radius="md">
-          <Stack gap="xs" mb="xl" align="center">
-            <img src="/fanek-logo.svg" alt="Fanek" style={{ width: 48, height: 48 }} />
-            <Title order={2} fw={700} ta="center">
-              Fanek Setup
-            </Title>
-            <Text size="sm" c="dimmed" ta="center">
-              Configure your Client Information Manager
-            </Text>
-          </Stack>
+    <div className="min-h-screen flex items-center justify-center py-8 px-4">
+      <div className="w-full max-w-lg">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex flex-col items-center gap-2 mb-8">
+              <img src="/fanek-logo.svg" alt="Fanek" className="w-16 h-16" />
+              <h2 className="text-xl font-bold text-center">Fanek Setup</h2>
+              <p className="text-sm text-muted-foreground text-center">
+                Configure your Client Information Manager
+              </p>
+            </div>
 
-          <Stepper active={activeStep} mb="xl" size="sm">
-            {STEPS.map((label) => (
-              <Stepper.Step key={label} label={label} />
-            ))}
-          </Stepper>
+            <div className="mb-8">
+              <Stepper steps={STEPS} currentStep={activeStep} />
+            </div>
 
-          {error && (
-            <Alert color="red" mb="lg">
-              {error}
-            </Alert>
-          )}
-
-          <Box style={{ minHeight: 240 }}>
-            {activeStep === 0 && (
-              <StepAdmin data={adminData} onChange={(d) => setAdminData((prev) => ({ ...prev, name: d.name ?? prev.name, email: d.email ?? prev.email, password: d.password ?? prev.password }))} errors={fieldErrors} />
+            {error && (
+              <Alert variant="destructive" className="mb-6">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
             )}
-            {activeStep === 1 && (
-              <StepOrg data={orgData} onChange={(d) => setOrgData((prev) => ({ name: d.name ?? prev.name, logo: d.logo !== undefined ? d.logo : prev.logo }))} errors={fieldErrors} />
-            )}
-            {activeStep === 2 && (
-              <StepTemplate selected={template} onSelect={setTemplate} />
-            )}
-            {activeStep === 3 && <StepComplete />}
-          </Box>
 
-          {!isComplete && (
-            <Group justify="space-between" mt="xl">
-              <Button
-                variant="outline"
-                leftSection={<IconArrowLeft size={16} />}
-                onClick={handleBack}
-                disabled={activeStep === 0 || submitting}
-              >
-                Back
-              </Button>
-              <Button
-                rightSection={<IconArrowRight size={16} />}
-                onClick={handleNext}
-                loading={submitting}
-              >
-                {isLastInputStep ? (submitting ? 'Setting up...' : 'Finish Setup') : 'Next'}
-              </Button>
-            </Group>
-          )}
-        </Paper>
-      </Container>
-    </Box>
+            <div className="min-h-[240px]">
+              {activeStep === 0 && (
+                <StepAdmin
+                  data={adminData}
+                  onChange={(d) =>
+                    setAdminData((prev) => ({
+                      ...prev,
+                      name: d.name ?? prev.name,
+                      email: d.email ?? prev.email,
+                      password: d.password ?? prev.password,
+                    }))
+                  }
+                  errors={fieldErrors}
+                />
+              )}
+              {activeStep === 1 && (
+                <StepOrg
+                  data={orgData}
+                  onChange={(d) =>
+                    setOrgData((prev) => ({
+                      name: d.name ?? prev.name,
+                      logo: d.logo !== undefined ? d.logo : prev.logo,
+                    }))
+                  }
+                  errors={fieldErrors}
+                />
+              )}
+              {activeStep === 2 && (
+                <StepTemplate selected={template} onSelect={setTemplate} />
+              )}
+              {activeStep === 3 && <StepComplete />}
+            </div>
+
+            {!isComplete && (
+              <div className="flex justify-between mt-8">
+                <Button
+                  variant="outline"
+                  onClick={handleBack}
+                  disabled={activeStep === 0 || submitting}
+                >
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Back
+                </Button>
+                <Button onClick={handleNext} disabled={submitting}>
+                  {submitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Setting up...
+                    </>
+                  ) : isLastInputStep ? (
+                    <>
+                      Finish Setup
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </>
+                  ) : (
+                    <>
+                      Next
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   );
 }
 

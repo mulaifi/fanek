@@ -1,94 +1,26 @@
-import { createTheme, type MantineColorsTuple } from '@mantine/core';
-
-// Orange accent - 10-shade tuple
-const brand: MantineColorsTuple = [
-  '#fff7ed', // 0
-  '#ffedd5', // 1
-  '#fed7aa', // 2
-  '#fdba74', // 3
-  '#fb923c', // 4
-  '#f97316', // 5 - dark mode base
-  '#ea580c', // 6 - light mode base
-  '#c2410c', // 7
-  '#9a3412', // 8
-  '#7c2d12', // 9
-];
-
-// Chart / data visualization palette (8 colors)
-const chartColors: { dark: string[]; light: string[] } = {
-  dark: ['#f97316', '#06b6d4', '#8b5cf6', '#10b981', '#f43f5e', '#eab308', '#6366f1', '#ec4899'],
-  light: ['#ea580c', '#0891b2', '#7c3aed', '#059669', '#e11d48', '#ca8a04', '#4f46e5', '#db2777'],
+/**
+ * Status color mappings for Tailwind CSS classes.
+ * Maps customer status strings to Tailwind color utility classes
+ * used on Badge components (as className additions).
+ */
+export const statusColors: Record<string, string> = {
+  Active: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
+  Evaluation: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
+  Implementation: 'bg-violet-100 text-violet-800 dark:bg-violet-900/30 dark:text-violet-400',
+  Suspended: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
+  Closed: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
 };
 
-// Status color mapping
-const statusColors: Record<string, string> = {
-  Active: 'green',
-  Evaluation: 'yellow',
-  Implementation: 'blue',
-  Suspended: 'red',
-  Closed: 'gray',
+/**
+ * CSS variable references for Recharts chart colors.
+ * These map to the --chart-N variables defined in globals.css.
+ */
+export const chartColors = {
+  vars: [
+    'var(--chart-1)',
+    'var(--chart-2)',
+    'var(--chart-3)',
+    'var(--chart-4)',
+    'var(--chart-5)',
+  ],
 };
-
-const dark: MantineColorsTuple = [
-  '#f0f6fc', // 0 - emphasis text
-  '#e6edf3', // 1 - primary text
-  '#c9d1d9', // 2 - secondary text
-  '#8b949e', // 3 - tertiary text
-  '#484f58', // 4 - muted text
-  '#30363d', // 5 - borders
-  '#21262d', // 6 - elevated/input bg
-  '#161b22', // 7 - card/surface bg
-  '#0d1117', // 8 - page bg
-  '#010409', // 9 - sidebar/tab bar bg
-];
-
-export const theme = createTheme({
-  primaryColor: 'brand',
-  primaryShade: { light: 6, dark: 5 },
-  colors: {
-    brand,
-    // GitHub-inspired dark palette overrides
-    dark,
-  },
-  fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif',
-  defaultRadius: 'sm',
-  other: {
-    chartColors,
-    statusColors,
-  },
-  components: {
-    Paper: {
-      defaultProps: {
-        withBorder: true,
-      },
-    },
-    Badge: {
-      defaultProps: {
-        variant: 'light',
-        size: 'sm',
-      },
-    },
-    Button: {
-      defaultProps: {
-        radius: 'sm',
-      },
-    },
-    TextInput: {
-      defaultProps: {
-        radius: 'sm',
-      },
-    },
-    Select: {
-      defaultProps: {
-        radius: 'sm',
-      },
-    },
-    ActionIcon: {
-      defaultProps: {
-        variant: 'subtle',
-      },
-    },
-  },
-});
-
-export { chartColors, statusColors };

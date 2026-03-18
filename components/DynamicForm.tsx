@@ -1,4 +1,13 @@
-import { Checkbox, NumberInput, Select, Stack, Text, TextInput } from '@mantine/core';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import type { ServiceTypeFieldInput } from '@/lib/validation';
 
 interface DynamicFormProps {
@@ -14,13 +23,14 @@ export default function DynamicForm({
   values = {},
   onChange,
   errors = {},
+  disabled = false,
 }: DynamicFormProps) {
   function handleChange(fieldName: string, value: unknown) {
     onChange({ ...values, [fieldName]: value });
   }
 
   return (
-    <Stack gap="sm">
+    <div className="space-y-4">
       {fieldSchema.map((field) => {
         const value = values[field.name] ?? '';
         const error = errors[field.name];
@@ -28,84 +38,139 @@ export default function DynamicForm({
         switch (field.type) {
           case 'select':
             return (
-              <Select
-                key={field.name}
-                label={field.label}
-                value={(value as string) || null}
-                onChange={(val) => handleChange(field.name, val ?? '')}
-                data={field.options || []}
-                clearable={!field.required}
-                error={error}
-                required={field.required}
-              />
+              <div key={field.name} className="space-y-2">
+                <Label htmlFor={field.name}>
+                  {field.label}
+                  {field.required && <span className="text-destructive ml-1">*</span>}
+                </Label>
+                <Select
+                  value={(value as string) || undefined}
+                  onValueChange={(val) => handleChange(field.name, val === '__none__' ? '' : val)}
+                >
+                  <SelectTrigger id={field.name}>
+                    <SelectValue placeholder="Select an option" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {!field.required && (
+                      <SelectItem value="__none__">
+                        <span className="text-muted-foreground">None</span>
+                      </SelectItem>
+                    )}
+                    {(field.options || []).map((opt) => (
+                      <SelectItem key={opt} value={opt}>
+                        {opt}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {error && <p className="text-sm text-destructive">{error}</p>}
+              </div>
             );
 
           case 'boolean':
             return (
-              <Checkbox
-                key={field.name}
-                label={field.label}
-                checked={Boolean(value)}
-                onChange={(e) => handleChange(field.name, e.currentTarget.checked)}
-                error={error}
-              />
+              <div key={field.name} className="flex items-center gap-2">
+                <Checkbox
+                  id={field.name}
+                  checked={Boolean(value)}
+                  onCheckedChange={(checked) => handleChange(field.name, Boolean(checked))}
+                />
+                <Label htmlFor={field.name}>{field.label}</Label>
+                {error && <p className="text-sm text-destructive">{error}</p>}
+              </div>
             );
 
           case 'currency':
             return (
-              <NumberInput
-                key={field.name}
-                label={field.label}
-                value={value === '' ? undefined : Number(value)}
-                onChange={(val) => handleChange(field.name, val)}
-                error={error}
-                required={field.required}
-                min={0}
-                decimalScale={2}
-                fixedDecimalScale
-                leftSection={<Text size="sm" c="dimmed">{field.currencySymbol || '$'}</Text>}
-              />
+              <div key={field.name} className="space-y-2">
+                <Label htmlFor={field.name}>
+                  {field.label}
+                  {field.required && <span className="text-destructive ml-1">*</span>}
+                </Label>
+                <div className="flex items-center">
+                  <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground text-sm h-9">
+                    {field.currencySymbol || '$'}
+                  </span>
+                  <Input
+                    id={field.name}
+                    type="number"
+                    value={value === '' ? '' : Number(value)}
+                    onChange={(e) =>
+                      handleChange(
+                        field.name,
+                        e.target.value === '' ? '' : parseFloat(e.target.value)
+                      )
+                    }
+                    min={0}
+                    step="0.01"
+                    className="rounded-l-none"
+                    required={field.required}
+                  />
+                </div>
+                {error && <p className="text-sm text-destructive">{error}</p>}
+              </div>
             );
 
           case 'number':
             return (
-              <NumberInput
-                key={field.name}
-                label={field.label}
-                value={value === '' ? undefined : Number(value)}
-                onChange={(val) => handleChange(field.name, val)}
-                error={error}
-                required={field.required}
-              />
+              <div key={field.name} className="space-y-2">
+                <Label htmlFor={field.name}>
+                  {field.label}
+                  {field.required && <span className="text-destructive ml-1">*</span>}
+                </Label>
+                <Input
+                  id={field.name}
+                  type="number"
+                  value={value === '' ? '' : Number(value)}
+                  onChange={(e) =>
+                    handleChange(
+                      field.name,
+                      e.target.value === '' ? '' : parseFloat(e.target.value)
+                    )
+                  }
+                  required={field.required}
+                />
+                {error && <p className="text-sm text-destructive">{error}</p>}
+              </div>
             );
 
           case 'date':
             return (
-              <TextInput
-                key={field.name}
-                label={field.label}
-                type="date"
-                value={value as string}
-                onChange={(e) => handleChange(field.name, e.currentTarget.value)}
-                error={error}
-                required={field.required}
-              />
+              <div key={field.name} className="space-y-2">
+                <Label htmlFor={field.name}>
+                  {field.label}
+                  {field.required && <span className="text-destructive ml-1">*</span>}
+                </Label>
+                <Input
+                  id={field.name}
+                  type="date"
+                  value={value as string}
+                  onChange={(e) => handleChange(field.name, e.currentTarget.value)}
+                  required={field.required}
+                />
+                {error && <p className="text-sm text-destructive">{error}</p>}
+              </div>
             );
 
           default: // text
             return (
-              <TextInput
-                key={field.name}
-                label={field.label}
-                type="text"
-                value={value as string}
-                onChange={(e) => handleChange(field.name, e.currentTarget.value)}
-                error={error}
-                required={field.required}
-              />
+              <div key={field.name} className="space-y-2">
+                <Label htmlFor={field.name}>
+                  {field.label}
+                  {field.required && <span className="text-destructive ml-1">*</span>}
+                </Label>
+                <Input
+                  id={field.name}
+                  type="text"
+                  value={value as string}
+                  onChange={(e) => handleChange(field.name, e.currentTarget.value)}
+                  required={field.required}
+                />
+                {error && <p className="text-sm text-destructive">{error}</p>}
+              </div>
             );
         }
       })}
-    </Stack>
+    </div>
   );
 }

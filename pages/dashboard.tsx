@@ -2,51 +2,52 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { getServerSession } from 'next-auth/next';
 import type { GetServerSidePropsContext } from 'next';
-import type { TablerIcon } from '@tabler/icons-react';
-import { getAuthOptions } from '@/lib/auth/options';
+import { Users, HeartHandshake, Layers } from 'lucide-react';
 import {
-  Badge,
-  Center,
-  Group,
-  Loader,
-  Paper,
-  SimpleGrid,
-  Stack,
-  Text,
-} from '@mantine/core';
-import { BarChart } from '@mantine/charts';
-import { DataTable } from 'mantine-datatable';
-import {
-  IconUsers,
-  IconHeartHandshake,
-  IconCategory,
-} from '@tabler/icons-react';
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+  ResponsiveContainer,
+} from 'recharts';
+import type { ColumnDef } from '@tanstack/react-table';
 import dayjs from 'dayjs';
+import { getAuthOptions } from '@/lib/auth/options';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+import { DataTable } from '@/components/ui/data-table';
 import AppShell from '@/components/AppShell';
-import { statusColors, chartColors } from '@/lib/theme';
+import { statusColors } from '@/lib/theme';
+import { cn } from '@/lib/utils';
 
 interface StatCardProps {
   label: string;
   value?: number | null;
-  icon: TablerIcon;
-  color: string;
+  icon: React.ComponentType<{ className?: string }>;
+  iconClassName?: string;
 }
 
-function StatCard({ label, value, icon: Icon, color }: StatCardProps) {
+function StatCard({ label, value, icon: Icon, iconClassName }: StatCardProps) {
   return (
-    <Paper p="lg">
-      <Group justify="space-between" align="flex-start">
-        <Stack gap={4}>
-          <Text size="xs" tt="uppercase" c="dimmed" fw={600}>
-            {label}
-          </Text>
-          <Text size="2rem" fw={600} lh={1}>
-            {value ?? <Loader size="sm" />}
-          </Text>
-        </Stack>
-        <Icon size={36} color={color} opacity={0.7} />
-      </Group>
-    </Paper>
+    <Card>
+      <CardContent className="pt-6">
+        <div className="flex justify-between items-start">
+          <div className="flex flex-col gap-1">
+            <span className="text-xs uppercase text-muted-foreground font-semibold tracking-wide">
+              {label}
+            </span>
+            <span className="text-4xl font-semibold leading-none">
+              {value ?? (
+                <span className="inline-block h-8 w-16 animate-pulse rounded bg-muted" />
+              )}
+            </span>
+          </div>
+          <Icon className={cn('h-9 w-9 opacity-70', iconClassName)} />
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -56,8 +57,16 @@ interface DashboardStats {
   totalPartners: number;
   customersByStatus: { status: string; count: number }[];
   servicesByType: { name: string; count: number }[];
-  recentCustomers: { id: string; name: string; clientCode?: string | null; status: string; updatedAt: string }[];
+  recentCustomers: {
+    id: string;
+    name: string;
+    clientCode?: string | null;
+    status: string;
+    updatedAt: string;
+  }[];
 }
+
+type RecentCustomer = DashboardStats['recentCustomers'][number];
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -79,124 +88,115 @@ export default function DashboardPage() {
     Count: s.count,
   }));
 
-  type RecentCustomer = DashboardStats['recentCustomers'][number];
-  const recentCustomerColumns: import('mantine-datatable').DataTableColumn<RecentCustomer>[] = [
+  const recentCustomerColumns: ColumnDef<RecentCustomer>[] = [
     {
-      accessor: 'name',
-      title: 'Name',
-      sortable: true,
+      accessorKey: 'name',
+      header: 'Name',
+      enableSorting: true,
     },
     {
-      accessor: 'clientCode',
-      title: 'Client Code',
-      render: (row) => row.clientCode || '-',
+      accessorKey: 'clientCode',
+      header: 'Client Code',
+      cell: ({ row }) => row.original.clientCode || '-',
     },
     {
-      accessor: 'status',
-      title: 'Status',
-      render: (row) => (
-        <Badge color={statusColors[row.status] || 'gray'}>
-          {row.status}
+      accessorKey: 'status',
+      header: 'Status',
+      cell: ({ row }) => (
+        <Badge className={cn('border-0', statusColors[row.original.status] || '')}>
+          {row.original.status}
         </Badge>
       ),
     },
     {
-      accessor: 'updatedAt',
-      title: 'Last Updated',
-      render: (row) => dayjs(row.updatedAt).format('DD MMM YYYY'),
+      accessorKey: 'updatedAt',
+      header: 'Last Updated',
+      cell: ({ row }) => dayjs(row.original.updatedAt).format('DD MMM YYYY'),
     },
   ];
 
   return (
     <AppShell title="Dashboard">
       {loading ? (
-        <Center mt="xl">
-          <Loader />
-        </Center>
+        <div className="flex items-center justify-center mt-8">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+        </div>
       ) : (
-        <Stack gap="xl">
-          <SimpleGrid cols={{ base: 1, sm: 3 }}>
+        <div className="flex flex-col gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <StatCard
               label="Total Customers"
               value={stats?.totalCustomers}
-              icon={IconUsers}
-              color="var(--mantine-color-brand-5)"
+              icon={Users}
+              iconClassName="text-primary"
             />
             <StatCard
               label="Total Services"
               value={stats?.totalServices}
-              icon={IconCategory}
-              color="var(--mantine-color-violet-5)"
+              icon={Layers}
+              iconClassName="text-violet-500"
             />
             <StatCard
               label="Total Partners"
               value={stats?.totalPartners}
-              icon={IconHeartHandshake}
-              color="var(--mantine-color-green-6)"
+              icon={HeartHandshake}
+              iconClassName="text-green-600"
             />
-          </SimpleGrid>
+          </div>
 
-          <SimpleGrid cols={{ base: 1, md: 2 }}>
-            <Paper p="lg">
-              <Text fw={600} mb="md">
-                Customers by Status
-              </Text>
-              {!stats?.customersByStatus?.length ? (
-                <Text c="dimmed" size="sm">
-                  No data available
-                </Text>
-              ) : (
-                <Stack gap="xs">
-                  {stats.customersByStatus.map((s) => (
-                    <Group key={s.status} justify="space-between">
-                      <Badge color={statusColors[s.status] || 'gray'}>
-                        {s.status}
-                      </Badge>
-                      <Text size="sm" fw={600}>
-                        {s.count}
-                      </Text>
-                    </Group>
-                  ))}
-                </Stack>
-              )}
-            </Paper>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card>
+              <CardContent className="pt-6">
+                <p className="font-semibold mb-4">Customers by Status</p>
+                {!stats?.customersByStatus?.length ? (
+                  <p className="text-muted-foreground text-sm">No data available</p>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    {stats.customersByStatus.map((s) => (
+                      <div key={s.status} className="flex justify-between items-center">
+                        <Badge className={cn('border-0', statusColors[s.status] || '')}>
+                          {s.status}
+                        </Badge>
+                        <span className="text-sm font-semibold">{s.count}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
-            <Paper p="lg">
-              <Text fw={600} mb="md">
-                Services by Type
-              </Text>
-              {!servicesByTypeData.length ? (
-                <Text c="dimmed" size="sm">
-                  No data available
-                </Text>
-              ) : (
-                <BarChart
-                  data={servicesByTypeData}
-                  dataKey="name"
-                  series={[{ name: 'Count', color: chartColors.dark[0] }]}
-                  h={300}
-                  gridAxis="y"
-                  tickLine="y"
-                />
-              )}
-            </Paper>
-          </SimpleGrid>
+            <Card>
+              <CardContent className="pt-6">
+                <p className="font-semibold mb-4">Services by Type</p>
+                {!servicesByTypeData.length ? (
+                  <p className="text-muted-foreground text-sm">No data available</p>
+                ) : (
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={servicesByTypeData}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                      <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                      <YAxis tick={{ fontSize: 12 }} />
+                      <RechartsTooltip />
+                      <Bar dataKey="Count" fill="var(--chart-1)" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </CardContent>
+            </Card>
+          </div>
 
-          <Paper p="lg">
-            <Text fw={600} mb="md">
-              Recently Updated Customers
-            </Text>
-            <DataTable
-              records={stats?.recentCustomers || []}
-              columns={recentCustomerColumns}
-              verticalSpacing="md"
-              highlightOnHover
-              onRowClick={({ record }) => router.push(`/customers/${record.id}`)}
-              noRecordsText="No customers yet"
-              withTableBorder={false}
-            />
-          </Paper>
-        </Stack>
+          <Card>
+            <CardContent className="pt-6">
+              <p className="font-semibold mb-4">Recently Updated Customers</p>
+              <DataTable
+                columns={recentCustomerColumns}
+                data={stats?.recentCustomers || []}
+                emptyMessage="No customers yet"
+                onRowClick={(row) => router.push(`/customers/${row.id}`)}
+              />
+            </CardContent>
+          </Card>
+        </div>
       )}
     </AppShell>
   );

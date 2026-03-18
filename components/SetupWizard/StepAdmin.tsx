@@ -1,4 +1,7 @@
-import { Box, PasswordInput, Progress, Stack, Text, TextInput } from '@mantine/core';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Progress } from '@/components/ui/progress';
+import { PasswordInput } from '@/components/ui/password-input';
 
 interface AdminData {
   name?: string;
@@ -15,11 +18,11 @@ interface StepAdminProps {
 interface PasswordStrength {
   score: number;
   label: string;
-  color: string;
+  colorClass: string;
 }
 
 function getPasswordStrength(password: string | undefined): PasswordStrength {
-  if (!password) return { score: 0, label: '', color: 'red' };
+  if (!password) return { score: 0, label: '', colorClass: 'text-destructive' };
   let score = 0;
   if (password.length >= 8) score++;
   if (/[a-z]/.test(password)) score++;
@@ -27,53 +30,68 @@ function getPasswordStrength(password: string | undefined): PasswordStrength {
   if (/[0-9]/.test(password)) score++;
   if (/[^a-zA-Z0-9]/.test(password)) score++;
   const labels = ['', 'Very Weak', 'Weak', 'Fair', 'Strong', 'Very Strong'];
-  const colors = ['red', 'red', 'orange', 'yellow', 'green', 'teal'];
-  return { score, label: labels[score], color: colors[score] };
+  const colorClasses = [
+    'text-destructive',
+    'text-destructive',
+    'text-orange-500',
+    'text-yellow-500',
+    'text-green-600',
+    'text-teal-600',
+  ];
+  return { score, label: labels[score], colorClass: colorClasses[score] };
 }
 
 export default function StepAdmin({ data, onChange, errors = {} }: StepAdminProps) {
   const strength = getPasswordStrength(data.password);
 
   return (
-    <Stack gap="md">
-      <TextInput
-        label="Full Name"
-        value={data.name || ''}
-        onChange={(e) => onChange({ ...data, name: e.target.value })}
-        error={errors.name}
-        required
-        autoFocus
-      />
-      <TextInput
-        label="Email Address"
-        type="email"
-        value={data.email || ''}
-        onChange={(e) => onChange({ ...data, email: e.target.value })}
-        error={errors.email}
-        required
-      />
-      <Box>
+    <div className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="admin-name">
+          Full Name <span className="text-destructive">*</span>
+        </Label>
+        <Input
+          id="admin-name"
+          value={data.name || ''}
+          onChange={(e) => onChange({ ...data, name: e.target.value })}
+          autoFocus
+        />
+        {errors.name && <p className="text-sm text-destructive">{errors.name}</p>}
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="admin-email">
+          Email Address <span className="text-destructive">*</span>
+        </Label>
+        <Input
+          id="admin-email"
+          type="email"
+          value={data.email || ''}
+          onChange={(e) => onChange({ ...data, email: e.target.value })}
+        />
+        {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
+      </div>
+
+      <div>
         <PasswordInput
           label="Password"
           value={data.password || ''}
-          onChange={(e) => onChange({ ...data, password: e.target.value })}
+          onChange={(e) => onChange({ ...data, password: (e.target as HTMLInputElement).value })}
           error={errors.password}
           required
         />
         {data.password && (
-          <Box mt="xs">
+          <div className="mt-2">
             <Progress
               value={(strength.score / 5) * 100}
-              color={strength.color}
-              size="sm"
-              radius="xl"
+              className="h-1.5"
             />
-            <Text size="xs" c={strength.color} mt={4}>
+            <p className={`text-xs mt-1 ${strength.colorClass}`}>
               Password strength: {strength.label}
-            </Text>
-          </Box>
+            </p>
+          </div>
         )}
-      </Box>
-    </Stack>
+      </div>
+    </div>
   );
 }

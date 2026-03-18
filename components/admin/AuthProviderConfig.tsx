@@ -1,5 +1,12 @@
 import { useState } from 'react';
-import { Alert, Box, Button, Card, Divider, Group, PasswordInput, Stack, Switch, Text, TextInput } from '@mantine/core';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { PasswordInput } from '@/components/ui/password-input';
 
 interface OAuthProviderSettings {
   clientId?: string;
@@ -77,90 +84,104 @@ export default function AuthProviderConfig({ settings, onSave }: AuthProviderCon
   }
 
   return (
-    <Box>
+    <div>
       {error && (
-        <Alert color="red" mb="md">
-          {error}
+        <Alert variant="destructive" className="mb-4">
+          <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
       {success && (
-        <Alert color="green" mb="md">
-          Authentication settings saved.
+        <Alert className="mb-4 border-green-200 bg-green-50 text-green-800">
+          <AlertDescription>Authentication settings saved.</AlertDescription>
         </Alert>
       )}
 
-      <Card withBorder mb="lg">
-        <Group justify="space-between" mb="md">
-          <Text size="md" fw={600}>
-            Google OAuth
-          </Text>
-          <Switch
-            checked={googleEnabled}
-            onChange={(e) => setGoogleEnabled(e.currentTarget.checked)}
-            label={googleEnabled ? 'Enabled' : 'Disabled'}
-          />
-        </Group>
-        <Divider mb="md" />
-        <Stack gap="sm">
-          <TextInput
-            label="Client ID"
-            value={googleClientId}
-            onChange={(e) => setGoogleClientId(e.currentTarget.value)}
-            size="sm"
-            disabled={!googleEnabled}
-          />
-          <PasswordInput
-            label="Client Secret"
-            value={googleClientSecret}
-            onChange={(e) => setGoogleClientSecret(e.currentTarget.value)}
-            size="sm"
-            description="Leave blank to keep the existing secret"
-            disabled={!googleEnabled}
-          />
-        </Stack>
+      <Card className="mb-6">
+        <CardContent className="pt-4">
+          <div className="flex items-center justify-between mb-4">
+            <span className="font-semibold">Google OAuth</span>
+            <div className="flex items-center gap-2">
+              <Switch
+                id="google-oauth-switch"
+                checked={googleEnabled}
+                onCheckedChange={setGoogleEnabled}
+              />
+              <Label htmlFor="google-oauth-switch" className="text-sm text-muted-foreground">
+                {googleEnabled ? 'Enabled' : 'Disabled'}
+              </Label>
+            </div>
+          </div>
+          <Separator className="mb-4" />
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <Label htmlFor="google-client-id">Client ID</Label>
+              <Input
+                id="google-client-id"
+                value={googleClientId}
+                onChange={(e) => setGoogleClientId(e.currentTarget.value)}
+                disabled={!googleEnabled}
+              />
+            </div>
+            <PasswordInput
+              label="Client Secret"
+              value={googleClientSecret}
+              onChange={(e) => setGoogleClientSecret((e.target as HTMLInputElement).value)}
+              disabled={!googleEnabled}
+            />
+            <p className="text-xs text-muted-foreground">Leave blank to keep the existing secret</p>
+          </div>
+        </CardContent>
       </Card>
 
-      <Card withBorder mb="lg">
-        <Group justify="space-between" mb="md">
-          <Text size="md" fw={600}>
-            Microsoft OAuth
-          </Text>
-          <Switch
-            checked={msEnabled}
-            onChange={(e) => setMsEnabled(e.currentTarget.checked)}
-            label={msEnabled ? 'Enabled' : 'Disabled'}
-          />
-        </Group>
-        <Divider mb="md" />
-        <Stack gap="sm">
-          <TextInput
-            label="Client ID"
-            value={msClientId}
-            onChange={(e) => setMsClientId(e.currentTarget.value)}
-            size="sm"
-            disabled={!msEnabled}
-          />
-          <TextInput
-            label="Tenant ID"
-            value={msTenantId}
-            onChange={(e) => setMsTenantId(e.currentTarget.value)}
-            size="sm"
-            disabled={!msEnabled}
-          />
-          <PasswordInput
-            label="Client Secret"
-            value={msClientSecret}
-            onChange={(e) => setMsClientSecret(e.currentTarget.value)}
-            size="sm"
-            description="Leave blank to keep the existing secret"
-            disabled={!msEnabled}
-          />
-        </Stack>
+      <Card className="mb-6">
+        <CardContent className="pt-4">
+          <div className="flex items-center justify-between mb-4">
+            <span className="font-semibold">Microsoft OAuth</span>
+            <div className="flex items-center gap-2">
+              <Switch
+                id="ms-oauth-switch"
+                checked={msEnabled}
+                onCheckedChange={setMsEnabled}
+              />
+              <Label htmlFor="ms-oauth-switch" className="text-sm text-muted-foreground">
+                {msEnabled ? 'Enabled' : 'Disabled'}
+              </Label>
+            </div>
+          </div>
+          <Separator className="mb-4" />
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <Label htmlFor="ms-client-id">Client ID</Label>
+              <Input
+                id="ms-client-id"
+                value={msClientId}
+                onChange={(e) => setMsClientId(e.currentTarget.value)}
+                disabled={!msEnabled}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="ms-tenant-id">Tenant ID</Label>
+              <Input
+                id="ms-tenant-id"
+                value={msTenantId}
+                onChange={(e) => setMsTenantId(e.currentTarget.value)}
+                disabled={!msEnabled}
+              />
+            </div>
+            <PasswordInput
+              label="Client Secret"
+              value={msClientSecret}
+              onChange={(e) => setMsClientSecret((e.target as HTMLInputElement).value)}
+              disabled={!msEnabled}
+            />
+            <p className="text-xs text-muted-foreground">Leave blank to keep the existing secret</p>
+          </div>
+        </CardContent>
       </Card>
 
-      <Button onClick={handleSave} loading={saving}>
+      <Button onClick={handleSave} disabled={saving}>
         {saving ? 'Saving...' : 'Save Authentication Settings'}
       </Button>
-    </Box>
+    </div>
   );
 }

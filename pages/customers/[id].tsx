@@ -3,41 +3,34 @@ import { useRouter } from 'next/router';
 import { useSession } from 'next-auth/react';
 import { getServerSession } from 'next-auth/next';
 import type { GetServerSidePropsContext } from 'next';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { toast } from 'sonner';
 import { getAuthOptions } from '@/lib/auth/options';
 import type { ContactInput } from '@/lib/validation';
 import type { ServiceTypeFieldInput } from '@/lib/validation';
-import {
-  ActionIcon,
-  Alert,
-  Badge,
-  Box,
-  Button,
-  Center,
-  Group,
-  Loader,
-  Paper,
-  Select,
-  SimpleGrid,
-  Stack,
-  Tabs,
-  Text,
-  Textarea,
-  TextInput,
-  Title,
-} from '@mantine/core';
-import { useForm } from '@mantine/form';
-import { notifications } from '@mantine/notifications';
-import {
-  IconArrowLeft,
-  IconEdit,
-  IconTrash,
-  IconPlus,
-} from '@tabler/icons-react';
+import { ArrowLeft, Edit, Trash, Plus, Loader2 } from 'lucide-react';
 import dayjs from 'dayjs';
 import AppShell from '@/components/AppShell';
 import ContactsEditor from '@/components/ContactsEditor';
 import DynamicForm from '@/components/DynamicForm';
 import DynamicFieldDisplay from '@/components/DynamicFieldDisplay';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { statusColors } from '@/lib/theme';
 import { DEFAULT_CUSTOMER_STATUSES } from '@/lib/constants';
 
@@ -69,14 +62,23 @@ interface CustomerShape {
   updatedAt: string;
 }
 
-interface EditCustomerFormValues {
-  name: string;
-  clientCode: string;
-  status: string;
-  vertical: string;
-  website: string;
-  address: string;
-}
+// ----- EditCustomerForm -----
+
+const editCustomerSchema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  clientCode: z.string().optional(),
+  status: z.string().min(1, 'Status is required'),
+  vertical: z.string().optional(),
+  website: z
+    .string()
+    .optional()
+    .refine((v) => !v || /^https?:\/\/.+/.test(v), {
+      message: 'Website must start with http:// or https://',
+    }),
+  address: z.string().optional(),
+});
+
+type EditCustomerFormValues = z.infer<typeof editCustomerSchema>;
 
 interface EditCustomerFormProps {
   customer: CustomerShape;
@@ -86,8 +88,18 @@ interface EditCustomerFormProps {
 }
 
 function EditCustomerForm({ customer, statuses, onSave, onClose }: EditCustomerFormProps) {
-  const form = useForm<EditCustomerFormValues>({
-    initialValues: {
+  const [saving, setSaving] = useState<boolean>(false);
+  const [saveError, setSaveError] = useState<string>('');
+
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    formState: { errors },
+  } = useForm<EditCustomerFormValues>({
+    resolver: zodResolver(editCustomerSchema),
+    defaultValues: {
       name: customer.name || '',
       clientCode: customer.clientCode || '',
       status: customer.status || 'Active',
@@ -95,22 +107,17 @@ function EditCustomerForm({ customer, statuses, onSave, onClose }: EditCustomerF
       website: customer.website || '',
       address: customer.address || '',
     },
-    validate: {
-      name: (v) => (v.trim() ? null : 'Name is required'),
-      website: (v) =>
-        !v || /^https?:\/\/.+/.test(v) ? null : 'Website must start with http:// or https://',
-    },
   });
 
-  const [saving, setSaving] = useState<boolean>(false);
-  const [saveError, setSaveError] = useState<string>('');
+  const statusValue = watch('status');
 
-  async function handleSubmit(values: EditCustomerFormValues) {
+  async function onSubmit(values: EditCustomerFormValues) {
     setSaveError('');
     setSaving(true);
-    const payload: Record<string, string | null> = { ...values };
-    (Object.keys(payload) as (keyof typeof payload)[]).forEach((k) => {
-      if (payload[k] === '') payload[k] = null;
+    const payload: Record<string, string | null> = {};
+    (Object.keys(values) as (keyof EditCustomerFormValues)[]).forEach((k) => {
+      const v = values[k];
+      payload[k] = v && v.trim?.() !== '' ? (v as string) : null;
     });
     const res = await fetch(`/api/customers/${customer.id}`, {
       method: 'PUT',
@@ -126,36 +133,81 @@ function EditCustomerForm({ customer, statuses, onSave, onClose }: EditCustomerF
     }
   }
 
-  const statusSelectData = statuses.map((s) => ({ value: s, label: s }));
-
   return (
-    <Paper withBorder p="md" style={{ borderColor: 'var(--mantine-color-brand-5)', borderWidth: 2 }}>
-      <form onSubmit={form.onSubmit(handleSubmit)}>
-        <Stack gap="sm">
+    <div className="rounded-md border-2 border-primary/40 p-4">
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <div className="flex flex-col gap-3">
           {saveError && (
-            <Alert color="red" title="Error">
-              {saveError}
+            <Alert variant="destructive">
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>{saveError}</AlertDescription>
             </Alert>
           )}
-          <SimpleGrid cols={{ base: 1, sm: 2 }}>
-            <TextInput label="Customer Name" required {...form.getInputProps('name')} />
-            <TextInput label="Client Code" {...form.getInputProps('clientCode')} />
-          </SimpleGrid>
-          <SimpleGrid cols={{ base: 1, sm: 2 }}>
-            <Select label="Status" data={statusSelectData} required {...form.getInputProps('status')} />
-            <TextInput label="Vertical" {...form.getInputProps('vertical')} />
-          </SimpleGrid>
-          <TextInput label="Website" placeholder="https://example.com" {...form.getInputProps('website')} />
-          <Textarea label="Address" rows={2} {...form.getInputProps('address')} />
-          <Group justify="flex-end" mt="sm">
-            <Button variant="default" onClick={onClose}>Cancel</Button>
-            <Button type="submit" color="brand" loading={saving}>Save Changes</Button>
-          </Group>
-        </Stack>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label htmlFor="edit-name">
+                Customer Name <span className="text-destructive">*</span>
+              </Label>
+              <Input id="edit-name" {...register('name')} />
+              {errors.name && (
+                <p className="text-sm text-destructive">{errors.name.message}</p>
+              )}
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="edit-clientCode">Client Code</Label>
+              <Input id="edit-clientCode" {...register('clientCode')} />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label htmlFor="edit-status">
+                Status <span className="text-destructive">*</span>
+              </Label>
+              <Select value={statusValue} onValueChange={(v) => setValue('status', v)}>
+                <SelectTrigger id="edit-status">
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  {statuses.map((s) => (
+                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.status && (
+                <p className="text-sm text-destructive">{errors.status.message}</p>
+              )}
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="edit-vertical">Vertical</Label>
+              <Input id="edit-vertical" {...register('vertical')} />
+            </div>
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="edit-website">Website</Label>
+            <Input id="edit-website" placeholder="https://example.com" {...register('website')} />
+            {errors.website && (
+              <p className="text-sm text-destructive">{errors.website.message}</p>
+            )}
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="edit-address">Address</Label>
+            <Textarea id="edit-address" rows={2} {...register('address')} />
+          </div>
+          <div className="flex justify-end gap-2 mt-1">
+            <Button type="button" variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={saving}>
+              {saving ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </div>
+        </div>
       </form>
-    </Paper>
+    </div>
   );
 }
+
+// ----- AddServiceForm -----
 
 interface AddServiceFormProps {
   customerId: string | string[] | undefined;
@@ -205,30 +257,41 @@ function AddServiceForm({ customerId, serviceTypes, onAdd, onClose }: AddService
     }
   }
 
-  const typeSelectData = serviceTypes.map((t) => ({ value: t.id, label: t.name }));
-
   return (
-    <Paper withBorder p="md" mb="md" style={{ borderColor: 'var(--mantine-color-brand-5)', borderWidth: 2 }}>
-      <Stack gap="sm">
-        <Text fw={600} size="sm">Add New Service</Text>
+    <div className="rounded-md border-2 border-primary/40 p-4 mb-4">
+      <div className="flex flex-col gap-3">
+        <p className="text-sm font-semibold">Add New Service</p>
         {addError && (
-          <Alert color="red" title="Error">
-            {addError}
+          <Alert variant="destructive">
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{addError}</AlertDescription>
           </Alert>
         )}
-        <Select
-          label="Service Type"
-          placeholder="Select a service type"
-          data={typeSelectData}
-          value={selectedTypeId}
-          onChange={(v) => {
-            setSelectedTypeId(v || '');
-            setServiceFields({});
-            setServiceErrors({});
-          }}
-          error={serviceErrors.type}
-          required
-        />
+        <div className="space-y-1">
+          <Label htmlFor="service-type">
+            Service Type <span className="text-destructive">*</span>
+          </Label>
+          <Select
+            value={selectedTypeId}
+            onValueChange={(v) => {
+              setSelectedTypeId(v);
+              setServiceFields({});
+              setServiceErrors({});
+            }}
+          >
+            <SelectTrigger id="service-type">
+              <SelectValue placeholder="Select a service type" />
+            </SelectTrigger>
+            <SelectContent>
+              {serviceTypes.map((t) => (
+                <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {serviceErrors.type && (
+            <p className="text-sm text-destructive">{serviceErrors.type}</p>
+          )}
+        </div>
         {selectedType && (
           <DynamicForm
             fieldSchema={selectedType.fieldSchema || []}
@@ -237,14 +300,20 @@ function AddServiceForm({ customerId, serviceTypes, onAdd, onClose }: AddService
             errors={serviceErrors}
           />
         )}
-        <Group justify="flex-end" mt="sm">
-          <Button variant="default" onClick={onClose}>Cancel</Button>
-          <Button color="brand" loading={adding} onClick={handleAdd}>Add Service</Button>
-        </Group>
-      </Stack>
-    </Paper>
+        <div className="flex justify-end gap-2 mt-1">
+          <Button type="button" variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button type="button" disabled={adding} onClick={handleAdd}>
+            {adding ? 'Adding...' : 'Add Service'}
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 }
+
+// ----- EditServiceForm -----
 
 interface EditServiceFormProps {
   service: ServiceShape;
@@ -289,12 +358,13 @@ function EditServiceForm({ service, onSave, onClose }: EditServiceFormProps) {
   }
 
   return (
-    <Paper withBorder p="md" style={{ borderColor: 'var(--mantine-color-brand-5)', borderWidth: 2 }}>
-      <Stack gap="sm">
-        <Text fw={600} size="sm">Edit {service.serviceType?.name || 'Service'}</Text>
+    <div className="rounded-md border-2 border-primary/40 p-4">
+      <div className="flex flex-col gap-3">
+        <p className="text-sm font-semibold">Edit {service.serviceType?.name || 'Service'}</p>
         {saveError && (
-          <Alert color="red" title="Error">
-            {saveError}
+          <Alert variant="destructive">
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{saveError}</AlertDescription>
           </Alert>
         )}
         <DynamicForm
@@ -303,24 +373,28 @@ function EditServiceForm({ service, onSave, onClose }: EditServiceFormProps) {
           onChange={setServiceFields}
           errors={serviceErrors}
         />
-        <Group justify="flex-end" mt="sm">
-          <Button variant="default" onClick={onClose}>Cancel</Button>
-          <Button color="brand" loading={saving} onClick={handleSave}>Save Changes</Button>
-        </Group>
-      </Stack>
-    </Paper>
+        <div className="flex justify-end gap-2 mt-1">
+          <Button type="button" variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button type="button" disabled={saving} onClick={handleSave}>
+            {saving ? 'Saving...' : 'Save Changes'}
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 }
+
+// ----- InlineDeleteButton -----
 
 interface InlineDeleteButtonProps {
   onConfirm: () => void;
   label?: string;
-  size?: string;
-  iconSize?: number;
 }
 
 /** Two-click inline delete button with 3-second auto-revert */
-function InlineDeleteButton({ onConfirm, label = 'Delete', size = 'lg', iconSize = 16 }: InlineDeleteButtonProps) {
+function InlineDeleteButton({ onConfirm, label = 'Delete' }: InlineDeleteButtonProps) {
   const [confirming, setConfirming] = useState<boolean>(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -341,24 +415,32 @@ function InlineDeleteButton({ onConfirm, label = 'Delete', size = 'lg', iconSize
   }, []);
 
   useEffect(() => {
-    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
   }, []);
 
   if (confirming) {
     return (
-      <Group gap={4}>
-        <Button size="xs" color="red" variant="filled" onClick={handleConfirm}>Confirm?</Button>
-        <Button size="xs" variant="default" onClick={handleCancel}>Cancel</Button>
-      </Group>
+      <div className="flex items-center gap-1">
+        <Button size="sm" variant="destructive" onClick={handleConfirm}>
+          Confirm?
+        </Button>
+        <Button size="sm" variant="outline" onClick={handleCancel}>
+          Cancel
+        </Button>
+      </div>
     );
   }
 
   return (
-    <ActionIcon variant="default" size={size} color="red" onClick={startConfirm} title={label}>
-      <IconTrash size={iconSize} />
-    </ActionIcon>
+    <Button variant="ghost" size="icon" onClick={startConfirm} title={label} className="text-destructive hover:text-destructive">
+      <Trash className="h-4 w-4" />
+    </Button>
   );
 }
+
+// ----- InlineDeleteServiceButton -----
 
 interface InlineDeleteServiceButtonProps {
   onConfirm: () => void;
@@ -386,24 +468,32 @@ function InlineDeleteServiceButton({ onConfirm }: InlineDeleteServiceButtonProps
   }, []);
 
   useEffect(() => {
-    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
   }, []);
 
   if (confirming) {
     return (
-      <Group gap={4}>
-        <Button size="xs" color="red" variant="filled" onClick={handleConfirm}>Confirm?</Button>
-        <Button size="xs" variant="default" onClick={handleCancel}>Cancel</Button>
-      </Group>
+      <div className="flex items-center gap-1">
+        <Button size="sm" variant="destructive" onClick={handleConfirm}>
+          Confirm?
+        </Button>
+        <Button size="sm" variant="outline" onClick={handleCancel}>
+          Cancel
+        </Button>
+      </div>
     );
   }
 
   return (
-    <ActionIcon color="red" variant="subtle" onClick={startConfirm} title="Remove service">
-      <IconTrash size={16} />
-    </ActionIcon>
+    <Button variant="ghost" size="icon" onClick={startConfirm} title="Remove service" className="text-destructive hover:text-destructive">
+      <Trash className="h-4 w-4" />
+    </Button>
   );
 }
+
+// ----- CustomerDetailPage -----
 
 export default function CustomerDetailPage() {
   const router = useRouter();
@@ -461,10 +551,10 @@ export default function CustomerDetailPage() {
         router.push('/customers');
       } else {
         const data = await res.json().catch(() => ({}));
-        notifications.show({ title: 'Error', message: data.error || 'Failed to delete customer.', color: 'red' });
+        toast.error('Error', { description: data.error || 'Failed to delete customer.' });
       }
-    } catch (err) {
-      notifications.show({ title: 'Error', message: 'Network error: failed to delete customer.', color: 'red' });
+    } catch {
+      toast.error('Error', { description: 'Network error: failed to delete customer.' });
     }
   }
 
@@ -472,16 +562,17 @@ export default function CustomerDetailPage() {
     try {
       const res = await fetch(`/api/services/${svcId}`, { method: 'DELETE' });
       if (res.ok) {
-        setCustomer((prev) => prev ? ({
-          ...prev,
-          services: prev.services?.filter((s) => s.id !== svcId),
-        }) : prev);
+        setCustomer((prev) =>
+          prev
+            ? { ...prev, services: prev.services?.filter((s) => s.id !== svcId) }
+            : prev
+        );
       } else {
         const data = await res.json().catch(() => ({}));
-        notifications.show({ title: 'Error', message: data.error || 'Failed to remove service.', color: 'red' });
+        toast.error('Error', { description: data.error || 'Failed to remove service.' });
       }
-    } catch (err) {
-      notifications.show({ title: 'Error', message: 'Network error: failed to remove service.', color: 'red' });
+    } catch {
+      toast.error('Error', { description: 'Network error: failed to remove service.' });
     }
   }
 
@@ -495,11 +586,11 @@ export default function CustomerDetailPage() {
     const data = await res.json();
     setContactsSaving(false);
     if (res.ok) {
-      setCustomer((prev) => prev ? ({ ...prev, contacts: data.contacts }) : prev);
+      setCustomer((prev) => (prev ? { ...prev, contacts: data.contacts } : prev));
       setContactsValue(data.contacts || []);
-      notifications.show({ title: 'Contacts saved', message: 'Contacts updated.', color: 'green' });
+      toast.success('Contacts saved', { description: 'Contacts updated.' });
     } else {
-      notifications.show({ title: 'Error', message: 'Failed to save contacts.', color: 'red' });
+      toast.error('Error', { description: 'Failed to save contacts.' });
     }
   }
 
@@ -513,19 +604,19 @@ export default function CustomerDetailPage() {
     const data = await res.json();
     setNotesSaving(false);
     if (res.ok) {
-      setCustomer((prev) => prev ? ({ ...prev, notes: data.notes }) : prev);
-      notifications.show({ title: 'Notes saved', message: 'Notes updated.', color: 'green' });
+      setCustomer((prev) => (prev ? { ...prev, notes: data.notes } : prev));
+      toast.success('Notes saved', { description: 'Notes updated.' });
     } else {
-      notifications.show({ title: 'Error', message: 'Failed to save notes.', color: 'red' });
+      toast.error('Error', { description: 'Failed to save notes.' });
     }
   }
 
   if (loading) {
     return (
       <AppShell title="Customer">
-        <Center mt="xl">
-          <Loader />
-        </Center>
+        <div className="flex items-center justify-center mt-12">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
       </AppShell>
     );
   }
@@ -533,211 +624,260 @@ export default function CustomerDetailPage() {
   if (error || !customer) {
     return (
       <AppShell title="Customer">
-        <Alert color="red" title="Error">
-          {error || 'Customer not found'}
+        <Alert variant="destructive">
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{error || 'Customer not found'}</AlertDescription>
         </Alert>
       </AppShell>
     );
   }
 
-  const servicesByType = (customer.services || []).reduce<Record<string, ServiceShape[]>>((acc, svc) => {
-    const typeName = svc.serviceType?.name || 'Unknown';
-    if (!acc[typeName]) acc[typeName] = [];
-    acc[typeName].push(svc);
-    return acc;
-  }, {});
+  const servicesByType = (customer.services || []).reduce<Record<string, ServiceShape[]>>(
+    (acc, svc) => {
+      const typeName = svc.serviceType?.name || 'Unknown';
+      if (!acc[typeName]) acc[typeName] = [];
+      acc[typeName].push(svc);
+      return acc;
+    },
+    {}
+  );
 
   return (
     <AppShell title={customer.name}>
-      <Stack gap="md">
+      <div className="flex flex-col gap-4">
         {/* Header */}
         {editingCustomer ? (
-          <Box>
-            <Group gap="sm" mb="md">
-              <ActionIcon variant="subtle" onClick={() => router.push('/customers')} mt={4}>
-                <IconArrowLeft size={18} />
-              </ActionIcon>
-              <Title order={3}>Edit Customer</Title>
-            </Group>
+          <div>
+            <div className="flex items-center gap-2 mb-4">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => router.push('/customers')}
+                className="mt-1"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+              <h2 className="text-lg font-semibold">Edit Customer</h2>
+            </div>
             <EditCustomerForm
               customer={customer}
               statuses={statuses}
               onSave={(data) => {
-                setCustomer((prev) => prev ? ({ ...prev, ...data }) : prev);
+                setCustomer((prev) => (prev ? { ...prev, ...data } : prev));
                 setEditingCustomer(false);
-                notifications.show({ title: 'Saved', message: 'Customer updated.', color: 'green' });
+                toast.success('Saved', { description: 'Customer updated.' });
               }}
               onClose={() => setEditingCustomer(false)}
             />
-          </Box>
+          </div>
         ) : (
-          <Group justify="space-between" align="flex-start" wrap="wrap">
-            <Group gap="sm" align="flex-start">
-              <ActionIcon variant="subtle" onClick={() => router.push('/customers')} mt={4}>
-                <IconArrowLeft size={18} />
-              </ActionIcon>
-              <Box>
-                <Title order={3}>{customer.name}</Title>
-                <Group gap="xs" mt={4}>
+          <div className="flex items-start justify-between flex-wrap gap-2">
+            <div className="flex items-start gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => router.push('/customers')}
+                className="mt-1"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+              <div>
+                <h2 className="text-lg font-semibold">{customer.name}</h2>
+                <div className="flex items-center gap-2 mt-1">
                   {customer.clientCode && (
-                    <Text size="sm" c="dimmed">
-                      {customer.clientCode}
-                    </Text>
+                    <span className="text-sm text-muted-foreground">{customer.clientCode}</span>
                   )}
-                  <Badge color={statusColors[customer.status] || 'gray'}>
+                  <Badge
+                    className={`border-0 ${statusColors[customer.status] || 'bg-gray-100 text-gray-600'}`}
+                  >
                     {customer.status}
                   </Badge>
-                </Group>
-              </Box>
-            </Group>
+                </div>
+              </div>
+            </div>
             {canEdit && (
-              <Group gap="xs">
-                <ActionIcon variant="default" size="lg" onClick={() => setEditingCustomer(true)} title="Edit">
-                  <IconEdit size={16} />
-                </ActionIcon>
-                {isAdmin && (
-                  <InlineDeleteButton onConfirm={handleDeleteCustomer} />
-                )}
-              </Group>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setEditingCustomer(true)}
+                  title="Edit"
+                >
+                  <Edit className="h-4 w-4" />
+                </Button>
+                {isAdmin && <InlineDeleteButton onConfirm={handleDeleteCustomer} />}
+              </div>
             )}
-          </Group>
+          </div>
         )}
 
         {/* Tabs */}
         {!editingCustomer && (
           <Tabs defaultValue="info">
-            <Tabs.List>
-              <Tabs.Tab value="info">Info</Tabs.Tab>
-              <Tabs.Tab value="services">Services ({customer.services?.length || 0})</Tabs.Tab>
-              <Tabs.Tab value="contacts">Contacts</Tabs.Tab>
-              <Tabs.Tab value="notes">Notes</Tabs.Tab>
-            </Tabs.List>
+            <TabsList>
+              <TabsTrigger value="info">Info</TabsTrigger>
+              <TabsTrigger value="services">
+                Services ({customer.services?.length || 0})
+              </TabsTrigger>
+              <TabsTrigger value="contacts">Contacts</TabsTrigger>
+              <TabsTrigger value="notes">Notes</TabsTrigger>
+            </TabsList>
 
             {/* Info tab */}
-            <Tabs.Panel value="info" pt="md">
-              <Paper p="md">
-                <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
-                  <Box>
-                    <Text size="xs" tt="uppercase" c="dimmed" fw={600} mb={4}>Vertical</Text>
-                    <Text size="sm">{customer.vertical || '-'}</Text>
-                  </Box>
-                  <Box>
-                    <Text size="xs" tt="uppercase" c="dimmed" fw={600} mb={4}>Website</Text>
-                    <Text size="sm">
-                      {customer.website ? (
-                        <a href={customer.website} target="_blank" rel="noopener noreferrer">
-                          {customer.website}
-                        </a>
-                      ) : '-'}
-                    </Text>
-                  </Box>
-                  <Box style={{ gridColumn: '1 / -1' }}>
-                    <Text size="xs" tt="uppercase" c="dimmed" fw={600} mb={4}>Address</Text>
-                    <Text size="sm">{customer.address || '-'}</Text>
-                  </Box>
-                  <Box>
-                    <Text size="xs" tt="uppercase" c="dimmed" fw={600} mb={4}>Created</Text>
-                    <Text size="sm">{dayjs(customer.createdAt).format('DD MMM YYYY')}</Text>
-                  </Box>
-                  <Box>
-                    <Text size="xs" tt="uppercase" c="dimmed" fw={600} mb={4}>Last Updated</Text>
-                    <Text size="sm">{dayjs(customer.updatedAt).format('DD MMM YYYY')}</Text>
-                  </Box>
-                </SimpleGrid>
-              </Paper>
-            </Tabs.Panel>
+            <TabsContent value="info" className="mt-4">
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-xs text-muted-foreground font-semibold uppercase mb-1">
+                        Vertical
+                      </p>
+                      <p className="text-sm">{customer.vertical || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground font-semibold uppercase mb-1">
+                        Website
+                      </p>
+                      <p className="text-sm">
+                        {customer.website ? (
+                          <a
+                            href={customer.website}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="underline"
+                          >
+                            {customer.website}
+                          </a>
+                        ) : (
+                          '-'
+                        )}
+                      </p>
+                    </div>
+                    <div className="sm:col-span-2">
+                      <p className="text-xs text-muted-foreground font-semibold uppercase mb-1">
+                        Address
+                      </p>
+                      <p className="text-sm">{customer.address || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground font-semibold uppercase mb-1">
+                        Created
+                      </p>
+                      <p className="text-sm">{dayjs(customer.createdAt).format('DD MMM YYYY')}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground font-semibold uppercase mb-1">
+                        Last Updated
+                      </p>
+                      <p className="text-sm">{dayjs(customer.updatedAt).format('DD MMM YYYY')}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
 
             {/* Services tab */}
-            <Tabs.Panel value="services" pt="md">
-              <Stack gap="md">
+            <TabsContent value="services" className="mt-4">
+              <div className="flex flex-col gap-4">
                 {canEdit && !addingService && (
-                  <Group justify="flex-end">
-                    <Button leftSection={<IconPlus size={16} />} color="brand" onClick={() => setAddingService(true)}>
+                  <div className="flex justify-end">
+                    <Button onClick={() => setAddingService(true)}>
+                      <Plus className="h-4 w-4 mr-1" />
                       Add Service
                     </Button>
-                  </Group>
+                  </div>
                 )}
                 {addingService && (
                   <AddServiceForm
                     customerId={id}
                     serviceTypes={serviceTypes}
                     onAdd={(newService) => {
-                      setCustomer((prev) => prev ? ({
-                        ...prev,
-                        services: [newService, ...(prev.services || [])],
-                      }) : prev);
+                      setCustomer((prev) =>
+                        prev
+                          ? { ...prev, services: [newService, ...(prev.services || [])] }
+                          : prev
+                      );
                       setAddingService(false);
-                      notifications.show({ title: 'Service added', message: 'Service was added.', color: 'green' });
+                      toast.success('Service added', { description: 'Service was added.' });
                     }}
                     onClose={() => setAddingService(false)}
                   />
                 )}
                 {Object.keys(servicesByType).length === 0 && (
-                  <Text c="dimmed">No services yet.</Text>
+                  <p className="text-sm text-muted-foreground">No services yet.</p>
                 )}
                 {Object.entries(servicesByType).map(([typeName, services]) => (
-                  <Box key={typeName}>
-                    <Text fw={600} mb="xs">
-                      {typeName}
-                    </Text>
-                    <Stack gap="xs">
+                  <div key={typeName}>
+                    <p className="text-sm font-semibold mb-2">{typeName}</p>
+                    <div className="flex flex-col gap-2">
                       {services.map((svc) => (
-                        <Paper key={svc.id} p="md" withBorder>
-                          {editingServiceId === svc.id ? (
-                            <EditServiceForm
-                              service={svc}
-                              onSave={(updated) => {
-                                setCustomer((prev) => prev ? ({
-                                  ...prev,
-                                  services: prev.services?.map((s) => (s.id === updated.id ? updated : s)),
-                                }) : prev);
-                                setEditingServiceId(null);
-                                notifications.show({ title: 'Updated', message: 'Service updated.', color: 'green' });
-                              }}
-                              onClose={() => setEditingServiceId(null)}
-                            />
-                          ) : (
-                            <Group justify="space-between" align="flex-start">
-                              <Box style={{ flex: 1 }}>
-                                <DynamicFieldDisplay
-                                  fieldSchema={svc.serviceType?.fieldSchema || []}
-                                  values={svc.fieldValues || {}}
-                                />
-                                {!svc.serviceType?.fieldSchema?.length && (
-                                  <Text size="sm" c="dimmed">
-                                    No fields defined
-                                  </Text>
-                                )}
-                                <Text size="xs" c="dimmed" mt="xs">
-                                  Added {dayjs(svc.createdAt).format('DD MMM YYYY')}
-                                </Text>
-                              </Box>
-                              {canEdit && (
-                                <Group gap={4}>
-                                  <ActionIcon
-                                    variant="subtle"
-                                    onClick={() => setEditingServiceId(svc.id)}
-                                    title="Edit service"
-                                  >
-                                    <IconEdit size={16} />
-                                  </ActionIcon>
-                                  {isAdmin && (
-                                    <InlineDeleteServiceButton onConfirm={() => handleDeleteService(svc.id)} />
+                        <Card key={svc.id}>
+                          <CardContent className="pt-4 pb-4">
+                            {editingServiceId === svc.id ? (
+                              <EditServiceForm
+                                service={svc}
+                                onSave={(updated) => {
+                                  setCustomer((prev) =>
+                                    prev
+                                      ? {
+                                          ...prev,
+                                          services: prev.services?.map((s) =>
+                                            s.id === updated.id ? updated : s
+                                          ),
+                                        }
+                                      : prev
+                                  );
+                                  setEditingServiceId(null);
+                                  toast.success('Updated', { description: 'Service updated.' });
+                                }}
+                                onClose={() => setEditingServiceId(null)}
+                              />
+                            ) : (
+                              <div className="flex items-start justify-between gap-4">
+                                <div className="flex-1">
+                                  <DynamicFieldDisplay
+                                    fieldSchema={svc.serviceType?.fieldSchema || []}
+                                    values={svc.fieldValues || {}}
+                                  />
+                                  {!svc.serviceType?.fieldSchema?.length && (
+                                    <p className="text-sm text-muted-foreground">
+                                      No fields defined
+                                    </p>
                                   )}
-                                </Group>
-                              )}
-                            </Group>
-                          )}
-                        </Paper>
+                                  <p className="text-xs text-muted-foreground mt-2">
+                                    Added {dayjs(svc.createdAt).format('DD MMM YYYY')}
+                                  </p>
+                                </div>
+                                {canEdit && (
+                                  <div className="flex items-center gap-1">
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => setEditingServiceId(svc.id)}
+                                      title="Edit service"
+                                    >
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                    {isAdmin && (
+                                      <InlineDeleteServiceButton
+                                        onConfirm={() => handleDeleteService(svc.id)}
+                                      />
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
                       ))}
-                    </Stack>
-                  </Box>
+                    </div>
+                  </div>
                 ))}
-              </Stack>
-            </Tabs.Panel>
+              </div>
+            </TabsContent>
 
             {/* Contacts tab */}
-            <Tabs.Panel value="contacts" pt="md">
+            <TabsContent value="contacts" className="mt-4">
               <ContactsEditor
                 contacts={contactsValue}
                 onChange={canEdit ? setContactsValue : undefined}
@@ -745,34 +885,33 @@ export default function CustomerDetailPage() {
                 saving={contactsSaving}
               />
               {!canEdit && (
-                <Text size="sm" c="dimmed" mt="xs">
+                <p className="text-sm text-muted-foreground mt-2">
                   You do not have permission to edit contacts.
-                </Text>
+                </p>
               )}
-            </Tabs.Panel>
+            </TabsContent>
 
             {/* Notes tab */}
-            <Tabs.Panel value="notes" pt="md">
-              <Stack gap="sm" maw={600}>
+            <TabsContent value="notes" className="mt-4">
+              <div className="flex flex-col gap-3 max-w-[600px]">
                 <Textarea
                   value={notesValue}
                   onChange={(e) => setNotesValue(e.target.value)}
-                  autosize
-                  minRows={6}
+                  rows={6}
                   readOnly={!canEdit}
                 />
                 {canEdit && (
-                  <Group>
-                    <Button color="brand" loading={notesSaving} onClick={handleSaveNotes}>
-                      Save Notes
+                  <div className="flex">
+                    <Button disabled={notesSaving} onClick={handleSaveNotes}>
+                      {notesSaving ? 'Saving...' : 'Save Notes'}
                     </Button>
-                  </Group>
+                  </div>
                 )}
-              </Stack>
-            </Tabs.Panel>
+              </div>
+            </TabsContent>
           </Tabs>
         )}
-      </Stack>
+      </div>
     </AppShell>
   );
 }

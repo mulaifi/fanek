@@ -1,6 +1,24 @@
 import { useState } from 'react';
-import { ActionIcon, Badge, Box, Button, Divider, Group, Paper, Select, Stack, Text, TextInput, Tooltip } from '@mantine/core';
-import { IconMail, IconPhone, IconPlus, IconTrash, IconUserPlus, IconEdit } from '@tabler/icons-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { Mail, Phone, Plus, Trash2, Pencil, UserPlus, Loader2 } from 'lucide-react';
 import type { ContactInput } from '@/lib/validation';
 
 const EMAIL_CATEGORIES = ['Work', 'Personal', 'Other'];
@@ -33,58 +51,77 @@ interface ContactViewProps {
 /** Read-only display of a single contact */
 function ContactView({ contact, onEdit, onRemove, canEdit }: ContactViewProps) {
   return (
-    <Paper withBorder p="md" mb="md">
-      <Group justify="space-between" mb="sm">
-        <Group gap="sm">
-          <Text size="sm" fw={600}>{contact.name || 'Unnamed Contact'}</Text>
-          {contact.title && <Text size="sm" c="dimmed">{contact.title}</Text>}
-        </Group>
-        {canEdit && (
-          <Group gap={4}>
-            <Tooltip label="Edit contact">
-              <ActionIcon size="sm" variant="subtle" onClick={onEdit}>
-                <IconEdit size={16} />
-              </ActionIcon>
-            </Tooltip>
-            <Tooltip label="Remove contact">
-              <ActionIcon size="sm" color="red" variant="subtle" onClick={onRemove}>
-                <IconTrash size={16} />
-              </ActionIcon>
-            </Tooltip>
-          </Group>
+    <Card className="mb-3">
+      <CardContent className="pt-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold">{contact.name || 'Unnamed Contact'}</span>
+            {contact.title && <span className="text-sm text-muted-foreground">{contact.title}</span>}
+          </div>
+          {canEdit && (
+            <TooltipProvider>
+              <div className="flex items-center gap-1">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onEdit}>
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Edit contact</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-destructive hover:text-destructive"
+                      onClick={onRemove}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Remove contact</TooltipContent>
+                </Tooltip>
+              </div>
+            </TooltipProvider>
+          )}
+        </div>
+
+        {(contact.emails?.length ?? 0) > 0 && (
+          <div className="flex items-center gap-2 mb-2 flex-wrap">
+            <Mail className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+            {contact.emails!.map((email, i) => (
+              <div key={i} className="flex items-center gap-1">
+                <span className="text-sm">{email.value}</span>
+                <Badge variant="secondary" className="text-xs px-1 py-0">{email.category}</Badge>
+                {i < contact.emails!.length - 1 && (
+                  <span className="text-sm text-muted-foreground">|</span>
+                )}
+              </div>
+            ))}
+          </div>
         )}
-      </Group>
 
-      {(contact.emails?.length ?? 0) > 0 && (
-        <Group gap="xs" mb="xs">
-          <IconMail size={14} color="var(--mantine-color-dimmed)" />
-          {contact.emails!.map((email, i) => (
-            <Group key={i} gap={4}>
-              <Text size="sm">{email.value}</Text>
-              <Badge size="xs" variant="light" color="gray">{email.category}</Badge>
-              {i < contact.emails!.length - 1 && <Text size="sm" c="dimmed">|</Text>}
-            </Group>
-          ))}
-        </Group>
-      )}
+        {(contact.phones?.length ?? 0) > 0 && (
+          <div className="flex items-center gap-2 flex-wrap">
+            <Phone className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+            {contact.phones!.map((phone, i) => (
+              <div key={i} className="flex items-center gap-1">
+                <span className="text-sm">{phone.value}</span>
+                <Badge variant="secondary" className="text-xs px-1 py-0">{phone.category}</Badge>
+                {i < contact.phones!.length - 1 && (
+                  <span className="text-sm text-muted-foreground">|</span>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
 
-      {(contact.phones?.length ?? 0) > 0 && (
-        <Group gap="xs">
-          <IconPhone size={14} color="var(--mantine-color-dimmed)" />
-          {contact.phones!.map((phone, i) => (
-            <Group key={i} gap={4}>
-              <Text size="sm">{phone.value}</Text>
-              <Badge size="xs" variant="light" color="gray">{phone.category}</Badge>
-              {i < contact.phones!.length - 1 && <Text size="sm" c="dimmed">|</Text>}
-            </Group>
-          ))}
-        </Group>
-      )}
-
-      {!contact.emails?.length && !contact.phones?.length && (
-        <Text size="sm" c="dimmed">No contact details added.</Text>
-      )}
-    </Paper>
+        {!contact.emails?.length && !contact.phones?.length && (
+          <p className="text-sm text-muted-foreground">No contact details added.</p>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -109,102 +146,162 @@ function ContactEditForm({
   addEmail, updateEmail, removeEmail, addPhone, updatePhone, removePhone,
 }: ContactEditFormProps) {
   return (
-    <Paper withBorder p="md" mb="md" style={{ borderColor: 'var(--mantine-color-brand-5)', borderWidth: 2 }}>
-      <Group justify="space-between" mb="md">
-        <Text size="sm" fw={600}>Editing Contact {ci + 1}</Text>
-        <Group gap={4}>
-          <Button size="xs" color="brand" loading={saving} onClick={onDone}>Save & Close</Button>
-          <Tooltip label="Remove contact">
-            <ActionIcon size="sm" color="red" variant="subtle" onClick={onRemove}>
-              <IconTrash size={16} />
-            </ActionIcon>
-          </Tooltip>
-        </Group>
-      </Group>
+    <Card className="mb-3 border-2 border-primary">
+      <CardContent className="pt-4">
+        <div className="flex items-center justify-between mb-4">
+          <span className="text-sm font-semibold">Editing Contact {ci + 1}</span>
+          <div className="flex items-center gap-1">
+            <Button size="sm" onClick={onDone} disabled={saving}>
+              {saving && <Loader2 className="h-3 w-3 mr-1 animate-spin" />}
+              Save &amp; Close
+            </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-destructive hover:text-destructive"
+                    onClick={onRemove}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Remove contact</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+        </div>
 
-      <Group grow mb="md">
-        <TextInput
-          label="Name"
-          value={contact.name}
-          onChange={(e) => onUpdate({ ...contact, name: e.currentTarget.value })}
+        <div className="grid grid-cols-2 gap-3 mb-4">
+          <div className="space-y-1">
+            <Label>Name</Label>
+            <Input
+              value={contact.name}
+              onChange={(e) => onUpdate({ ...contact, name: e.currentTarget.value })}
+            />
+          </div>
+          <div className="space-y-1">
+            <Label>Title / Role</Label>
+            <Input
+              value={contact.title ?? ''}
+              onChange={(e) => onUpdate({ ...contact, title: e.currentTarget.value })}
+            />
+          </div>
+        </div>
+
+        <Separator className="mb-4" />
+
+        <p className="text-xs text-muted-foreground font-semibold mb-2">EMAILS</p>
+        <div className="space-y-2 mb-2">
+          {(contact.emails ?? []).map((email, ei) => (
+            <div key={ei} className="flex items-end gap-2">
+              <div className="space-y-1 flex-[2]">
+                {ei === 0 && <Label>Email</Label>}
+                <div className="relative">
+                  <Mail className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+                  <Input
+                    aria-label={ei > 0 ? `Email ${ei + 1}` : undefined}
+                    type="email"
+                    value={email.value}
+                    onChange={(e) => updateEmail(ci, ei, { ...email, value: e.currentTarget.value })}
+                    className="pl-8"
+                  />
+                </div>
+              </div>
+              <div className="space-y-1 flex-1">
+                {ei === 0 && <Label>Category</Label>}
+                <Select
+                  value={email.category}
+                  onValueChange={(val) => updateEmail(ci, ei, { ...email, category: val })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {EMAIL_CATEGORIES.map((cat) => (
+                      <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 text-muted-foreground"
+                onClick={() => removeEmail(ci, ei)}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          ))}
+        </div>
+        <Button
+          variant="ghost"
           size="sm"
-        />
-        <TextInput
-          label="Title / Role"
-          value={contact.title ?? ''}
-          onChange={(e) => onUpdate({ ...contact, title: e.currentTarget.value })}
+          className="mb-4"
+          onClick={() => addEmail(ci)}
+        >
+          <Plus className="h-3.5 w-3.5 mr-1" />
+          Add Email
+        </Button>
+
+        <Separator className="mb-4" />
+
+        <p className="text-xs text-muted-foreground font-semibold mb-2">PHONES</p>
+        <div className="space-y-2 mb-2">
+          {(contact.phones ?? []).map((phone, pi) => (
+            <div key={pi} className="flex items-end gap-2">
+              <div className="space-y-1 flex-[2]">
+                {pi === 0 && <Label>Phone</Label>}
+                <div className="relative">
+                  <Phone className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+                  <Input
+                    aria-label={pi > 0 ? `Phone ${pi + 1}` : undefined}
+                    type="tel"
+                    value={phone.value}
+                    onChange={(e) => updatePhone(ci, pi, { ...phone, value: e.currentTarget.value })}
+                    className="pl-8"
+                  />
+                </div>
+              </div>
+              <div className="space-y-1 flex-1">
+                {pi === 0 && <Label>Category</Label>}
+                <Select
+                  value={phone.category}
+                  onValueChange={(val) => updatePhone(ci, pi, { ...phone, category: val })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PHONE_CATEGORIES.map((cat) => (
+                      <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 text-muted-foreground"
+                onClick={() => removePhone(ci, pi)}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          ))}
+        </div>
+        <Button
+          variant="ghost"
           size="sm"
-        />
-      </Group>
-
-      <Divider mb="md" />
-
-      <Text size="xs" c="dimmed" fw={600} mb="xs">EMAILS</Text>
-      <Stack gap="xs" mb="xs">
-        {(contact.emails ?? []).map((email, ei) => (
-          <Group key={ei} align="flex-end" gap="xs">
-            <TextInput
-              label={ei === 0 ? 'Email' : undefined}
-              aria-label={ei > 0 ? `Email ${ei + 1}` : undefined}
-              type="email"
-              value={email.value}
-              onChange={(e) => updateEmail(ci, ei, { ...email, value: e.currentTarget.value })}
-              size="sm"
-              leftSection={<IconMail size={14} />}
-              style={{ flex: 2 }}
-            />
-            <Select
-              label={ei === 0 ? 'Category' : undefined}
-              value={email.category}
-              onChange={(val) => updateEmail(ci, ei, { ...email, category: val ?? email.category })}
-              data={EMAIL_CATEGORIES}
-              size="sm"
-              style={{ flex: 1 }}
-            />
-            <ActionIcon size="sm" variant="subtle" color="gray" onClick={() => removeEmail(ci, ei)}>
-              <IconTrash size={14} />
-            </ActionIcon>
-          </Group>
-        ))}
-      </Stack>
-      <Button variant="subtle" size="xs" leftSection={<IconPlus size={14} />} onClick={() => addEmail(ci)} mb="md">
-        Add Email
-      </Button>
-
-      <Divider mb="md" />
-
-      <Text size="xs" c="dimmed" fw={600} mb="xs">PHONES</Text>
-      <Stack gap="xs" mb="xs">
-        {(contact.phones ?? []).map((phone, pi) => (
-          <Group key={pi} align="flex-end" gap="xs">
-            <TextInput
-              label={pi === 0 ? 'Phone' : undefined}
-              aria-label={pi > 0 ? `Phone ${pi + 1}` : undefined}
-              type="tel"
-              value={phone.value}
-              onChange={(e) => updatePhone(ci, pi, { ...phone, value: e.currentTarget.value })}
-              size="sm"
-              leftSection={<IconPhone size={14} />}
-              style={{ flex: 2 }}
-            />
-            <Select
-              label={pi === 0 ? 'Category' : undefined}
-              value={phone.category}
-              onChange={(val) => updatePhone(ci, pi, { ...phone, category: val ?? phone.category })}
-              data={PHONE_CATEGORIES}
-              size="sm"
-              style={{ flex: 1 }}
-            />
-            <ActionIcon size="sm" variant="subtle" color="gray" onClick={() => removePhone(ci, pi)}>
-              <IconTrash size={14} />
-            </ActionIcon>
-          </Group>
-        ))}
-      </Stack>
-      <Button variant="subtle" size="xs" leftSection={<IconPlus size={14} />} onClick={() => addPhone(ci)}>
-        Add Phone
-      </Button>
-    </Paper>
+          onClick={() => addPhone(ci)}
+        >
+          <Plus className="h-3.5 w-3.5 mr-1" />
+          Add Phone
+        </Button>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -282,9 +379,9 @@ export default function ContactsEditor({ contacts = [], onChange, onSave, saving
   }
 
   return (
-    <Box>
+    <div>
       {contacts.length === 0 && !canEdit && (
-        <Text size="sm" c="dimmed">No contacts.</Text>
+        <p className="text-sm text-muted-foreground">No contacts.</p>
       )}
 
       {contacts.map((contact, ci) =>
@@ -316,10 +413,11 @@ export default function ContactsEditor({ contacts = [], onChange, onSave, saving
       )}
 
       {canEdit && (
-        <Button variant="light" leftSection={<IconUserPlus size={16} />} onClick={addContact}>
+        <Button variant="outline" onClick={addContact}>
+          <UserPlus className="h-4 w-4 mr-2" />
           Add Contact
         </Button>
       )}
-    </Box>
+    </div>
   );
 }

@@ -1,24 +1,19 @@
-import { Group, Loader, Stack, Text, ThemeIcon, Title } from '@mantine/core';
-import { IconCheck } from '@tabler/icons-react';
+import { Check, Loader2 } from 'lucide-react';
 
 export default function StepComplete() {
   return (
-    <Stack align="center" justify="center" gap="lg" py="xl" style={{ textAlign: 'center' }}>
-      <ThemeIcon color="green" size={72} radius="xl" variant="light">
-        <IconCheck size={40} />
-      </ThemeIcon>
-      <Title order={3} fw={600}>
-        Setup Complete!
-      </Title>
-      <Text c="dimmed">
+    <div className="flex flex-col items-center justify-center gap-6 py-10 text-center">
+      <div className="flex items-center justify-center h-[72px] w-[72px] rounded-full bg-green-100 text-green-700">
+        <Check className="h-10 w-10" />
+      </div>
+      <h3 className="text-xl font-semibold">Setup Complete!</h3>
+      <p className="text-muted-foreground">
         Your organization has been configured and your admin account is ready.
-      </Text>
-      <Group gap="sm" align="center">
-        <Loader size="sm" />
-        <Text size="sm" c="dimmed">
-          Redirecting to dashboard...
-        </Text>
-      </Group>
-    </Stack>
+      </p>
+      <div className="flex items-center gap-2">
+        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+        <span className="text-sm text-muted-foreground">Redirecting to dashboard...</span>
+      </div>
+    </div>
   );
 }

@@ -1,6 +1,14 @@
 import { useState } from 'react';
-import { ActionIcon, Alert, Box, Button, Group, Stack, Text, TextInput, Tooltip } from '@mantine/core';
-import { IconArrowDown, IconArrowUp, IconPlus, IconTrash } from '@tabler/icons-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { Plus, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
 
 interface StatusManagerProps {
   statuses?: string[];
@@ -71,23 +79,23 @@ export default function StatusManager({ statuses = [], statusUsage = {}, onSave 
   }
 
   return (
-    <Box>
+    <div>
       {error && (
-        <Alert color="red" mb="md">
-          {error}
+        <Alert variant="destructive" className="mb-4">
+          <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
       {success && (
-        <Alert color="green" mb="md">
-          Customer statuses saved.
+        <Alert className="mb-4 border-green-200 bg-green-50 text-green-800">
+          <AlertDescription>Customer statuses saved.</AlertDescription>
         </Alert>
       )}
 
-      <Text size="sm" c="dimmed" mb="md">
+      <p className="text-sm text-muted-foreground mb-4">
         Define the allowed customer status values. Statuses in use by customers cannot be removed.
-      </Text>
+      </p>
 
-      <Stack gap="xs" mb="md">
+      <div className="space-y-2 mb-4">
         {items.map((status, index) => {
           const usageCount = statusUsage?.[status] || 0;
           const inUse = usageCount > 0;
@@ -96,68 +104,76 @@ export default function StatusManager({ statuses = [], statusUsage = {}, onSave 
             : 'Remove status';
 
           return (
-            <Group key={index} gap="xs" align="center">
-              <TextInput
-                value={status}
-                onChange={(e) => handleUpdate(index, e.currentTarget.value)}
-                size="sm"
-                style={{ flex: 1 }}
-              />
-              <ActionIcon
-                size="sm"
-                variant="subtle"
-                onClick={() => moveItem(index, -1)}
-                disabled={index === 0}
-              >
-                <IconArrowUp size={14} />
-              </ActionIcon>
-              <ActionIcon
-                size="sm"
-                variant="subtle"
-                onClick={() => moveItem(index, 1)}
-                disabled={index === items.length - 1}
-              >
-                <IconArrowDown size={14} />
-              </ActionIcon>
-              <Tooltip label={removeTooltip} disabled={!inUse}>
-                <ActionIcon
-                  size="sm"
-                  variant="subtle"
-                  color="red"
-                  onClick={() => !inUse && handleRemove(status)}
-                  disabled={inUse}
+            <TooltipProvider key={index}>
+              <div className="flex items-center gap-2">
+                <Input
+                  value={status}
+                  onChange={(e) => handleUpdate(index, e.currentTarget.value)}
+                  className="flex-1"
+                />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => moveItem(index, -1)}
+                  disabled={index === 0}
                 >
-                  <IconTrash size={14} />
-                </ActionIcon>
-              </Tooltip>
-            </Group>
+                  <ArrowUp className="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => moveItem(index, 1)}
+                  disabled={index === items.length - 1}
+                >
+                  <ArrowDown className="h-3.5 w-3.5" />
+                </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-destructive hover:text-destructive"
+                      onClick={() => !inUse && handleRemove(status)}
+                      disabled={inUse}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>{removeTooltip}</TooltipContent>
+                </Tooltip>
+              </div>
+            </TooltipProvider>
           );
         })}
-      </Stack>
+      </div>
 
-      <Group align="flex-start" mb="lg">
-        <TextInput
-          placeholder="e.g. On Hold"
-          value={newStatus}
-          onChange={(e) => setNewStatus(e.currentTarget.value)}
-          error={newError}
-          size="sm"
-          style={{ width: 200 }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              handleAdd();
-            }
-          }}
-        />
-        <Button variant="light" leftSection={<IconPlus size={14} />} onClick={handleAdd} size="sm">
+      <div className="flex items-start gap-2 mb-6">
+        <div className="space-y-1">
+          <Input
+            placeholder="e.g. On Hold"
+            value={newStatus}
+            onChange={(e) => setNewStatus(e.currentTarget.value)}
+            className="w-[200px]"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                handleAdd();
+              }
+            }}
+          />
+          {newError && <p className="text-sm text-destructive">{newError}</p>}
+        </div>
+        <Button variant="outline" size="sm" onClick={handleAdd}>
+          <Plus className="h-3.5 w-3.5 mr-1.5" />
           Add
         </Button>
-      </Group>
+      </div>
 
-      <Button onClick={handleSave} loading={saving}>
+      <Button onClick={handleSave} disabled={saving}>
         {saving ? 'Saving...' : 'Save Statuses'}
       </Button>
-    </Box>
+    </div>
   );
 }
