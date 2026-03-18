@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "jsx": "preserve",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "incremental": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/lib/*": ["./lib/*"],
+      "@/components/*": ["./components/*"],
+      "@/types/*": ["./types/*"],
+      "@/styles/*": ["./styles/*"]
+    }
+  },
+  "include": ["next-env.d.ts", "types/**/*.ts", "**/*.ts", "**/*.tsx"],
+  "exclude": ["node_modules", ".next", "prisma/seed.js", "scripts"]
+}

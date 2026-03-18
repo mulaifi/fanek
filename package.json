@@ -18,7 +18,8 @@
     "db:studio": "prisma studio",
     "postinstall": "prisma generate",
     "reset-password": "node scripts/reset-password.mjs",
-    "list-users": "node scripts/list-users.mjs"
+    "list-users": "node scripts/list-users.mjs",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@mantine/charts": "^8.3.18",
@@ -53,6 +54,10 @@
     "@jest/globals": "^30.3.0",
     "@playwright/test": "^1.49.0",
     "@swc/jest": "^0.2.39",
+    "@types/node": "^25.5.0",
+    "@types/pg": "^8.18.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
     "babel-jest": "^30.3.0",
     "eslint": "^9.0.0",
     "eslint-config-next": "^16.1.6",
@@ -62,6 +67,8 @@
     "postcss-preset-mantine": "^1.18.0",
     "postcss-simple-vars": "^7.0.1",
     "prettier": "^3.4.0",
-    "prisma": "^7.5.0"
+    "prisma": "^7.5.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.57.1"
   }
 }
