@@ -3,23 +3,26 @@ import { getServerSession } from 'next-auth/next';
 import type { GetServerSidePropsContext } from 'next';
 import { getAuthOptions } from '@/lib/auth/options';
 import type { ServiceTypeFieldInput } from '@/lib/validation';
-import {
-  Alert,
-  Badge,
-  Button,
-  Group,
-  Paper,
-  Stack,
-  Switch,
-  Table,
-  Text,
-  TextInput,
-  Textarea,
-} from '@mantine/core';
-import { notifications } from '@mantine/notifications';
-import { IconPlus, IconPencil, IconTrash } from '@tabler/icons-react';
+import { toast } from 'sonner';
+import { Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
 import AppShell from '@/components/AppShell';
 import ServiceTypeEditor from '@/components/admin/ServiceTypeEditor';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Textarea } from '@/components/ui/textarea';
 
 interface ServiceTypeRow {
   id: string;
@@ -70,27 +73,33 @@ function InlineDeleteButton({ onConfirm, disabled }: InlineDeleteButtonProps) {
   }, []);
 
   useEffect(() => {
-    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
   }, []);
 
   if (confirming) {
     return (
-      <Group gap={4}>
-        <Button size="xs" color="red" variant="filled" onClick={handleConfirm}>Confirm?</Button>
-        <Button size="xs" variant="default" onClick={handleCancel}>Cancel</Button>
-      </Group>
+      <div className="flex items-center gap-1">
+        <Button size="sm" variant="destructive" onClick={handleConfirm}>
+          Confirm?
+        </Button>
+        <Button size="sm" variant="outline" onClick={handleCancel}>
+          Cancel
+        </Button>
+      </div>
     );
   }
 
   return (
     <Button
-      variant="subtle"
-      size="xs"
-      color="red"
-      leftSection={<IconTrash size={14} />}
+      variant="ghost"
+      size="sm"
+      className="gap-1 text-destructive hover:text-destructive"
       disabled={disabled}
       onClick={startConfirm}
     >
+      <Trash2 className="h-3.5 w-3.5" />
       Delete
     </Button>
   );
@@ -101,7 +110,6 @@ export default function ServiceCatalogPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
 
-  // Inline editing states
   const [showCreateForm, setShowCreateForm] = useState<boolean>(false);
   const [editingTypeId, setEditingTypeId] = useState<string | null>(null);
 
@@ -122,129 +130,168 @@ export default function ServiceCatalogPage() {
     const res = await fetch(`/api/service-types/${st.id}`, { method: 'DELETE' });
     if (res.ok) {
       setServiceTypes((prev) => prev.filter((s) => s.id !== st.id));
-      notifications.show({ color: 'green', message: 'Service type deleted.' });
+      toast.success('Service type deleted.');
     } else {
       const data = await res.json();
-      notifications.show({ color: 'red', message: data.error || 'Failed to delete.' });
+      toast.error(data.error || 'Failed to delete.');
     }
   }
 
   return (
     <AppShell title="Service Catalog">
-      {error && <Alert color="red" mb="md">{error}</Alert>}
+      {error && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
 
-      <Group justify="flex-end" mb="md">
+      <div className="flex justify-end mb-4">
         {!showCreateForm && (
-          <Button leftSection={<IconPlus size={16} />} onClick={() => { setShowCreateForm(true); setEditingTypeId(null); }}>
+          <Button
+            className="gap-2"
+            onClick={() => {
+              setShowCreateForm(true);
+              setEditingTypeId(null);
+            }}
+          >
+            <Plus className="h-4 w-4" />
             New Service Type
           </Button>
         )}
-      </Group>
+      </div>
 
       {/* Inline create form */}
       {showCreateForm && (
-        <Paper withBorder p="md" mb="md" style={{ borderColor: 'var(--mantine-color-brand-5)', borderWidth: 2 }}>
-          <Text fw={600} size="sm" mb="md">New Service Type</Text>
-          <ServiceTypeForm
-            initial={emptyServiceType()}
-            editingType={null}
-            onClose={() => setShowCreateForm(false)}
-            onSuccess={() => {
-              setShowCreateForm(false);
-              loadServiceTypes();
-            }}
-          />
-        </Paper>
+        <Card className="mb-4 border-2 border-primary">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">New Service Type</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ServiceTypeForm
+              initial={emptyServiceType()}
+              editingType={null}
+              onClose={() => setShowCreateForm(false)}
+              onSuccess={() => {
+                setShowCreateForm(false);
+                loadServiceTypes();
+              }}
+            />
+          </CardContent>
+        </Card>
       )}
 
-      <Table striped highlightOnHover withTableBorder>
-        <Table.Thead>
-          <Table.Tr>
-            <Table.Th>Name</Table.Th>
-            <Table.Th>Description</Table.Th>
-            <Table.Th>Fields</Table.Th>
-            <Table.Th>Services</Table.Th>
-            <Table.Th style={{ whiteSpace: 'nowrap' }}>Status</Table.Th>
-            <Table.Th style={{ textAlign: 'right' }}>Actions</Table.Th>
-          </Table.Tr>
-        </Table.Thead>
-        <Table.Tbody>
-          {loading && (
-            <Table.Tr>
-              <Table.Td colSpan={6} style={{ textAlign: 'center', padding: '2rem' }}>
-                Loading...
-              </Table.Td>
-            </Table.Tr>
-          )}
-          {!loading && serviceTypes.length === 0 && (
-            <Table.Tr>
-              <Table.Td colSpan={6} style={{ textAlign: 'center', padding: '2rem' }}>
-                <Text size="sm" c="dimmed">No service types defined yet</Text>
-              </Table.Td>
-            </Table.Tr>
-          )}
-          {serviceTypes.map((st) => (
-            editingTypeId === st.id ? (
-              <Table.Tr key={st.id}>
-                <Table.Td colSpan={6} style={{ padding: '1rem' }}>
-                  <Paper withBorder p="md" style={{ borderColor: 'var(--mantine-color-brand-5)', borderWidth: 2 }}>
-                    <Text fw={600} size="sm" mb="md">Edit: {st.name}</Text>
-                    <ServiceTypeForm
-                      initial={{
-                        name: st.name || '',
-                        description: st.description || '',
-                        icon: st.icon || '',
-                        active: st.active !== false,
-                        fieldSchema: st.fieldSchema || [],
-                      }}
-                      editingType={st}
-                      onClose={() => setEditingTypeId(null)}
-                      onSuccess={() => {
-                        setEditingTypeId(null);
-                        loadServiceTypes();
-                      }}
-                    />
-                  </Paper>
-                </Table.Td>
-              </Table.Tr>
-            ) : (
-              <Table.Tr key={st.id} style={{ cursor: 'pointer' }} onClick={() => { setEditingTypeId(st.id); setShowCreateForm(false); }}>
-                <Table.Td>
-                  <Text fw={500}>
-                    {st.name}
-                  </Text>
-                </Table.Td>
-                <Table.Td>{st.description || '-'}</Table.Td>
-                <Table.Td>
-                  <Badge variant="light">{(st.fieldSchema || []).length} fields</Badge>
-                </Table.Td>
-                <Table.Td>{st._count?.services ?? 0}</Table.Td>
-                <Table.Td>
-                  <Badge variant="light" color={st.active ? 'green' : 'gray'}>
-                    {st.active ? 'Active' : 'Inactive'}
-                  </Badge>
-                </Table.Td>
-                <Table.Td style={{ textAlign: 'right' }}>
-                  <Group gap={4} justify="flex-end" onClick={(e) => e.stopPropagation()}>
-                    <Button
-                      variant="subtle"
-                      size="xs"
-                      leftSection={<IconPencil size={14} />}
-                      onClick={() => { setEditingTypeId(st.id); setShowCreateForm(false); }}
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Description</TableHead>
+              <TableHead>Fields</TableHead>
+              <TableHead>Services</TableHead>
+              <TableHead className="whitespace-nowrap">Status</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loading && (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center py-8">
+                  <Loader2 className="h-5 w-5 animate-spin mx-auto text-muted-foreground" />
+                </TableCell>
+              </TableRow>
+            )}
+            {!loading && serviceTypes.length === 0 && (
+              <TableRow>
+                <TableCell
+                  colSpan={6}
+                  className="text-center py-8 text-sm text-muted-foreground"
+                >
+                  No service types defined yet
+                </TableCell>
+              </TableRow>
+            )}
+            {serviceTypes.map((st) =>
+              editingTypeId === st.id ? (
+                <TableRow key={st.id}>
+                  <TableCell colSpan={6} className="p-4">
+                    <Card className="border-2 border-primary">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm">Edit: {st.name}</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <ServiceTypeForm
+                          initial={{
+                            name: st.name || '',
+                            description: st.description || '',
+                            icon: st.icon || '',
+                            active: st.active !== false,
+                            fieldSchema: st.fieldSchema || [],
+                          }}
+                          editingType={st}
+                          onClose={() => setEditingTypeId(null)}
+                          onSuccess={() => {
+                            setEditingTypeId(null);
+                            loadServiceTypes();
+                          }}
+                        />
+                      </CardContent>
+                    </Card>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                <TableRow
+                  key={st.id}
+                  className="cursor-pointer"
+                  onClick={() => {
+                    setEditingTypeId(st.id);
+                    setShowCreateForm(false);
+                  }}
+                >
+                  <TableCell>
+                    <span className="font-medium">
+                      {st.icon ? `${st.icon} ` : ''}
+                      {st.name}
+                    </span>
+                  </TableCell>
+                  <TableCell>{st.description || '-'}</TableCell>
+                  <TableCell>
+                    <Badge variant="secondary">{(st.fieldSchema || []).length} fields</Badge>
+                  </TableCell>
+                  <TableCell>{st._count?.services ?? 0}</TableCell>
+                  <TableCell>
+                    <Badge variant={st.active ? 'default' : 'secondary'}>
+                      {st.active ? 'Active' : 'Inactive'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div
+                      className="flex items-center gap-1 justify-end"
+                      onClick={(e) => e.stopPropagation()}
                     >
-                      Edit
-                    </Button>
-                    <InlineDeleteButton
-                      onConfirm={() => handleDelete(st)}
-                      disabled={(st._count?.services ?? 0) > 0}
-                    />
-                  </Group>
-                </Table.Td>
-              </Table.Tr>
-            )
-          ))}
-        </Table.Tbody>
-      </Table>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="gap-1"
+                        onClick={() => {
+                          setEditingTypeId(st.id);
+                          setShowCreateForm(false);
+                        }}
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                        Edit
+                      </Button>
+                      <InlineDeleteButton
+                        onConfirm={() => handleDelete(st)}
+                        disabled={(st._count?.services ?? 0) > 0}
+                      />
+                    </div>
+                  </TableCell>
+                </TableRow>
+              )
+            )}
+          </TableBody>
+        </Table>
+      </div>
     </AppShell>
   );
 }
@@ -292,50 +339,73 @@ function ServiceTypeForm({ initial, editingType, onClose, onSuccess }: ServiceTy
   }
 
   return (
-    <Stack>
-      {saveError && <Alert color="red">{saveError}</Alert>}
-      <Group align="flex-start">
-        <TextInput
-          label="Service Type Name"
-          required
-          style={{ flex: 1 }}
-          value={form.name}
-          onChange={(e) => setForm({ ...form, name: e.target.value })}
-          error={formErrors.name}
+    <div className="flex flex-col gap-4">
+      {saveError && (
+        <Alert variant="destructive">
+          <AlertDescription>{saveError}</AlertDescription>
+        </Alert>
+      )}
+      <div className="flex items-start gap-4">
+        <div className="flex flex-col gap-1 flex-1">
+          <Label htmlFor="st-name">
+            Service Type Name <span className="text-destructive">*</span>
+          </Label>
+          <Input
+            id="st-name"
+            required
+            value={form.name}
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
+          />
+          {formErrors.name && (
+            <p className="text-xs text-destructive">{formErrors.name}</p>
+          )}
+        </div>
+        <div className="flex flex-col gap-1 w-24">
+          <Label htmlFor="st-icon">Icon (emoji)</Label>
+          <Input
+            id="st-icon"
+            placeholder="e.g. ☁️"
+            value={form.icon}
+            onChange={(e) => setForm({ ...form, icon: e.target.value })}
+          />
+        </div>
+      </div>
+      <div className="flex flex-col gap-1">
+        <Label htmlFor="st-desc">Description</Label>
+        <Textarea
+          id="st-desc"
+          rows={2}
+          value={form.description}
+          onChange={(e) => setForm({ ...form, description: e.target.value })}
         />
-        <TextInput
-          label="Icon (emoji)"
-          style={{ width: 100 }}
-          placeholder="e.g. ☁️"
-          value={form.icon}
-          onChange={(e) => setForm({ ...form, icon: e.target.value })}
+      </div>
+      <div className="flex items-center gap-3">
+        <Switch
+          id="st-active"
+          checked={form.active}
+          onCheckedChange={(checked) => setForm({ ...form, active: checked })}
         />
-      </Group>
-      <Textarea
-        label="Description"
-        rows={2}
-        value={form.description}
-        onChange={(e) => setForm({ ...form, description: e.target.value })}
-      />
-      <Switch
-        label="Active (visible when adding services)"
-        checked={form.active}
-        onChange={(e) => setForm({ ...form, active: e.currentTarget.checked })}
-      />
+        <Label htmlFor="st-active">Active (visible when adding services)</Label>
+      </div>
 
-      <Text fw={600} size="sm" mt="sm">Field Schema</Text>
-      <ServiceTypeEditor
-        fieldSchema={form.fieldSchema}
-        onChange={(fieldSchema) => setForm({ ...form, fieldSchema })}
-      />
+      <div>
+        <p className="text-sm font-semibold mb-2 mt-1">Field Schema</p>
+        <ServiceTypeEditor
+          fieldSchema={form.fieldSchema}
+          onChange={(fieldSchema) => setForm({ ...form, fieldSchema })}
+        />
+      </div>
 
-      <Group justify="flex-end" mt="md">
-        <Button variant="default" onClick={onClose}>Cancel</Button>
-        <Button onClick={handleSave} loading={saving}>
+      <div className="flex justify-end gap-2 mt-2">
+        <Button variant="outline" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button onClick={handleSave} disabled={saving}>
+          {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
           {editingType ? 'Save Changes' : 'Create Service Type'}
         </Button>
-      </Group>
-    </Stack>
+      </div>
+    </div>
   );
 }
 
