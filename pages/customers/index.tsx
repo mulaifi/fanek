@@ -4,46 +4,46 @@ import { useRouter } from 'next/router';
 import { getServerSession } from 'next-auth/next';
 import { useSession } from 'next-auth/react';
 import type { GetServerSidePropsContext } from 'next';
-import type { DataTableSortStatus } from 'mantine-datatable';
+import type { ColumnDef, SortingState } from '@tanstack/react-table';
 import { getAuthOptions } from '@/lib/auth/options';
-import {
-  Avatar,
-  Badge,
-  Button,
-  Group,
-  Select,
-  Stack,
-  Text,
-  TextInput,
-} from '@mantine/core';
-import { DataTable } from 'mantine-datatable';
-import { IconSearch, IconPlus, IconDownload } from '@tabler/icons-react';
+import { Search, Plus, Download } from 'lucide-react';
 import dayjs from 'dayjs';
 import AppShell from '@/components/AppShell';
+import { DataTable } from '@/components/ui/data-table';
+import { Badge } from '@/components/ui/badge';
+import { Button, buttonVariants } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { statusColors } from '@/lib/theme';
 import { DEFAULT_CUSTOMER_STATUSES } from '@/lib/constants';
 
 const PAGE_SIZE = 25;
+
+interface CustomerRow {
+  id: string;
+  name: string;
+  clientCode?: string | null;
+  status: string;
+  updatedAt: string;
+  _count?: { services: number };
+}
 
 export default function CustomersIndexPage() {
   const router = useRouter();
   const { data: session } = useSession();
   const canCreate = ['ADMIN', 'EDITOR'].includes(session?.user?.role ?? '');
 
-  interface CustomerRow {
-    id: string;
-    name: string;
-    clientCode?: string | null;
-    status: string;
-    updatedAt: string;
-    _count?: { services: number };
-  }
-
   const [records, setRecords] = useState<CustomerRow[]>([]);
   const [totalRecords, setTotalRecords] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(true);
   const [page, setPage] = useState<number>(1);
-  const [sortStatus, setSortStatus] = useState<DataTableSortStatus<CustomerRow>>({ columnAccessor: 'updatedAt', direction: 'desc' });
+  const [sorting, setSorting] = useState<SortingState>([{ id: 'updatedAt', desc: true }]);
 
   const [searchInput, setSearchInput] = useState<string>('');
   const [search, setSearch] = useState<string>('');
@@ -61,11 +61,13 @@ export default function CustomersIndexPage() {
 
   const fetchData = useCallback(() => {
     setLoading(true);
+    const sortCol = sorting[0]?.id ?? 'updatedAt';
+    const sortDir = sorting[0]?.desc ? 'desc' : 'asc';
     const params = new URLSearchParams({
       page: String(page),
       limit: String(PAGE_SIZE),
-      sort: sortStatus.columnAccessor,
-      order: sortStatus.direction,
+      sort: sortCol,
+      order: sortDir,
     });
     if (statusFilter) params.set('status', statusFilter);
     if (search) params.set('search', search);
@@ -78,7 +80,7 @@ export default function CustomersIndexPage() {
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, [page, sortStatus, statusFilter, search]);
+  }, [page, sorting, statusFilter, search]);
 
   useEffect(() => {
     fetchData();
@@ -91,125 +93,126 @@ export default function CustomersIndexPage() {
     }
   }
 
-  function handleStatusChange(value: string | null) {
+  function handleStatusChange(value: string) {
     setPage(1);
-    setStatusFilter(value || '');
+    setStatusFilter(value === '__all__' ? '' : value);
   }
 
-  const statusSelectData = [
-    { value: '', label: 'All statuses' },
-    ...statuses.map((s) => ({ value: s, label: s })),
-  ];
+  const pageCount = Math.ceil(totalRecords / PAGE_SIZE);
 
-  const columns: import('mantine-datatable').DataTableColumn<CustomerRow>[] = [
+  const columns: ColumnDef<CustomerRow>[] = [
     {
-      accessor: 'avatar',
-      title: '',
-      width: 48,
-      render: (row) => (
-        <Avatar radius="sm" bg="dark.6" size="sm">
-          {row.name?.charAt(0)?.toUpperCase() || '?'}
-        </Avatar>
+      accessorKey: 'avatar',
+      header: '',
+      enableSorting: false,
+      cell: ({ row }) => (
+        <div className="flex h-7 w-7 items-center justify-center rounded bg-muted text-xs font-semibold uppercase">
+          {row.original.name?.charAt(0)?.toUpperCase() || '?'}
+        </div>
       ),
     },
     {
-      accessor: 'name',
-      title: 'Name',
-      sortable: true,
-      render: (row) => (
-        <Stack gap={2}>
-          <Text size="sm" fw={500}>
-            {row.name}
-          </Text>
-          {row.clientCode && (
-            <Text size="xs" c="dimmed">
-              {row.clientCode}
-            </Text>
+      accessorKey: 'name',
+      header: 'Name',
+      enableSorting: true,
+      cell: ({ row }) => (
+        <div className="flex flex-col gap-0.5">
+          <span className="text-sm font-medium">{row.original.name}</span>
+          {row.original.clientCode && (
+            <span className="text-xs text-muted-foreground">{row.original.clientCode}</span>
           )}
-        </Stack>
+        </div>
       ),
     },
     {
-      accessor: 'status',
-      title: 'Status',
-      render: (row) => (
-        <Badge color={statusColors[row.status] || 'gray'}>
-          {row.status}
+      accessorKey: 'status',
+      header: 'Status',
+      enableSorting: false,
+      cell: ({ row }) => (
+        <Badge className={`border-0 ${statusColors[row.original.status] || 'bg-gray-100 text-gray-600'}`}>
+          {row.original.status}
         </Badge>
       ),
     },
     {
-      accessor: 'services',
-      title: 'Services',
-      render: (row) => row._count?.services ?? 0,
+      accessorKey: 'services',
+      header: 'Services',
+      enableSorting: false,
+      cell: ({ row }) => row.original._count?.services ?? 0,
     },
     {
-      accessor: 'updatedAt',
-      title: 'Last Updated',
-      sortable: true,
-      render: (row) => dayjs(row.updatedAt).format('DD MMM YYYY'),
+      accessorKey: 'updatedAt',
+      header: 'Last Updated',
+      enableSorting: true,
+      cell: ({ row }) => dayjs(row.original.updatedAt).format('DD MMM YYYY'),
     },
   ];
 
   return (
     <AppShell title="Customers">
-      <Stack gap="md">
-        <Group justify="space-between">
-          <Group gap="sm">
-            <TextInput
-              placeholder="Name or code..."
-              leftSection={<IconSearch size={16} />}
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              onKeyDown={handleSearchKeyDown}
-              w={220}
-            />
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div className="flex items-center gap-2">
+            <div className="relative w-[220px]">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Name or code..."
+                className="pl-8"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                onKeyDown={handleSearchKeyDown}
+              />
+            </div>
             <Select
-              placeholder="All statuses"
-              data={statusSelectData}
-              value={statusFilter}
-              onChange={handleStatusChange}
-              w={160}
-              clearable
-            />
-          </Group>
-          <Group gap="xs">
+              value={statusFilter || '__all__'}
+              onValueChange={handleStatusChange}
+            >
+              <SelectTrigger className="w-[160px]">
+                <SelectValue placeholder="All statuses" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all__">All statuses</SelectItem>
+                {statuses.map((s) => (
+                  <SelectItem key={s} value={s}>{s}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center gap-2">
             {canCreate && (
-              <Button
-                leftSection={<IconPlus size={16} />}
-                color="brand"
-                onClick={() => router.push('/customers/new')}
-              >
+              <Button onClick={() => router.push('/customers/new')}>
+                <Plus className="h-4 w-4 mr-1" />
                 New customer
               </Button>
             )}
-            <Button
-              variant="subtle"
-              leftSection={<IconDownload size={16} />}
-              component="a"
+            <a
               href="/api/customers/export"
+              className={buttonVariants({ variant: 'outline' })}
             >
+              <Download className="h-4 w-4 mr-1" />
               Export CSV
-            </Button>
-          </Group>
-        </Group>
+            </a>
+          </div>
+        </div>
 
         <DataTable
-          records={records}
           columns={columns}
-          fetching={loading}
-          totalRecords={totalRecords}
-          recordsPerPage={PAGE_SIZE}
-          page={page}
-          onPageChange={setPage}
-          sortStatus={sortStatus}
-          onSortStatusChange={(s) => { setSortStatus(s); setPage(1); }}
-          verticalSpacing="md"
-          highlightOnHover
-          onRowClick={({ record }) => router.push(`/customers/${record.id}`)}
-          noRecordsText="No customers found"
+          data={records}
+          sorting={sorting}
+          onSortingChange={(updater) => {
+            const next = typeof updater === 'function' ? updater(sorting) : updater;
+            setSorting(next);
+            setPage(1);
+          }}
+          pageCount={pageCount}
+          pageIndex={page - 1}
+          pageSize={PAGE_SIZE}
+          onPageChange={(idx) => setPage(idx + 1)}
+          isLoading={loading}
+          emptyMessage="No customers found"
+          onRowClick={(row) => router.push(`/customers/${row.id}`)}
         />
-      </Stack>
+      </div>
     </AppShell>
   );
 }

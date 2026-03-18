@@ -2,24 +2,43 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { getServerSession } from 'next-auth/next';
 import type { GetServerSidePropsContext } from 'next';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { toast } from 'sonner';
 import { getAuthOptions } from '@/lib/auth/options';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import {
-  Alert,
-  Button,
-  Group,
-  Paper,
   Select,
-  SimpleGrid,
-  Stack,
-  Text,
-  Textarea,
-  TextInput,
-  Title,
-} from '@mantine/core';
-import { useForm } from '@mantine/form';
-import { notifications } from '@mantine/notifications';
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import AppShell from '@/components/AppShell';
 import { DEFAULT_CUSTOMER_STATUSES } from '@/lib/constants';
+
+const schema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  clientCode: z.string().optional(),
+  status: z.string().min(1, 'Status is required'),
+  vertical: z.string().optional(),
+  website: z
+    .string()
+    .optional()
+    .refine((v) => !v || /^https?:\/\/.+/.test(v), {
+      message: 'Website must start with http:// or https://',
+    }),
+  address: z.string().optional(),
+  notes: z.string().optional(),
+});
+
+type NewCustomerFormValues = z.infer<typeof schema>;
 
 export default function NewCustomerPage() {
   const router = useRouter();
@@ -36,18 +55,15 @@ export default function NewCustomerPage() {
       .catch(() => {});
   }, []);
 
-  interface NewCustomerFormValues {
-    name: string;
-    clientCode: string;
-    status: string;
-    vertical: string;
-    website: string;
-    address: string;
-    notes: string;
-  }
-
-  const form = useForm<NewCustomerFormValues>({
-    initialValues: {
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    formState: { errors },
+  } = useForm<NewCustomerFormValues>({
+    resolver: zodResolver(schema),
+    defaultValues: {
       name: '',
       clientCode: '',
       status: 'Active',
@@ -56,20 +72,18 @@ export default function NewCustomerPage() {
       address: '',
       notes: '',
     },
-    validate: {
-      name: (v) => (v.trim() ? null : 'Name is required'),
-      website: (v) =>
-        !v || /^https?:\/\/.+/.test(v) ? null : 'Website must start with http:// or https://',
-    },
   });
 
-  async function handleSubmit(values: NewCustomerFormValues) {
+  const statusValue = watch('status');
+
+  async function onSubmit(values: NewCustomerFormValues) {
     setApiError('');
     setSubmitting(true);
 
-    const payload: Record<string, string> = { ...values };
-    (Object.keys(payload) as (keyof typeof payload)[]).forEach((k) => {
-      if (payload[k] === '') delete payload[k];
+    const payload: Record<string, string> = {};
+    (Object.keys(values) as (keyof NewCustomerFormValues)[]).forEach((k) => {
+      const v = values[k];
+      if (v && v.trim?.() !== '') payload[k] = v as string;
     });
 
     const res = await fetch('/api/customers', {
@@ -83,92 +97,111 @@ export default function NewCustomerPage() {
     if (!res.ok) {
       setApiError(data.error || 'Failed to create customer');
     } else {
-      notifications.show({
-        title: 'Customer created',
-        message: `${data.name} was added successfully.`,
-        color: 'green',
-      });
+      toast.success('Customer created', { description: `${data.name} was added successfully.` });
       router.push(`/customers/${data.id}`);
     }
   }
 
-  const statusSelectData = statuses.map((s) => ({ value: s, label: s }));
-
   return (
     <AppShell title="New Customer">
-      <Stack gap="md" maw={720}>
+      <div className="flex flex-col gap-4 max-w-[720px]">
         {apiError && (
-          <Alert color="red" title="Error">
-            {apiError}
+          <Alert variant="destructive">
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{apiError}</AlertDescription>
           </Alert>
         )}
 
-        <Paper p="lg">
-          <Title order={5} mb="md">
-            Customer Details
-          </Title>
+        <Card>
+          <CardContent className="pt-6">
+            <h2 className="text-sm font-semibold mb-4">Customer Details</h2>
 
-          <form onSubmit={form.onSubmit(handleSubmit)}>
-            <Stack gap="sm">
-              <SimpleGrid cols={{ base: 1, sm: 2 }}>
-                <TextInput
-                  label="Customer Name"
-                  placeholder="Acme Corporation"
-                  required
-                  autoFocus
-                  {...form.getInputProps('name')}
-                />
-                <TextInput
-                  label="Client Code"
-                  placeholder="e.g. ACME-001"
-                  {...form.getInputProps('clientCode')}
-                />
-              </SimpleGrid>
+            <form onSubmit={handleSubmit(onSubmit)}>
+              <div className="flex flex-col gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label htmlFor="name">
+                      Customer Name <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      id="name"
+                      placeholder="Acme Corporation"
+                      autoFocus
+                      {...register('name')}
+                    />
+                    {errors.name && (
+                      <p className="text-sm text-destructive">{errors.name.message}</p>
+                    )}
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="clientCode">Client Code</Label>
+                    <Input id="clientCode" placeholder="e.g. ACME-001" {...register('clientCode')} />
+                  </div>
+                </div>
 
-              <SimpleGrid cols={{ base: 1, sm: 2 }}>
-                <Select
-                  label="Status"
-                  data={statusSelectData}
-                  required
-                  {...form.getInputProps('status')}
-                />
-                <TextInput
-                  label="Vertical"
-                  placeholder="Technology"
-                  {...form.getInputProps('vertical')}
-                />
-              </SimpleGrid>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label htmlFor="status">
+                      Status <span className="text-destructive">*</span>
+                    </Label>
+                    <Select
+                      value={statusValue}
+                      onValueChange={(v) => setValue('status', v)}
+                    >
+                      <SelectTrigger id="status">
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {statuses.map((s) => (
+                          <SelectItem key={s} value={s}>{s}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {errors.status && (
+                      <p className="text-sm text-destructive">{errors.status.message}</p>
+                    )}
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="vertical">Vertical</Label>
+                    <Input id="vertical" placeholder="Technology" {...register('vertical')} />
+                  </div>
+                </div>
 
-              <TextInput
-                label="Website"
-                placeholder="https://example.com"
-                {...form.getInputProps('website')}
-              />
+                <div className="space-y-1">
+                  <Label htmlFor="website">Website</Label>
+                  <Input id="website" placeholder="https://example.com" {...register('website')} />
+                  {errors.website && (
+                    <p className="text-sm text-destructive">{errors.website.message}</p>
+                  )}
+                </div>
 
-              <Textarea
-                label="Address"
-                rows={2}
-                {...form.getInputProps('address')}
-              />
+                <div className="space-y-1">
+                  <Label htmlFor="address">Address</Label>
+                  <Textarea id="address" rows={2} {...register('address')} />
+                </div>
 
-              <Textarea
-                label="Notes"
-                rows={3}
-                {...form.getInputProps('notes')}
-              />
+                <div className="space-y-1">
+                  <Label htmlFor="notes">Notes</Label>
+                  <Textarea id="notes" rows={3} {...register('notes')} />
+                </div>
 
-              <Group mt="sm">
-                <Button type="submit" color="brand" loading={submitting}>
-                  Create Customer
-                </Button>
-                <Button variant="default" onClick={() => router.push('/customers')}>
-                  Cancel
-                </Button>
-              </Group>
-            </Stack>
-          </form>
-        </Paper>
-      </Stack>
+                <div className="flex items-center gap-2 mt-1">
+                  <Button type="submit" disabled={submitting}>
+                    {submitting ? 'Creating...' : 'Create Customer'}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => router.push('/customers')}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
     </AppShell>
   );
 }
