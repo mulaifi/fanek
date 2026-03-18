@@ -1,6 +1,9 @@
 import { useRef } from 'react';
-import { Avatar, Box, Button, Group, Stack, Text, TextInput } from '@mantine/core';
-import { IconUpload, IconX } from '@tabler/icons-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { Upload, X } from 'lucide-react';
 
 const MAX_LOGO_SIZE = 256 * 1024; // 256 KB
 
@@ -35,55 +38,57 @@ export default function StepOrg({ data, onChange, errors }: StepOrgProps) {
   }
 
   return (
-    <Stack gap="md">
-      <TextInput
-        label="Organization Name"
-        value={data.name || ''}
-        onChange={(e) => onChange({ ...data, name: e.target.value })}
-        required
-        autoFocus
-        error={errors?.orgName}
-      />
+    <div className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="org-name">
+          Organization Name <span className="text-destructive">*</span>
+        </Label>
+        <Input
+          id="org-name"
+          value={data.name || ''}
+          onChange={(e) => onChange({ ...data, name: e.target.value })}
+          required
+          autoFocus
+        />
+        {errors?.orgName && <p className="text-sm text-destructive">{errors.orgName}</p>}
+      </div>
 
-      <Box>
-        <Text size="sm" c="dimmed" mb="xs">
+      <div>
+        <p className="text-sm text-muted-foreground mb-2">
           Organization Logo (optional, max 256 KB)
-        </Text>
-        <Group gap="md" align="center">
-          {data.logo ? (
-            <Avatar
-              src={data.logo}
-              alt="Organization logo preview"
-              radius="sm"
-              size={72}
-            />
-          ) : (
-            <Avatar radius="sm" size={72} color="gray">
-              <IconUpload size={28} />
-            </Avatar>
-          )}
-          <Stack gap="xs">
+        </p>
+        <div className="flex items-center gap-4">
+          <Avatar className="h-[72px] w-[72px] rounded-sm">
+            {data.logo ? (
+              <AvatarImage src={data.logo} alt="Organization logo preview" />
+            ) : (
+              <AvatarFallback className="rounded-sm">
+                <Upload className="h-7 w-7 text-muted-foreground" />
+              </AvatarFallback>
+            )}
+          </Avatar>
+          <div className="flex flex-col gap-2">
             <Button
               variant="outline"
-              size="xs"
-              leftSection={<IconUpload size={14} />}
+              size="sm"
               onClick={() => fileInputRef.current?.click()}
             >
+              <Upload className="h-3.5 w-3.5 mr-1.5" />
               {data.logo ? 'Change Logo' : 'Upload Logo'}
             </Button>
             {data.logo && (
               <Button
-                variant="subtle"
-                size="xs"
-                color="red"
-                leftSection={<IconX size={14} />}
+                variant="ghost"
+                size="sm"
+                className="text-destructive hover:text-destructive"
                 onClick={() => onChange({ ...data, logo: null })}
               >
+                <X className="h-3.5 w-3.5 mr-1.5" />
                 Remove
               </Button>
             )}
-          </Stack>
-        </Group>
+          </div>
+        </div>
         <input
           ref={fileInputRef}
           type="file"
@@ -91,7 +96,7 @@ export default function StepOrg({ data, onChange, errors }: StepOrgProps) {
           style={{ display: 'none' }}
           onChange={handleLogoChange}
         />
-      </Box>
-    </Stack>
+      </div>
+    </div>
   );
 }

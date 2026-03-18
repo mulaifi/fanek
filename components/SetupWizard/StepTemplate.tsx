@@ -1,17 +1,11 @@
-import { Box, Paper, SimpleGrid, Stack, Text } from '@mantine/core';
-import {
-  IconCloud,
-  IconDeviceDesktopAnalytics,
-  IconSettings,
-  IconLayersOff,
-  type TablerIcon,
-} from '@tabler/icons-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Cloud, Monitor, Settings, PackageOpen, type LucideIcon } from 'lucide-react';
 
 interface TemplateOption {
   id: string | null;
   title: string;
   description: string;
-  Icon: TablerIcon;
+  Icon: LucideIcon;
 }
 
 interface StepTemplateProps {
@@ -24,74 +18,57 @@ const TEMPLATES: TemplateOption[] = [
     id: 'cloud',
     title: 'Cloud Provider',
     description: 'Virtual data centers, DR, backup, network links, and hardware assets.',
-    Icon: IconCloud,
+    Icon: Cloud,
   },
   {
     id: 'telecom',
     title: 'Telecom',
     description: 'Voice lines, data circuits, internet services, CPE equipment, and SLAs.',
-    Icon: IconDeviceDesktopAnalytics,
+    Icon: Monitor,
   },
   {
     id: 'msp',
     title: 'MSP',
     description: 'Managed servers, endpoints, security services, backups, and licenses.',
-    Icon: IconSettings,
+    Icon: Settings,
   },
   {
     id: null,
     title: 'Blank',
     description: 'Start with no service types. Define your own catalog from scratch.',
-    Icon: IconLayersOff,
+    Icon: PackageOpen,
   },
 ];
 
 export default function StepTemplate({ selected, onSelect }: StepTemplateProps) {
   return (
-    <SimpleGrid cols={2} spacing="sm">
+    <div className="grid grid-cols-2 gap-2">
       {TEMPLATES.map(({ id, title, description, Icon }) => {
         const isSelected = selected === id;
         return (
-          <Paper
+          <Card
             key={String(id)}
-            p="md"
-            radius="sm"
-            withBorder
             onClick={() => onSelect(id)}
-            style={{
-              cursor: 'pointer',
-              borderColor: isSelected ? 'var(--mantine-color-brand-6)' : undefined,
-              borderWidth: isSelected ? 2 : 1,
-              transition: 'border-color 0.2s',
-            }}
+            className={`cursor-pointer transition-colors ${
+              isSelected
+                ? 'border-2 border-primary'
+                : 'border hover:border-primary/50'
+            }`}
           >
-            <Stack gap="xs">
-              <Box
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                }}
-              >
-                <Icon
-                  size={28}
-                  style={{
-                    color: isSelected
-                      ? 'var(--mantine-color-brand-6)'
-                      : 'var(--mantine-color-dimmed)',
-                  }}
-                />
-                <Text fw={600} size="sm">
-                  {title}
-                </Text>
-              </Box>
-              <Text size="xs" c="dimmed">
-                {description}
-              </Text>
-            </Stack>
-          </Paper>
+            <CardContent className="pt-4 pb-4">
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <Icon
+                    className={`h-7 w-7 ${isSelected ? 'text-primary' : 'text-muted-foreground'}`}
+                  />
+                  <span className="font-semibold text-sm">{title}</span>
+                </div>
+                <p className="text-xs text-muted-foreground">{description}</p>
+              </div>
+            </CardContent>
+          </Card>
         );
       })}
-    </SimpleGrid>
+    </div>
   );
 }
