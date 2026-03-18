@@ -6,15 +6,22 @@ import {
   IconUsers,
   IconHeartHandshake,
   IconSettings,
+  type TablerIcon,
 } from '@tabler/icons-react';
 
-const mainTabs = [
+interface NavTab {
+  href: string;
+  label: string;
+  icon: TablerIcon;
+}
+
+const mainTabs: NavTab[] = [
   { href: '/dashboard', label: 'Home', icon: IconLayoutDashboard },
   { href: '/customers', label: 'Customers', icon: IconUsers },
   { href: '/partners', label: 'Partners', icon: IconHeartHandshake },
 ];
 
-const adminTab = { href: '/admin/users', label: 'Admin', icon: IconSettings };
+const adminTab: NavTab = { href: '/admin/users', label: 'Admin', icon: IconSettings };
 
 export default function BottomTabs() {
   const router = useRouter();
@@ -24,7 +31,7 @@ export default function BottomTabs() {
   const isAdmin = session?.user?.role === 'ADMIN';
   const tabs = isAdmin ? [...mainTabs, adminTab] : mainTabs;
 
-  function isActive(href) {
+  function isActive(href: string): boolean {
     return router.pathname === href || router.pathname.startsWith(href + '/');
   }
 

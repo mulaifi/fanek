@@ -1,7 +1,21 @@
 import { Checkbox, NumberInput, Select, Stack, Text, TextInput } from '@mantine/core';
+import type { ServiceTypeFieldInput } from '@/lib/validation';
 
-export default function DynamicForm({ fieldSchema = [], values = {}, onChange, errors = {} }) {
-  function handleChange(fieldName, value) {
+interface DynamicFormProps {
+  fieldSchema?: ServiceTypeFieldInput[];
+  values?: Record<string, unknown>;
+  onChange: (values: Record<string, unknown>) => void;
+  errors?: Record<string, string>;
+  disabled?: boolean;
+}
+
+export default function DynamicForm({
+  fieldSchema = [],
+  values = {},
+  onChange,
+  errors = {},
+}: DynamicFormProps) {
+  function handleChange(fieldName: string, value: unknown) {
     onChange({ ...values, [fieldName]: value });
   }
 
@@ -17,7 +31,7 @@ export default function DynamicForm({ fieldSchema = [], values = {}, onChange, e
               <Select
                 key={field.name}
                 label={field.label}
-                value={value || null}
+                value={(value as string) || null}
                 onChange={(val) => handleChange(field.name, val ?? '')}
                 data={field.options || []}
                 clearable={!field.required}
@@ -71,7 +85,7 @@ export default function DynamicForm({ fieldSchema = [], values = {}, onChange, e
                 key={field.name}
                 label={field.label}
                 type="date"
-                value={value}
+                value={value as string}
                 onChange={(e) => handleChange(field.name, e.currentTarget.value)}
                 error={error}
                 required={field.required}
@@ -84,7 +98,7 @@ export default function DynamicForm({ fieldSchema = [], values = {}, onChange, e
                 key={field.name}
                 label={field.label}
                 type="text"
-                value={value}
+                value={value as string}
                 onChange={(e) => handleChange(field.name, e.currentTarget.value)}
                 error={error}
                 required={field.required}

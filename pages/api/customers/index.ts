@@ -52,7 +52,7 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse): Promise
     }
     const settings = await getSettings();
     if (parsed.data.status) {
-      const validStatuses: string[] = settings?.customerStatuses ?? [];
+      const validStatuses: string[] = (settings?.customerStatuses as string[]) ?? [];
       if (!validStatuses.includes(parsed.data.status)) {
         return res.status(400).json({ error: `Invalid status. Must be one of: ${validStatuses.join(', ')}` });
       }

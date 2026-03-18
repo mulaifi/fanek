@@ -53,7 +53,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       if (template && templates[template]) {
         for (let i = 0; i < templates[template].length; i++) {
           const t = templates[template][i];
-          await tx.serviceType.create({ data: { ...t, sortOrder: i } });
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await tx.serviceType.create({ data: { ...t, sortOrder: i } as any });
         }
       }
     });

@@ -33,7 +33,7 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse): Promise
     }
     if (parsed.data.status) {
       const settings = await getSettings();
-      const validStatuses: string[] = settings?.customerStatuses ?? [];
+      const validStatuses: string[] = (settings?.customerStatuses as string[]) ?? [];
       if (!validStatuses.includes(parsed.data.status)) {
         return res.status(400).json({ error: 'Invalid status' });
       }

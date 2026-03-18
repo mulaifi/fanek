@@ -97,7 +97,7 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse): Promise
         if (authProviders.google.clientSecret) {
           providers.google.clientSecret = encrypt(
             authProviders.google.clientSecret,
-            process.env.NEXTAUTH_SECRET
+            process.env.NEXTAUTH_SECRET!
           );
         }
       }
@@ -107,7 +107,7 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse): Promise
         if (authProviders.microsoft.clientSecret) {
           providers.microsoft.clientSecret = encrypt(
             authProviders.microsoft.clientSecret,
-            process.env.NEXTAUTH_SECRET
+            process.env.NEXTAUTH_SECRET!
           );
         }
       }

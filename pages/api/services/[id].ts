@@ -31,7 +31,8 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse): Promise
     if (!parsed.success) {
       return res.status(400).json({ error: 'Validation failed', details: parsed.error.flatten() });
     }
-    const updated = await prisma.service.update({ where: { id }, data: parsed.data });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const updated = await prisma.service.update({ where: { id }, data: parsed.data as any });
     await logAudit({
       userId: req.session.user.id,
       action: 'UPDATE',

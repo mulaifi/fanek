@@ -19,7 +19,8 @@ function createPrismaClient(): PrismaClient {
     idleTimeoutMillis: parseInt(process.env.DB_POOL_IDLE_TIMEOUT || '30000', 10),
     connectionTimeoutMillis: parseInt(process.env.DB_POOL_CONNECT_TIMEOUT || '5000', 10),
   });
-  const adapter = new PrismaPg(pool);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const adapter = new PrismaPg(pool as any);
   return new PrismaClient({ adapter });
 }
 

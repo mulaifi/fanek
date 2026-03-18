@@ -1,24 +1,37 @@
 import { useState } from 'react';
 import { ActionIcon, Badge, Box, Button, Divider, Group, Paper, Select, Stack, Text, TextInput, Tooltip } from '@mantine/core';
 import { IconMail, IconPhone, IconPlus, IconTrash, IconUserPlus, IconEdit } from '@tabler/icons-react';
+import type { ContactInput } from '@/lib/validation';
 
 const EMAIL_CATEGORIES = ['Work', 'Personal', 'Other'];
 const PHONE_CATEGORIES = ['Mobile', 'Work', 'Direct', 'Fax', 'Other'];
 
-function newContact() {
+interface ContactEntryItem {
+  value: string;
+  category: string;
+}
+
+function newContact(): ContactInput {
   return { name: '', title: '', emails: [], phones: [] };
 }
 
-function newEmail() {
+function newEmail(): ContactEntryItem {
   return { value: '', category: 'Work' };
 }
 
-function newPhone() {
+function newPhone(): ContactEntryItem {
   return { value: '', category: 'Mobile' };
 }
 
+interface ContactViewProps {
+  contact: ContactInput;
+  onEdit: () => void;
+  onRemove: () => void;
+  canEdit: boolean;
+}
+
 /** Read-only display of a single contact */
-function ContactView({ contact, onEdit, onRemove, canEdit }) {
+function ContactView({ contact, onEdit, onRemove, canEdit }: ContactViewProps) {
   return (
     <Paper withBorder p="md" mb="md">
       <Group justify="space-between" mb="sm">
@@ -42,27 +55,27 @@ function ContactView({ contact, onEdit, onRemove, canEdit }) {
         )}
       </Group>
 
-      {contact.emails?.length > 0 && (
+      {(contact.emails?.length ?? 0) > 0 && (
         <Group gap="xs" mb="xs">
           <IconMail size={14} color="var(--mantine-color-dimmed)" />
-          {contact.emails.map((email, i) => (
+          {contact.emails!.map((email, i) => (
             <Group key={i} gap={4}>
               <Text size="sm">{email.value}</Text>
               <Badge size="xs" variant="light" color="gray">{email.category}</Badge>
-              {i < contact.emails.length - 1 && <Text size="sm" c="dimmed">|</Text>}
+              {i < contact.emails!.length - 1 && <Text size="sm" c="dimmed">|</Text>}
             </Group>
           ))}
         </Group>
       )}
 
-      {contact.phones?.length > 0 && (
+      {(contact.phones?.length ?? 0) > 0 && (
         <Group gap="xs">
           <IconPhone size={14} color="var(--mantine-color-dimmed)" />
-          {contact.phones.map((phone, i) => (
+          {contact.phones!.map((phone, i) => (
             <Group key={i} gap={4}>
               <Text size="sm">{phone.value}</Text>
               <Badge size="xs" variant="light" color="gray">{phone.category}</Badge>
-              {i < contact.phones.length - 1 && <Text size="sm" c="dimmed">|</Text>}
+              {i < contact.phones!.length - 1 && <Text size="sm" c="dimmed">|</Text>}
             </Group>
           ))}
         </Group>
@@ -75,9 +88,26 @@ function ContactView({ contact, onEdit, onRemove, canEdit }) {
   );
 }
 
+interface ContactEditFormProps {
+  contact: ContactInput;
+  ci: number;
+  onUpdate: (updated: ContactInput) => void;
+  onRemove: () => void;
+  onDone: () => void;
+  saving?: boolean;
+  addEmail: (contactIndex: number) => void;
+  updateEmail: (contactIndex: number, emailIndex: number, updated: ContactEntryItem) => void;
+  removeEmail: (contactIndex: number, emailIndex: number) => void;
+  addPhone: (contactIndex: number) => void;
+  updatePhone: (contactIndex: number, phoneIndex: number, updated: ContactEntryItem) => void;
+  removePhone: (contactIndex: number, phoneIndex: number) => void;
+}
+
 /** Inline edit form for a single contact */
-function ContactEditForm({ contact, ci, onUpdate, onRemove, onDone, saving,
-  addEmail, updateEmail, removeEmail, addPhone, updatePhone, removePhone }) {
+function ContactEditForm({
+  contact, ci, onUpdate, onRemove, onDone, saving,
+  addEmail, updateEmail, removeEmail, addPhone, updatePhone, removePhone,
+}: ContactEditFormProps) {
   return (
     <Paper withBorder p="md" mb="md" style={{ borderColor: 'var(--mantine-color-brand-5)', borderWidth: 2 }}>
       <Group justify="space-between" mb="md">
@@ -101,7 +131,7 @@ function ContactEditForm({ contact, ci, onUpdate, onRemove, onDone, saving,
         />
         <TextInput
           label="Title / Role"
-          value={contact.title}
+          value={contact.title ?? ''}
           onChange={(e) => onUpdate({ ...contact, title: e.currentTarget.value })}
           size="sm"
         />
@@ -111,7 +141,7 @@ function ContactEditForm({ contact, ci, onUpdate, onRemove, onDone, saving,
 
       <Text size="xs" c="dimmed" fw={600} mb="xs">EMAILS</Text>
       <Stack gap="xs" mb="xs">
-        {contact.emails.map((email, ei) => (
+        {(contact.emails ?? []).map((email, ei) => (
           <Group key={ei} align="flex-end" gap="xs">
             <TextInput
               label={ei === 0 ? 'Email' : undefined}
@@ -126,7 +156,7 @@ function ContactEditForm({ contact, ci, onUpdate, onRemove, onDone, saving,
             <Select
               label={ei === 0 ? 'Category' : undefined}
               value={email.category}
-              onChange={(val) => updateEmail(ci, ei, { ...email, category: val })}
+              onChange={(val) => updateEmail(ci, ei, { ...email, category: val ?? email.category })}
               data={EMAIL_CATEGORIES}
               size="sm"
               style={{ flex: 1 }}
@@ -145,7 +175,7 @@ function ContactEditForm({ contact, ci, onUpdate, onRemove, onDone, saving,
 
       <Text size="xs" c="dimmed" fw={600} mb="xs">PHONES</Text>
       <Stack gap="xs" mb="xs">
-        {contact.phones.map((phone, pi) => (
+        {(contact.phones ?? []).map((phone, pi) => (
           <Group key={pi} align="flex-end" gap="xs">
             <TextInput
               label={pi === 0 ? 'Phone' : undefined}
@@ -160,7 +190,7 @@ function ContactEditForm({ contact, ci, onUpdate, onRemove, onDone, saving,
             <Select
               label={pi === 0 ? 'Category' : undefined}
               value={phone.category}
-              onChange={(val) => updatePhone(ci, pi, { ...phone, category: val })}
+              onChange={(val) => updatePhone(ci, pi, { ...phone, category: val ?? phone.category })}
               data={PHONE_CATEGORIES}
               size="sm"
               style={{ flex: 1 }}
@@ -178,8 +208,15 @@ function ContactEditForm({ contact, ci, onUpdate, onRemove, onDone, saving,
   );
 }
 
-export default function ContactsEditor({ contacts = [], onChange, onSave, saving }) {
-  const [editingIndex, setEditingIndex] = useState(null);
+interface ContactsEditorProps {
+  contacts?: ContactInput[];
+  onChange?: (contacts: ContactInput[]) => void;
+  onSave?: () => void;
+  saving?: boolean;
+}
+
+export default function ContactsEditor({ contacts = [], onChange, onSave, saving }: ContactsEditorProps) {
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const canEdit = !!onChange;
 
   function handleDone() {
@@ -187,60 +224,60 @@ export default function ContactsEditor({ contacts = [], onChange, onSave, saving
     if (onSave) onSave();
   }
 
-  function updateContact(index, updated) {
+  function updateContact(index: number, updated: ContactInput) {
     const next = contacts.map((c, i) => (i === index ? updated : c));
-    onChange(next);
+    onChange!(next);
   }
 
-  function removeContact(index) {
+  function removeContact(index: number) {
     if (editingIndex === index) {
       setEditingIndex(null);
     } else if (editingIndex !== null && index < editingIndex) {
       setEditingIndex(editingIndex - 1);
     }
-    onChange(contacts.filter((_, i) => i !== index));
+    onChange!(contacts.filter((_, i) => i !== index));
   }
 
   function addContact() {
-    onChange([...contacts, newContact()]);
+    onChange!([...contacts, newContact()]);
     setEditingIndex(contacts.length); // auto-edit the new contact
   }
 
-  function addEmail(contactIndex) {
+  function addEmail(contactIndex: number) {
     const contact = contacts[contactIndex];
-    updateContact(contactIndex, { ...contact, emails: [...contact.emails, newEmail()] });
+    updateContact(contactIndex, { ...contact, emails: [...(contact.emails ?? []), newEmail()] });
   }
 
-  function updateEmail(contactIndex, emailIndex, updated) {
+  function updateEmail(contactIndex: number, emailIndex: number, updated: ContactEntryItem) {
     const contact = contacts[contactIndex];
-    const emails = contact.emails.map((e, i) => (i === emailIndex ? updated : e));
+    const emails = (contact.emails ?? []).map((e, i) => (i === emailIndex ? updated : e));
     updateContact(contactIndex, { ...contact, emails });
   }
 
-  function removeEmail(contactIndex, emailIndex) {
+  function removeEmail(contactIndex: number, emailIndex: number) {
     const contact = contacts[contactIndex];
     updateContact(contactIndex, {
       ...contact,
-      emails: contact.emails.filter((_, i) => i !== emailIndex),
+      emails: (contact.emails ?? []).filter((_, i) => i !== emailIndex),
     });
   }
 
-  function addPhone(contactIndex) {
+  function addPhone(contactIndex: number) {
     const contact = contacts[contactIndex];
-    updateContact(contactIndex, { ...contact, phones: [...contact.phones, newPhone()] });
+    updateContact(contactIndex, { ...contact, phones: [...(contact.phones ?? []), newPhone()] });
   }
 
-  function updatePhone(contactIndex, phoneIndex, updated) {
+  function updatePhone(contactIndex: number, phoneIndex: number, updated: ContactEntryItem) {
     const contact = contacts[contactIndex];
-    const phones = contact.phones.map((p, i) => (i === phoneIndex ? updated : p));
+    const phones = (contact.phones ?? []).map((p, i) => (i === phoneIndex ? updated : p));
     updateContact(contactIndex, { ...contact, phones });
   }
 
-  function removePhone(contactIndex, phoneIndex) {
+  function removePhone(contactIndex: number, phoneIndex: number) {
     const contact = contacts[contactIndex];
     updateContact(contactIndex, {
       ...contact,
-      phones: contact.phones.filter((_, i) => i !== phoneIndex),
+      phones: (contact.phones ?? []).filter((_, i) => i !== phoneIndex),
     });
   }
 

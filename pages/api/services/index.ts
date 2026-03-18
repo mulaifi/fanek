@@ -42,7 +42,8 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse): Promise
       }
     }
 
-    const service = await prisma.service.create({ data: parsed.data });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const service = await prisma.service.create({ data: parsed.data as any });
     await logAudit({
       userId: req.session.user.id,
       action: 'CREATE',

@@ -1,7 +1,13 @@
 import { Badge, Box, SimpleGrid, Text } from '@mantine/core';
 import { IconCheck, IconX } from '@tabler/icons-react';
+import type { ServiceTypeFieldInput } from '@/lib/validation';
 
-function FieldValue({ field, value }) {
+interface FieldValueProps {
+  field: ServiceTypeFieldInput;
+  value: unknown;
+}
+
+function FieldValue({ field, value }: FieldValueProps) {
   if (value === null || value === undefined || value === '') {
     return (
       <Text size="sm" c="dimmed">
@@ -32,7 +38,7 @@ function FieldValue({ field, value }) {
     case 'date':
       return (
         <Text size="sm">
-          {new Date(value).toLocaleDateString()}
+          {new Date(value as string).toLocaleDateString()}
         </Text>
       );
 
@@ -46,7 +52,12 @@ function FieldValue({ field, value }) {
   }
 }
 
-export default function DynamicFieldDisplay({ fieldSchema = [], values = {} }) {
+interface DynamicFieldDisplayProps {
+  fieldSchema?: ServiceTypeFieldInput[];
+  values?: Record<string, unknown>;
+}
+
+export default function DynamicFieldDisplay({ fieldSchema = [], values = {} }: DynamicFieldDisplayProps) {
   if (!fieldSchema.length) return null;
 
   return (
