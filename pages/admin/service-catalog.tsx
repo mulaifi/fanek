@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { getServerSession } from 'next-auth/next';
+import type { GetServerSidePropsContext } from 'next';
 import { getAuthOptions } from '@/lib/auth/options';
+import type { ServiceTypeFieldInput } from '@/lib/validation';
 import {
   Alert,
   Badge,
@@ -19,14 +21,37 @@ import { IconPlus, IconPencil, IconTrash } from '@tabler/icons-react';
 import AppShell from '@/components/AppShell';
 import ServiceTypeEditor from '@/components/admin/ServiceTypeEditor';
 
-function emptyServiceType() {
+interface ServiceTypeRow {
+  id: string;
+  name: string;
+  description?: string | null;
+  icon?: string | null;
+  active: boolean;
+  fieldSchema?: ServiceTypeFieldInput[];
+  _count?: { services: number };
+}
+
+interface ServiceTypeFormShape {
+  name: string;
+  description: string;
+  icon: string;
+  active: boolean;
+  fieldSchema: ServiceTypeFieldInput[];
+}
+
+function emptyServiceType(): ServiceTypeFormShape {
   return { name: '', description: '', icon: '', active: true, fieldSchema: [] };
 }
 
+interface InlineDeleteButtonProps {
+  onConfirm: () => void;
+  disabled?: boolean;
+}
+
 /** Two-click inline delete button with 3-second auto-revert */
-function InlineDeleteButton({ onConfirm, disabled }) {
-  const [confirming, setConfirming] = useState(false);
-  const timerRef = useRef(null);
+function InlineDeleteButton({ onConfirm, disabled }: InlineDeleteButtonProps) {
+  const [confirming, setConfirming] = useState<boolean>(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const startConfirm = useCallback(() => {
     setConfirming(true);
@@ -72,13 +97,13 @@ function InlineDeleteButton({ onConfirm, disabled }) {
 }
 
 export default function ServiceCatalogPage() {
-  const [serviceTypes, setServiceTypes] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [serviceTypes, setServiceTypes] = useState<ServiceTypeRow[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string>('');
 
   // Inline editing states
-  const [showCreateForm, setShowCreateForm] = useState(false);
-  const [editingTypeId, setEditingTypeId] = useState(null);
+  const [showCreateForm, setShowCreateForm] = useState<boolean>(false);
+  const [editingTypeId, setEditingTypeId] = useState<string | null>(null);
 
   async function loadServiceTypes() {
     setLoading(true);
@@ -93,7 +118,7 @@ export default function ServiceCatalogPage() {
     loadServiceTypes();
   }, []);
 
-  async function handleDelete(st) {
+  async function handleDelete(st: ServiceTypeRow) {
     const res = await fetch(`/api/service-types/${st.id}`, { method: 'DELETE' });
     if (res.ok) {
       setServiceTypes((prev) => prev.filter((s) => s.id !== st.id));
@@ -211,7 +236,7 @@ export default function ServiceCatalogPage() {
                     </Button>
                     <InlineDeleteButton
                       onConfirm={() => handleDelete(st)}
-                      disabled={st._count?.services > 0}
+                      disabled={(st._count?.services ?? 0) > 0}
                     />
                   </Group>
                 </Table.Td>
@@ -224,15 +249,22 @@ export default function ServiceCatalogPage() {
   );
 }
 
-function ServiceTypeForm({ initial, editingType, onClose, onSuccess }) {
-  const [form, setForm] = useState(initial);
-  const [formErrors, setFormErrors] = useState({});
-  const [saveError, setSaveError] = useState('');
-  const [saving, setSaving] = useState(false);
+interface ServiceTypeFormProps {
+  initial: ServiceTypeFormShape;
+  editingType: ServiceTypeRow | null;
+  onClose: () => void;
+  onSuccess: () => void;
+}
+
+function ServiceTypeForm({ initial, editingType, onClose, onSuccess }: ServiceTypeFormProps) {
+  const [form, setForm] = useState<ServiceTypeFormShape>(initial);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [saveError, setSaveError] = useState<string>('');
+  const [saving, setSaving] = useState<boolean>(false);
 
   async function handleSave() {
     setSaveError('');
-    const errs = {};
+    const errs: Record<string, string> = {};
     if (!form.name.trim()) errs.name = 'Name is required';
     if (Object.keys(errs).length > 0) {
       setFormErrors(errs);
@@ -307,7 +339,7 @@ function ServiceTypeForm({ initial, editingType, onClose, onSuccess }) {
   );
 }
 
-export async function getServerSideProps(context) {
+export async function getServerSideProps(context: GetServerSidePropsContext) {
   const options = await getAuthOptions();
   const session = await getServerSession(context.req, context.res, options);
   if (!session) {

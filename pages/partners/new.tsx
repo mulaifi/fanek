@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/router';
 import { getServerSession } from 'next-auth/next';
+import type { GetServerSidePropsContext } from 'next';
 import { getAuthOptions } from '@/lib/auth/options';
 import {
   Alert,
@@ -22,10 +23,18 @@ const PARTNER_TYPES = ['Reseller', 'Distributor', 'Technology', 'Service', 'Refe
 
 export default function NewPartnerPage() {
   const router = useRouter();
-  const [submitting, setSubmitting] = useState(false);
-  const [apiError, setApiError] = useState('');
+  const [submitting, setSubmitting] = useState<boolean>(false);
+  const [apiError, setApiError] = useState<string>('');
 
-  const form = useForm({
+  interface NewPartnerFormValues {
+    name: string;
+    type: string;
+    website: string;
+    address: string;
+    notes: string;
+  }
+
+  const form = useForm<NewPartnerFormValues>({
     initialValues: {
       name: '',
       type: '',
@@ -40,12 +49,12 @@ export default function NewPartnerPage() {
     },
   });
 
-  async function handleSubmit(values) {
+  async function handleSubmit(values: NewPartnerFormValues) {
     setApiError('');
     setSubmitting(true);
 
-    const payload = { ...values };
-    Object.keys(payload).forEach((k) => {
+    const payload: Record<string, string> = { ...values };
+    (Object.keys(payload) as (keyof typeof payload)[]).forEach((k) => {
       if (payload[k] === '') delete payload[k];
     });
 
@@ -139,7 +148,7 @@ export default function NewPartnerPage() {
   );
 }
 
-export async function getServerSideProps(context) {
+export async function getServerSideProps(context: GetServerSidePropsContext) {
   const options = await getAuthOptions();
   const session = await getServerSession(context.req, context.res, options);
   if (!session) {

@@ -1,7 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import { getServerSession } from 'next-auth/next';
 import { useSession } from 'next-auth/react';
+import type { GetServerSidePropsContext } from 'next';
+import type { DataTableSortStatus } from 'mantine-datatable';
 import { getAuthOptions } from '@/lib/auth/options';
 import {
   Badge,
@@ -20,7 +22,7 @@ import AppShell from '@/components/AppShell';
 const PAGE_SIZE = 25;
 const PARTNER_TYPES = ['Reseller', 'Distributor', 'Technology', 'Service', 'Referral', 'Other'];
 
-const TYPE_COLORS = {
+const TYPE_COLORS: Record<string, string> = {
   Reseller: 'blue',
   Distributor: 'cyan',
   Technology: 'violet',
@@ -32,17 +34,25 @@ const TYPE_COLORS = {
 export default function PartnersIndexPage() {
   const router = useRouter();
   const { data: session } = useSession();
-  const canCreate = ['ADMIN', 'EDITOR'].includes(session?.user?.role);
+  const canCreate = ['ADMIN', 'EDITOR'].includes(session?.user?.role ?? '');
 
-  const [records, setRecords] = useState([]);
-  const [totalRecords, setTotalRecords] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(1);
-  const [sortStatus, setSortStatus] = useState({ columnAccessor: 'updatedAt', direction: 'desc' });
+  interface PartnerRow {
+    id: string;
+    name: string;
+    type?: string | null;
+    notes?: string | null;
+    updatedAt: string;
+  }
 
-  const [searchInput, setSearchInput] = useState('');
-  const [search, setSearch] = useState('');
-  const [typeFilter, setTypeFilter] = useState('');
+  const [records, setRecords] = useState<PartnerRow[]>([]);
+  const [totalRecords, setTotalRecords] = useState<number>(0);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [page, setPage] = useState<number>(1);
+  const [sortStatus, setSortStatus] = useState<DataTableSortStatus<PartnerRow>>({ columnAccessor: 'updatedAt', direction: 'desc' });
+
+  const [searchInput, setSearchInput] = useState<string>('');
+  const [search, setSearch] = useState<string>('');
+  const [typeFilter, setTypeFilter] = useState<string>('');
 
   const fetchData = useCallback(() => {
     setLoading(true);
@@ -69,7 +79,7 @@ export default function PartnersIndexPage() {
     fetchData();
   }, [fetchData]);
 
-  function handleSearchKeyDown(e) {
+  function handleSearchKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === 'Enter') {
       setPage(1);
       setSearch(searchInput);
@@ -81,7 +91,7 @@ export default function PartnersIndexPage() {
     ...PARTNER_TYPES.map((t) => ({ value: t, label: t })),
   ];
 
-  const columns = [
+  const columns: import('mantine-datatable').DataTableColumn<PartnerRow>[] = [
     {
       accessor: 'name',
       title: 'Name',
@@ -182,7 +192,7 @@ export default function PartnersIndexPage() {
   );
 }
 
-export async function getServerSideProps(context) {
+export async function getServerSideProps(context: GetServerSidePropsContext) {
   const options = await getAuthOptions();
   const session = await getServerSession(context.req, context.res, options);
   if (!session) {

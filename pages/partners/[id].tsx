@@ -2,7 +2,9 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/router';
 import { useSession } from 'next-auth/react';
 import { getServerSession } from 'next-auth/next';
+import type { GetServerSidePropsContext } from 'next';
 import { getAuthOptions } from '@/lib/auth/options';
+import type { ContactInput } from '@/lib/validation';
 import {
   ActionIcon,
   Alert,
@@ -34,7 +36,7 @@ import ContactsEditor from '@/components/ContactsEditor';
 
 const PARTNER_TYPES = ['Reseller', 'Distributor', 'Technology', 'Service', 'Referral', 'Other'];
 
-const TYPE_COLORS = {
+const TYPE_COLORS: Record<string, string> = {
   Reseller: 'blue',
   Distributor: 'cyan',
   Technology: 'violet',
@@ -43,8 +45,34 @@ const TYPE_COLORS = {
   Other: 'gray',
 };
 
-function EditPartnerForm({ partner, onSave, onClose }) {
-  const form = useForm({
+interface PartnerShape {
+  id: string;
+  name: string;
+  type?: string | null;
+  website?: string | null;
+  address?: string | null;
+  notes?: string | null;
+  contacts?: ContactInput[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface EditPartnerFormValues {
+  name: string;
+  type: string;
+  website: string;
+  address: string;
+  notes: string;
+}
+
+interface EditPartnerFormProps {
+  partner: PartnerShape;
+  onSave: (data: PartnerShape) => void;
+  onClose: () => void;
+}
+
+function EditPartnerForm({ partner, onSave, onClose }: EditPartnerFormProps) {
+  const form = useForm<EditPartnerFormValues>({
     initialValues: {
       name: partner.name || '',
       type: partner.type || '',
@@ -59,19 +87,19 @@ function EditPartnerForm({ partner, onSave, onClose }) {
     },
   });
 
-  const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState('');
+  const [saving, setSaving] = useState<boolean>(false);
+  const [saveError, setSaveError] = useState<string>('');
 
   const typeSelectData = [
     { value: '', label: 'None' },
     ...PARTNER_TYPES.map((t) => ({ value: t, label: t })),
   ];
 
-  async function handleSubmit(values) {
+  async function handleSubmit(values: EditPartnerFormValues) {
     setSaveError('');
     setSaving(true);
-    const payload = { ...values };
-    Object.keys(payload).forEach((k) => {
+    const payload: Record<string, string | null> = { ...values };
+    (Object.keys(payload) as (keyof typeof payload)[]).forEach((k) => {
       if (payload[k] === '') payload[k] = null;
     });
     const res = await fetch(`/api/partners/${partner.id}`, {
@@ -114,10 +142,14 @@ function EditPartnerForm({ partner, onSave, onClose }) {
   );
 }
 
+interface InlineDeleteButtonProps {
+  onConfirm: () => void;
+}
+
 /** Two-click inline delete button with 3-second auto-revert */
-function InlineDeleteButton({ onConfirm }) {
-  const [confirming, setConfirming] = useState(false);
-  const timerRef = useRef(null);
+function InlineDeleteButton({ onConfirm }: InlineDeleteButtonProps) {
+  const [confirming, setConfirming] = useState<boolean>(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const startConfirm = useCallback(() => {
     setConfirming(true);
@@ -160,16 +192,16 @@ export default function PartnerDetailPage() {
   const { id } = router.query;
   const { data: session } = useSession();
 
-  const [partner, setPartner] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [contactsValue, setContactsValue] = useState([]);
-  const [contactsSaving, setContactsSaving] = useState(false);
+  const [partner, setPartner] = useState<PartnerShape | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string>('');
+  const [contactsValue, setContactsValue] = useState<ContactInput[]>([]);
+  const [contactsSaving, setContactsSaving] = useState<boolean>(false);
 
   // Inline editing state
-  const [editingPartner, setEditingPartner] = useState(false);
+  const [editingPartner, setEditingPartner] = useState<boolean>(false);
 
-  const canEdit = ['ADMIN', 'EDITOR'].includes(session?.user?.role);
+  const canEdit = ['ADMIN', 'EDITOR'].includes(session?.user?.role ?? '');
   const isAdmin = session?.user?.role === 'ADMIN';
 
   useEffect(() => {
@@ -215,7 +247,7 @@ export default function PartnerDetailPage() {
     const data = await res.json();
     setContactsSaving(false);
     if (res.ok) {
-      setPartner((prev) => ({ ...prev, contacts: data.contacts }));
+      setPartner((prev) => prev ? ({ ...prev, contacts: data.contacts }) : prev);
       setContactsValue(data.contacts || []);
       notifications.show({ title: 'Contacts saved', message: 'Contacts updated.', color: 'green' });
     } else {
@@ -258,7 +290,7 @@ export default function PartnerDetailPage() {
             <EditPartnerForm
               partner={partner}
               onSave={(data) => {
-                setPartner((prev) => ({ ...prev, ...data }));
+                setPartner((prev) => prev ? ({ ...prev, ...data }) : prev);
                 setEditingPartner(false);
                 notifications.show({ title: 'Saved', message: 'Partner updated.', color: 'green' });
               }}
@@ -352,7 +384,7 @@ export default function PartnerDetailPage() {
   );
 }
 
-export async function getServerSideProps(context) {
+export async function getServerSideProps(context: GetServerSidePropsContext) {
   const options = await getAuthOptions();
   const session = await getServerSession(context.req, context.res, options);
   if (!session) {

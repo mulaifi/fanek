@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getServerSession } from 'next-auth/next';
+import type { GetServerSidePropsContext } from 'next';
 import { getAuthOptions } from '@/lib/auth/options';
 import {
   Alert,
@@ -14,7 +15,7 @@ import {
 import { DataTable } from 'mantine-datatable';
 import AppShell from '@/components/AppShell';
 
-const ACTION_COLORS = {
+const ACTION_COLORS: Record<string, string> = {
   CREATE: 'green',
   UPDATE: 'yellow',
   DELETE: 'red',
@@ -25,23 +26,33 @@ const ACTIONS = ['CREATE', 'UPDATE', 'DELETE'];
 
 const PAGE_SIZE = 20;
 
+interface AuditLogEntry {
+  id: string;
+  createdAt: string;
+  action: string;
+  resource: string;
+  resourceId?: string | null;
+  details?: unknown;
+  user?: { name?: string | null; email?: string | null } | null;
+}
+
 export default function AuditLogPage() {
-  const [logs, setLogs] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [cursors, setCursors] = useState([null]);
-  const [currentPage, setCurrentPage] = useState(0);
-  const [nextCursor, setNextCursor] = useState(null);
+  const [logs, setLogs] = useState<AuditLogEntry[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string>('');
+  const [cursors, setCursors] = useState<(string | null)[]>([null]);
+  const [currentPage, setCurrentPage] = useState<number>(0);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
 
-  const [filterAction, setFilterAction] = useState(null);
-  const [filterResource, setFilterResource] = useState(null);
-  const [filterFrom, setFilterFrom] = useState('');
-  const [filterTo, setFilterTo] = useState('');
+  const [filterAction, setFilterAction] = useState<string | null>(null);
+  const [filterResource, setFilterResource] = useState<string | null>(null);
+  const [filterFrom, setFilterFrom] = useState<string>('');
+  const [filterTo, setFilterTo] = useState<string>('');
 
-  const [expandedRecordIds, setExpandedRecordIds] = useState([]);
+  const [expandedRecordIds, setExpandedRecordIds] = useState<string[]>([]);
 
   const buildUrl = useCallback(
-    (cursor) => {
+    (cursor: string | null) => {
       const params = new URLSearchParams();
       if (filterAction) params.set('action', filterAction);
       if (filterResource) params.set('resource', filterResource);
@@ -54,7 +65,7 @@ export default function AuditLogPage() {
   );
 
   const loadPage = useCallback(
-    async (cursor) => {
+    async (cursor: string | null) => {
       setLoading(true);
       setError('');
       const res = await fetch(buildUrl(cursor));
@@ -77,7 +88,7 @@ export default function AuditLogPage() {
     loadPage(null);
   }, [loadPage]);
 
-  function handlePageChange(page) {
+  function handlePageChange(page: number) {
     if (page > currentPage) {
       if (!nextCursor) return;
       const newCursors = [...cursors, nextCursor];
@@ -177,8 +188,7 @@ export default function AuditLogPage() {
         ]}
         rowExpansion={{
           allowMultiple: false,
-          expandedRecordIds,
-          onRecordIdsChange: setExpandedRecordIds,
+          expanded: { recordIds: expandedRecordIds, onRecordIdsChange: setExpandedRecordIds },
           collapseProps: { transitionDuration: 150 },
           content: ({ record }) =>
             record.details ? (
@@ -195,7 +205,7 @@ export default function AuditLogPage() {
   );
 }
 
-export async function getServerSideProps(context) {
+export async function getServerSideProps(context: GetServerSidePropsContext) {
   const options = await getAuthOptions();
   const session = await getServerSession(context.req, context.res, options);
   if (!session) {

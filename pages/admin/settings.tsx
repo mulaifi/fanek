@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { getServerSession } from 'next-auth/next';
+import type { GetServerSidePropsContext } from 'next';
 import { getAuthOptions } from '@/lib/auth/options';
 import {
   Alert,
@@ -21,18 +22,25 @@ import StatusManager from '@/components/admin/StatusManager';
 
 const MAX_LOGO_BYTES = 256 * 1024; // 256 KB
 
+interface SettingsShape {
+  orgName?: string;
+  orgLogo?: string | null;
+  customerStatuses?: string[];
+  [key: string]: unknown;
+}
+
 export default function AdminSettingsPage() {
-  const [tab, setTab] = useState('organization');
-  const [settings, setSettings] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [tab, setTab] = useState<string>('organization');
+  const [settings, setSettings] = useState<SettingsShape | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string>('');
 
-  const [orgName, setOrgName] = useState('');
-  const [orgLogo, setOrgLogo] = useState(null);
-  const [orgSaving, setOrgSaving] = useState(false);
-  const [orgError, setOrgError] = useState('');
+  const [orgName, setOrgName] = useState<string>('');
+  const [orgLogo, setOrgLogo] = useState<string | null>(null);
+  const [orgSaving, setOrgSaving] = useState<boolean>(false);
+  const [orgError, setOrgError] = useState<string>('');
 
-  const fileInputRef = useRef(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     fetch('/api/admin/settings')
@@ -49,7 +57,7 @@ export default function AdminSettingsPage() {
       });
   }, []);
 
-  function handleLogoFileChange(e) {
+  function handleLogoFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > MAX_LOGO_BYTES) {
@@ -57,11 +65,11 @@ export default function AdminSettingsPage() {
       return;
     }
     const reader = new FileReader();
-    reader.onload = (ev) => setOrgLogo(ev.target.result);
+    reader.onload = (ev) => setOrgLogo(ev.target?.result as string ?? null);
     reader.readAsDataURL(file);
   }
 
-  async function handleSaveOrg(e) {
+  async function handleSaveOrg(e: React.FormEvent<HTMLElement>) {
     e.preventDefault();
     setOrgError('');
     if (!orgName.trim()) {
@@ -115,7 +123,7 @@ export default function AdminSettingsPage() {
 
   return (
     <AppShell title="Settings">
-      <Tabs value={tab} onChange={setTab}>
+      <Tabs value={tab} onChange={(v) => setTab(v ?? 'organization')}>
         <Tabs.List mb="lg">
           <Tabs.Tab value="organization">Organization</Tabs.Tab>
           <Tabs.Tab value="authentication">Authentication</Tabs.Tab>
@@ -176,9 +184,10 @@ export default function AdminSettingsPage() {
         <Tabs.Panel value="authentication">
           <Stack maw={600}>
             <Title order={5}>Authentication Providers</Title>
+            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
             <AuthProviderConfig
-              settings={settings}
-              onSave={(updated) => setSettings((prev) => ({ ...prev, ...updated }))}
+              settings={settings as any}
+              onSave={(updated) => setSettings((prev) => ({ ...prev, ...updated as SettingsShape }))}
             />
           </Stack>
         </Tabs.Panel>
@@ -188,7 +197,7 @@ export default function AdminSettingsPage() {
             <Title order={5}>Customer Statuses</Title>
             <StatusManager
               statuses={settings?.customerStatuses || []}
-              onSave={(updated) => setSettings((prev) => ({ ...prev, ...updated }))}
+              onSave={(updated) => setSettings((prev) => ({ ...prev, ...updated as SettingsShape }))}
             />
           </Stack>
         </Tabs.Panel>
@@ -215,7 +224,7 @@ export default function AdminSettingsPage() {
   );
 }
 
-export async function getServerSideProps(context) {
+export async function getServerSideProps(context: GetServerSidePropsContext) {
   const options = await getAuthOptions();
   const session = await getServerSession(context.req, context.res, options);
   if (!session) {

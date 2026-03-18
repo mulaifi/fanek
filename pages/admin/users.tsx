@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { getServerSession } from 'next-auth/next';
+import type { GetServerSidePropsContext } from 'next';
 import { getAuthOptions } from '@/lib/auth/options';
 import {
   Alert,
@@ -33,10 +34,42 @@ const ROLE_COLORS = {
   VIEWER: 'gray',
 };
 
+type UserRole = 'ADMIN' | 'EDITOR' | 'VIEWER';
+
+interface UserRow {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  createdAt: string;
+}
+
+interface InviteResult {
+  user: UserRow;
+  tempPassword: string;
+}
+
+interface ResetPasswordResult {
+  userId: string;
+  userName: string;
+  tempPassword: string;
+}
+
+interface InlineConfirmButtonProps {
+  onConfirm: () => void;
+  label: string;
+  confirmLabel?: string;
+  color?: string;
+  icon?: React.ReactNode;
+  size?: string;
+  variant?: string;
+  disabled?: boolean;
+}
+
 /** Two-click inline confirm button with 3-second auto-revert */
-function InlineConfirmButton({ onConfirm, label, confirmLabel = 'Confirm?', color = 'red', icon, size = 'xs', variant = 'subtle', disabled = false }) {
-  const [confirming, setConfirming] = useState(false);
-  const timerRef = useRef(null);
+function InlineConfirmButton({ onConfirm, label, confirmLabel = 'Confirm?', color = 'red', icon, size = 'xs', variant = 'subtle', disabled = false }: InlineConfirmButtonProps) {
+  const [confirming, setConfirming] = useState<boolean>(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const startConfirm = useCallback(() => {
     if (disabled) return;
@@ -78,15 +111,15 @@ function InlineConfirmButton({ onConfirm, label, confirmLabel = 'Confirm?', colo
 export default function AdminUsersPage() {
   const { data: session } = useSession();
 
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [users, setUsers] = useState<UserRow[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string>('');
 
   // Inline states
-  const [showInviteForm, setShowInviteForm] = useState(false);
-  const [inviteResult, setInviteResult] = useState(null);
-  const [editingRoleUserId, setEditingRoleUserId] = useState(null);
-  const [resetPasswordResult, setResetPasswordResult] = useState(null);
+  const [showInviteForm, setShowInviteForm] = useState<boolean>(false);
+  const [inviteResult, setInviteResult] = useState<InviteResult | null>(null);
+  const [editingRoleUserId, setEditingRoleUserId] = useState<string | null>(null);
+  const [resetPasswordResult, setResetPasswordResult] = useState<ResetPasswordResult | null>(null);
 
   async function loadUsers() {
     setLoading(true);
@@ -104,19 +137,19 @@ export default function AdminUsersPage() {
     loadUsers();
   }, []);
 
-  function handleInviteSuccess(result) {
+  function handleInviteSuccess(result: InviteResult) {
     setUsers((prev) => [result.user, ...prev]);
     setShowInviteForm(false);
     setInviteResult(result);
   }
 
-  function handleRoleUpdated(userId, newRole) {
+  function handleRoleUpdated(userId: string, newRole: UserRole) {
     setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u)));
     setEditingRoleUserId(null);
     notifications.show({ color: 'green', message: 'Role updated successfully.' });
   }
 
-  async function handleResetPassword(user) {
+  async function handleResetPassword(user: UserRow) {
     const res = await fetch(`/api/admin/users/${user.id}/reset-password`, { method: 'POST' });
     const data = await res.json();
     if (res.ok) {
@@ -126,7 +159,7 @@ export default function AdminUsersPage() {
     }
   }
 
-  async function handleRevokeSessions(user) {
+  async function handleRevokeSessions(user: UserRow) {
     try {
       const res = await fetch(`/api/admin/users/${user.id}/revoke-sessions`, { method: 'POST' });
       if (res.ok) {
@@ -140,7 +173,7 @@ export default function AdminUsersPage() {
     }
   }
 
-  async function handleDelete(user) {
+  async function handleDelete(user: UserRow) {
     if (user.id === session?.user?.id) {
       notifications.show({ color: 'red', message: 'You cannot delete your own account.' });
       return;
@@ -275,9 +308,15 @@ export default function AdminUsersPage() {
   );
 }
 
-function InlineEditRole({ user, onSave, onCancel }) {
-  const [role, setRole] = useState(user.role);
-  const [saving, setSaving] = useState(false);
+interface InlineEditRoleProps {
+  user: UserRow;
+  onSave: (userId: string, role: UserRole) => void;
+  onCancel: () => void;
+}
+
+function InlineEditRole({ user, onSave, onCancel }: InlineEditRoleProps) {
+  const [role, setRole] = useState<UserRole>(user.role);
+  const [saving, setSaving] = useState<boolean>(false);
 
   async function handleSave() {
     setSaving(true);
@@ -305,7 +344,7 @@ function InlineEditRole({ user, onSave, onCancel }) {
       <Select
         size="xs"
         value={role}
-        onChange={setRole}
+        onChange={(v) => { if (v) setRole(v as UserRole); }}
         data={[
           { value: 'VIEWER', label: 'Viewer' },
           { value: 'EDITOR', label: 'Editor' },
@@ -319,13 +358,24 @@ function InlineEditRole({ user, onSave, onCancel }) {
   );
 }
 
-function InviteUserForm({ onClose, onSuccess }) {
-  const [form, setForm] = useState({ name: '', email: '', role: 'VIEWER' });
-  const [errors, setErrors] = useState({});
-  const [inviting, setInviting] = useState(false);
+interface InviteUserFormProps {
+  onClose: () => void;
+  onSuccess: (result: InviteResult) => void;
+}
+
+interface InviteFormErrors {
+  name?: string;
+  email?: string;
+  _form?: string;
+}
+
+function InviteUserForm({ onClose, onSuccess }: InviteUserFormProps) {
+  const [form, setForm] = useState<{ name: string; email: string; role: UserRole }>({ name: '', email: '', role: 'VIEWER' });
+  const [errors, setErrors] = useState<InviteFormErrors>({});
+  const [inviting, setInviting] = useState<boolean>(false);
 
   async function handleSubmit() {
-    const errs = {};
+    const errs: InviteFormErrors = {};
     if (!form.name.trim()) errs.name = 'Name is required';
     if (!form.email.trim()) errs.email = 'Email is required';
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) errs.email = 'Enter a valid email';
@@ -369,7 +419,7 @@ function InviteUserForm({ onClose, onSuccess }) {
       <Select
         label="Role"
         value={form.role}
-        onChange={(v) => setForm({ ...form, role: v })}
+        onChange={(v) => { if (v) setForm({ ...form, role: v as UserRole }); }}
         data={[
           { value: 'VIEWER', label: 'Viewer' },
           { value: 'EDITOR', label: 'Editor' },
@@ -384,7 +434,7 @@ function InviteUserForm({ onClose, onSuccess }) {
   );
 }
 
-export async function getServerSideProps(context) {
+export async function getServerSideProps(context: GetServerSidePropsContext) {
   const options = await getAuthOptions();
   const session = await getServerSession(context.req, context.res, options);
   if (!session) {
