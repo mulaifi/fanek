@@ -1,10 +1,12 @@
+import type { NextApiResponse } from 'next';
+import type { AuthenticatedRequest } from '@/types';
 import { withAuth } from '@/lib/auth/guard';
 import prisma from '@/lib/prisma';
 import { serviceTypeSchema } from '@/lib/validation';
 import { logAudit } from '@/lib/audit';
 
-async function handler(req, res) {
-  const { id } = req.query;
+async function handler(req: AuthenticatedRequest, res: NextApiResponse): Promise<void> {
+  const id = req.query.id as string;
 
   if (req.method === 'GET') {
     const serviceType = await prisma.serviceType.findUnique({

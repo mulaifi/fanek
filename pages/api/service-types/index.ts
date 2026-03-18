@@ -1,13 +1,15 @@
+import type { NextApiResponse } from 'next';
+import type { AuthenticatedRequest } from '@/types';
 import { withAuth } from '@/lib/auth/guard';
 import prisma from '@/lib/prisma';
 import { serviceTypeSchema } from '@/lib/validation';
 import { logAudit } from '@/lib/audit';
 import logger from '@/lib/logger';
 
-async function handler(req, res) {
+async function handler(req: AuthenticatedRequest, res: NextApiResponse): Promise<void> {
   if (req.method === 'GET') {
     const { active } = req.query;
-    const where = {};
+    const where: Record<string, unknown> = {};
     if (active === 'true') where.active = true;
     const serviceTypes = await prisma.serviceType.findMany({
       where,

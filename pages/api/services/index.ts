@@ -1,10 +1,12 @@
+import type { NextApiResponse } from 'next';
+import type { AuthenticatedRequest } from '@/types';
 import { withAuth } from '@/lib/auth/guard';
 import prisma from '@/lib/prisma';
-import { serviceSchema } from '@/lib/validation';
+import { serviceSchema, ServiceTypeFieldInput } from '@/lib/validation';
 import { logAudit } from '@/lib/audit';
 import logger from '@/lib/logger';
 
-async function handler(req, res) {
+async function handler(req: AuthenticatedRequest, res: NextApiResponse): Promise<void> {
   if (req.method === 'POST') {
     if (!['ADMIN', 'EDITOR'].includes(req.session.user.role)) {
       return res.status(403).json({ error: 'Forbidden: Editor access required' });
@@ -27,8 +29,9 @@ async function handler(req, res) {
     }
 
     // Validate fieldValues against the service type's fieldSchema
-    if (serviceType.fieldSchema && serviceType.fieldSchema.length > 0) {
-      const requiredFields = serviceType.fieldSchema.filter((f) => f.required).map((f) => f.name);
+    if (serviceType.fieldSchema && (serviceType.fieldSchema as unknown[]).length > 0) {
+      const fieldSchema = serviceType.fieldSchema as ServiceTypeFieldInput[];
+      const requiredFields = fieldSchema.filter((f) => f.required).map((f) => f.name);
       const missingFields = requiredFields.filter(
         (name) => !fieldValues || fieldValues[name] === undefined || fieldValues[name] === null || fieldValues[name] === ''
       );
