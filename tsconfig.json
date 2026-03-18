@@ -48,6 +48,7 @@
     ".next",
     "prisma/seed.js",
     "prisma.config.ts",
-    "scripts"
+    "scripts",
+    "__tests__"
   ]
 }
