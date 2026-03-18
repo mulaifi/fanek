@@ -173,6 +173,7 @@ export default function PartnersIndexPage() {
                 New partner
               </Button>
             )}
+            {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
             <a
               href="/api/partners/export"
               className={buttonVariants({ variant: 'outline' })}

@@ -185,6 +185,7 @@ export default function CustomersIndexPage() {
                 New customer
               </Button>
             )}
+            {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
             <a
               href="/api/customers/export"
               className={buttonVariants({ variant: 'outline' })}

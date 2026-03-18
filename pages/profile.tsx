@@ -27,12 +27,6 @@ function getPasswordStrength(password: string): number {
   return strength;
 }
 
-function getStrengthColor(strength: number): string {
-  if (strength < 50) return 'red';
-  if (strength < 75) return 'yellow';
-  return 'green';
-}
-
 function getStrengthLabel(strength: number): string {
   if (strength < 25) return 'Too short';
   if (strength < 50) return 'Weak';
