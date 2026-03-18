@@ -11,6 +11,7 @@ import {
   UnstyledButton,
   useMantineTheme,
   Group,
+  type MantineTheme,
 } from '@mantine/core';
 import { useMediaQuery, useDebouncedValue } from '@mantine/hooks';
 import { Spotlight, spotlight } from '@mantine/spotlight';
@@ -27,6 +28,7 @@ import {
   IconUser,
   IconPin,
   IconPinFilled,
+  type TablerIcon,
 } from '@tabler/icons-react';
 import ColorSchemeToggle from './ColorSchemeToggle';
 import BottomTabs from './BottomTabs';
@@ -34,20 +36,45 @@ import BottomTabs from './BottomTabs';
 const RAIL_WIDTH = 56;
 const EXPANDED_WIDTH = 200;
 
-const mainNavItems = [
+interface NavItemDef {
+  href: string;
+  label: string;
+  icon: TablerIcon;
+}
+
+interface AppShellProps {
+  children: React.ReactNode;
+  title: string;
+}
+
+interface SpotlightAction {
+  id: string;
+  label: string;
+  description: string;
+  group: string;
+  onClick: () => void;
+}
+
+const mainNavItems: NavItemDef[] = [
   { href: '/dashboard', label: 'Dashboard', icon: IconLayoutDashboard },
   { href: '/customers', label: 'Customers', icon: IconUsers },
   { href: '/partners', label: 'Partners', icon: IconHeartHandshake },
 ];
 
-const adminNavItems = [
+const adminNavItems: NavItemDef[] = [
   { href: '/admin/users', label: 'Users', icon: IconUserPlus },
   { href: '/admin/service-catalog', label: 'Service Catalog', icon: IconCategory },
   { href: '/admin/settings', label: 'Settings', icon: IconSettings },
   { href: '/admin/audit-log', label: 'Audit Log', icon: IconHistory },
 ];
 
-function NavItem({ href, label, icon: Icon, expanded, brandColor, theme }) {
+interface NavItemProps extends NavItemDef {
+  expanded: boolean;
+  brandColor: string;
+  theme: MantineTheme;
+}
+
+function NavItem({ href, label, icon: Icon, expanded, brandColor, theme }: NavItemProps) {
   const router = useRouter();
   const active = router.pathname === href || router.pathname.startsWith(href + '/');
 
@@ -92,7 +119,7 @@ function NavItem({ href, label, icon: Icon, expanded, brandColor, theme }) {
   );
 }
 
-export default function AppShell({ children, title }) {
+export default function AppShell({ children, title }: AppShellProps) {
   const router = useRouter();
   const { data: session, status } = useSession();
   const theme = useMantineTheme();
@@ -116,7 +143,7 @@ export default function AppShell({ children, title }) {
 
   const [spotlightQuery, setSpotlightQuery] = useState('');
   const [debouncedQuery] = useDebouncedValue(spotlightQuery, 300);
-  const [spotlightActions, setSpotlightActions] = useState([]);
+  const [spotlightActions, setSpotlightActions] = useState<SpotlightAction[]>([]);
 
   const brandColor = theme.colors.brand?.[5] ?? theme.colors.violet[5];
   const isAdmin = session?.user?.role === 'ADMIN';
@@ -140,10 +167,14 @@ export default function AppShell({ children, title }) {
     fetch(`/api/search?q=${encodeURIComponent(debouncedQuery)}`)
       .then((r) => r.json())
       .then((data) => {
-        const actions = [];
+        const actions: SpotlightAction[] = [];
 
-        if (data.customers?.length > 0) {
-          data.customers.forEach((c) => {
+        const customers = data.customers as Array<{ id: string; name: string; clientCode?: string }> | undefined;
+        const partners = data.partners as Array<{ id: string; name: string }> | undefined;
+        const services = data.services as Array<{ id: string; name: string; type?: string }> | undefined;
+
+        if (customers && customers.length > 0) {
+          customers.forEach((c) => {
             actions.push({
               id: `customer-${c.id}`,
               label: c.name,
@@ -154,8 +185,8 @@ export default function AppShell({ children, title }) {
           });
         }
 
-        if (data.partners?.length > 0) {
-          data.partners.forEach((p) => {
+        if (partners && partners.length > 0) {
+          partners.forEach((p) => {
             actions.push({
               id: `partner-${p.id}`,
               label: p.name,
@@ -166,8 +197,8 @@ export default function AppShell({ children, title }) {
           });
         }
 
-        if (data.services?.length > 0) {
-          data.services.forEach((s) => {
+        if (services && services.length > 0) {
+          services.forEach((s) => {
             actions.push({
               id: `service-${s.id}`,
               label: s.name,
