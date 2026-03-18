@@ -35,6 +35,9 @@ jobs:
 
       - run: npm ci
 
+      - name: Type check
+        run: npx tsc --noEmit
+
       - run: npx prisma generate
 
       - run: npm run lint

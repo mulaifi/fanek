@@ -11,6 +11,7 @@ node_modules/
 dist/
 .vercel/
 coverage/
+tsconfig.tsbuildinfo
 test-results/
 playwright-report/
 .superpowers/
