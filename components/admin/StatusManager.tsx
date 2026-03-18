@@ -2,7 +2,13 @@ import { useState } from 'react';
 import { ActionIcon, Alert, Box, Button, Group, Stack, Text, TextInput, Tooltip } from '@mantine/core';
 import { IconArrowDown, IconArrowUp, IconPlus, IconTrash } from '@tabler/icons-react';
 
-export default function StatusManager({ statuses = [], statusUsage = {}, onSave }) {
+interface StatusManagerProps {
+  statuses?: string[];
+  statusUsage?: Record<string, number>;
+  onSave?: (data: unknown) => void;
+}
+
+export default function StatusManager({ statuses = [], statusUsage = {}, onSave }: StatusManagerProps) {
   const [items, setItems] = useState(statuses);
   const [newStatus, setNewStatus] = useState('');
   const [newError, setNewError] = useState('');
@@ -25,15 +31,15 @@ export default function StatusManager({ statuses = [], statusUsage = {}, onSave 
     setNewError('');
   }
 
-  function handleRemove(status) {
+  function handleRemove(status: string) {
     setItems(items.filter((s) => s !== status));
   }
 
-  function handleUpdate(index, value) {
+  function handleUpdate(index: number, value: string) {
     setItems(items.map((s, i) => (i === index ? value : s)));
   }
 
-  function moveItem(index, direction) {
+  function moveItem(index: number, direction: number) {
     const target = index + direction;
     if (target < 0 || target >= items.length) return;
     const next = [...items];

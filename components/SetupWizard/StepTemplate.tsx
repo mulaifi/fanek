@@ -4,9 +4,22 @@ import {
   IconDeviceDesktopAnalytics,
   IconSettings,
   IconLayersOff,
+  type TablerIcon,
 } from '@tabler/icons-react';
 
-const TEMPLATES = [
+interface TemplateOption {
+  id: string | null;
+  title: string;
+  description: string;
+  Icon: TablerIcon;
+}
+
+interface StepTemplateProps {
+  selected: string | null;
+  onSelect: (id: string | null) => void;
+}
+
+const TEMPLATES: TemplateOption[] = [
   {
     id: 'cloud',
     title: 'Cloud Provider',
@@ -33,7 +46,7 @@ const TEMPLATES = [
   },
 ];
 
-export default function StepTemplate({ selected, onSelect }) {
+export default function StepTemplate({ selected, onSelect }: StepTemplateProps) {
   return (
     <SimpleGrid cols={2} spacing="sm">
       {TEMPLATES.map(({ id, title, description, Icon }) => {

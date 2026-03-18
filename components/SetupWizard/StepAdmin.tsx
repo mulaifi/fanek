@@ -1,6 +1,24 @@
 import { Box, PasswordInput, Progress, Stack, Text, TextInput } from '@mantine/core';
 
-function getPasswordStrength(password) {
+interface AdminData {
+  name?: string;
+  email?: string;
+  password?: string;
+}
+
+interface StepAdminProps {
+  data: AdminData;
+  onChange: (data: AdminData) => void;
+  errors?: Record<string, string | undefined>;
+}
+
+interface PasswordStrength {
+  score: number;
+  label: string;
+  color: string;
+}
+
+function getPasswordStrength(password: string | undefined): PasswordStrength {
   if (!password) return { score: 0, label: '', color: 'red' };
   let score = 0;
   if (password.length >= 8) score++;
@@ -13,7 +31,7 @@ function getPasswordStrength(password) {
   return { score, label: labels[score], color: colors[score] };
 }
 
-export default function StepAdmin({ data, onChange, errors = {} }) {
+export default function StepAdmin({ data, onChange, errors = {} }: StepAdminProps) {
   const strength = getPasswordStrength(data.password);
 
   return (

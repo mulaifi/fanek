@@ -1,7 +1,26 @@
 import { useState } from 'react';
 import { Alert, Box, Button, Card, Divider, Group, PasswordInput, Stack, Switch, Text, TextInput } from '@mantine/core';
 
-export default function AuthProviderConfig({ settings, onSave }) {
+interface OAuthProviderSettings {
+  clientId?: string;
+  tenantId?: string;
+}
+
+interface AuthSettingsInput {
+  googleOAuthEnabled?: boolean;
+  microsoftOAuthEnabled?: boolean;
+  authProviders?: {
+    google?: OAuthProviderSettings;
+    microsoft?: OAuthProviderSettings;
+  };
+}
+
+interface AuthProviderConfigProps {
+  settings?: AuthSettingsInput;
+  onSave?: (data: unknown) => void;
+}
+
+export default function AuthProviderConfig({ settings, onSave }: AuthProviderConfigProps) {
   const [googleEnabled, setGoogleEnabled] = useState(settings?.googleOAuthEnabled || false);
   const [googleClientId, setGoogleClientId] = useState(settings?.authProviders?.google?.clientId || '');
   const [googleClientSecret, setGoogleClientSecret] = useState('');
@@ -20,7 +39,7 @@ export default function AuthProviderConfig({ settings, onSave }) {
     setSuccess(false);
     setSaving(true);
 
-    const authProviders = {};
+    const authProviders: Record<string, { enabled: boolean; clientId: string; tenantId?: string; clientSecret?: string }> = {};
 
     if (googleEnabled || googleClientId) {
       authProviders.google = {

@@ -4,10 +4,21 @@ import { IconUpload, IconX } from '@tabler/icons-react';
 
 const MAX_LOGO_SIZE = 256 * 1024; // 256 KB
 
-export default function StepOrg({ data, onChange, errors }) {
-  const fileInputRef = useRef(null);
+interface OrgData {
+  name?: string;
+  logo?: string | null;
+}
 
-  function handleLogoChange(e) {
+interface StepOrgProps {
+  data: OrgData;
+  onChange: (data: OrgData) => void;
+  errors?: Record<string, string | undefined>;
+}
+
+export default function StepOrg({ data, onChange, errors }: StepOrgProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  function handleLogoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > MAX_LOGO_SIZE) {
@@ -16,7 +27,7 @@ export default function StepOrg({ data, onChange, errors }) {
     }
     const reader = new FileReader();
     reader.onload = (ev) => {
-      onChange({ ...data, logo: ev.target.result });
+      onChange({ ...data, logo: ev.target?.result as string });
     };
     reader.readAsDataURL(file);
     // Reset input so the same file can be re-selected after clearing

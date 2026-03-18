@@ -1,5 +1,11 @@
-import { ActionIcon, Badge, Box, Button, Checkbox, Group, Paper, Select, Stack, Text, TextInput, Tooltip } from '@mantine/core';
+import { ActionIcon, Badge, Box, Button, Checkbox, Group, Paper, Select, Text, TextInput, Tooltip } from '@mantine/core';
 import { IconArrowDown, IconArrowUp, IconPlus, IconTrash } from '@tabler/icons-react';
+import type { ServiceTypeFieldInput } from '@/lib/validation';
+
+interface ServiceTypeEditorProps {
+  fieldSchema?: ServiceTypeFieldInput[];
+  onChange: (fieldSchema: ServiceTypeFieldInput[]) => void;
+}
 
 const FIELD_TYPES = [
   { value: 'text', label: 'Text' },
@@ -10,24 +16,24 @@ const FIELD_TYPES = [
   { value: 'boolean', label: 'Checkbox (Yes/No)' },
 ];
 
-function newField() {
+function newField(): ServiceTypeFieldInput {
   return { name: '', label: '', type: 'text', required: false, options: [] };
 }
 
-export default function ServiceTypeEditor({ fieldSchema = [], onChange }) {
+export default function ServiceTypeEditor({ fieldSchema = [], onChange }: ServiceTypeEditorProps) {
   function addField() {
     onChange([...fieldSchema, newField()]);
   }
 
-  function removeField(index) {
+  function removeField(index: number) {
     onChange(fieldSchema.filter((_, i) => i !== index));
   }
 
-  function updateField(index, updated) {
+  function updateField(index: number, updated: ServiceTypeFieldInput) {
     onChange(fieldSchema.map((f, i) => (i === index ? updated : f)));
   }
 
-  function moveField(index, direction) {
+  function moveField(index: number, direction: number) {
     const target = index + direction;
     if (target < 0 || target >= fieldSchema.length) return;
     const next = [...fieldSchema];
@@ -35,7 +41,7 @@ export default function ServiceTypeEditor({ fieldSchema = [], onChange }) {
     onChange(next);
   }
 
-  function handleOptionsChange(index, value) {
+  function handleOptionsChange(index: number, value: string) {
     const opts = value
       .split(',')
       .map((s) => s.trim())
@@ -114,7 +120,13 @@ export default function ServiceTypeEditor({ fieldSchema = [], onChange }) {
             <Select
               label="Type"
               value={field.type}
-              onChange={(val) => updateField(index, { ...field, type: val, options: [] })}
+              onChange={(val) =>
+                updateField(index, {
+                  ...field,
+                  type: (val ?? 'text') as ServiceTypeFieldInput['type'],
+                  options: [],
+                })
+              }
               data={FIELD_TYPES}
               size="sm"
             />
