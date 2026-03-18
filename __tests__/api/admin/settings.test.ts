@@ -18,7 +18,8 @@ jest.mock('@/lib/prisma', () => ({
 }));
 
 jest.mock('@/lib/auth/guard', () => ({
-  withAdmin: (handler) => (req, res) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  withAdmin: (handler: any) => (req: any, res: any) => {
     req.session = { user: { id: 'admin-1', role: 'ADMIN' } };
     return handler(req, res);
   },
@@ -37,7 +38,7 @@ jest.mock('@/lib/settings', () => ({
 }));
 
 jest.mock('@/lib/encryption', () => ({
-  encrypt: jest.fn((val) => `encrypted:${val}`),
+  encrypt: jest.fn((val: string) => `encrypted:${val}`),
 }));
 
 const mockSettings = {
@@ -53,8 +54,14 @@ const mockSettings = {
   updatedAt: new Date(),
 };
 
-function mockReqRes({ method = 'GET', body = {}, query = {} } = {}) {
-  const req = { method, body, query };
+interface MockReqResOptions {
+  method?: string;
+  body?: Record<string, unknown>;
+  query?: Record<string, string>;
+}
+
+function mockReqRes({ method = 'GET', body = {}, query = {} }: MockReqResOptions = {}) {
+  const req: Record<string, unknown> = { method, body, query };
   const res = {
     status: jest.fn().mockReturnThis(),
     json: jest.fn().mockReturnThis(),

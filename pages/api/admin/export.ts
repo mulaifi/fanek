@@ -1,3 +1,5 @@
+import type { NextApiResponse } from 'next';
+import type { AuthenticatedRequest } from '@/types';
 import { withAdmin } from '@/lib/auth/guard';
 import prisma from '@/lib/prisma';
 import logger from '@/lib/logger';
@@ -11,11 +13,12 @@ const USER_SELECT = {
   lastActiveAt: true,
   createdAt: true,
   updatedAt: true,
-};
+} as const;
 
-async function handler(req, res) {
+async function handler(req: AuthenticatedRequest, res: NextApiResponse): Promise<void> {
   if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    res.status(405).json({ error: 'Method not allowed' });
+    return;
   }
 
   const [customers, partners, serviceTypes, users] = await Promise.all([
@@ -35,7 +38,7 @@ async function handler(req, res) {
     'Full data export performed'
   );
 
-  return res.json({
+  res.json({
     exportedAt: new Date().toISOString(),
     customers,
     partners,

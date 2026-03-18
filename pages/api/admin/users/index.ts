@@ -1,3 +1,5 @@
+import type { NextApiResponse } from 'next';
+import type { AuthenticatedRequest } from '@/types';
 import { withAdmin } from '@/lib/auth/guard';
 import prisma from '@/lib/prisma';
 import { generateTempPassword, hashPassword } from '@/lib/password';
@@ -13,30 +15,34 @@ const USER_SELECT = {
   lastActiveAt: true,
   createdAt: true,
   updatedAt: true,
-};
+} as const;
 
-const VALID_ROLES = ['ADMIN', 'EDITOR', 'VIEWER'];
+const VALID_ROLES = ['ADMIN', 'EDITOR', 'VIEWER'] as const;
 
-async function handler(req, res) {
+async function handler(req: AuthenticatedRequest, res: NextApiResponse): Promise<void> {
   if (req.method === 'GET') {
     const users = await prisma.user.findMany({
       select: USER_SELECT,
       orderBy: { createdAt: 'desc' },
     });
-    return res.json({ data: users });
+    res.json({ data: users });
+    return;
   }
 
   if (req.method === 'POST') {
-    const { name, email, role } = req.body;
+    const { name, email, role } = req.body as { name?: unknown; email?: unknown; role?: unknown };
 
     if (!name || typeof name !== 'string' || name.trim() === '') {
-      return res.status(400).json({ error: 'Validation failed', details: { name: 'Name is required' } });
+      res.status(400).json({ error: 'Validation failed', details: { name: 'Name is required' } });
+      return;
     }
     if (!email || typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return res.status(400).json({ error: 'Validation failed', details: { email: 'Valid email is required' } });
+      res.status(400).json({ error: 'Validation failed', details: { email: 'Valid email is required' } });
+      return;
     }
-    if (role && !VALID_ROLES.includes(role)) {
-      return res.status(400).json({ error: `Invalid role. Must be one of: ${VALID_ROLES.join(', ')}` });
+    if (role && (typeof role !== 'string' || !(VALID_ROLES as readonly string[]).includes(role))) {
+      res.status(400).json({ error: `Invalid role. Must be one of: ${VALID_ROLES.join(', ')}` });
+      return;
     }
 
     const tempPassword = generateTempPassword();
@@ -48,7 +54,7 @@ async function handler(req, res) {
           name: name.trim(),
           email: email.toLowerCase().trim(),
           passwordHash,
-          role: role || 'VIEWER',
+          role: (typeof role === 'string' ? role : 'VIEWER') as 'ADMIN' | 'EDITOR' | 'VIEWER',
           firstLogin: true,
         },
         select: USER_SELECT,
@@ -64,16 +70,18 @@ async function handler(req, res) {
 
       logger.info({ userId: user.id }, 'User created (invite)');
 
-      return res.status(201).json({ user, tempPassword });
-    } catch (err) {
-      if (err.code === 'P2002') {
-        return res.status(409).json({ error: 'A user with that email already exists' });
+      res.status(201).json({ user, tempPassword });
+      return;
+    } catch (err: unknown) {
+      if (err && typeof err === 'object' && 'code' in err && (err as { code: string }).code === 'P2002') {
+        res.status(409).json({ error: 'A user with that email already exists' });
+        return;
       }
       throw err;
     }
   }
 
-  return res.status(405).json({ error: 'Method not allowed' });
+  res.status(405).json({ error: 'Method not allowed' });
 }
 
 export default withAdmin(handler);

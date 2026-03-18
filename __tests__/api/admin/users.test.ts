@@ -24,7 +24,8 @@ jest.mock('@/lib/prisma', () => ({
 }));
 
 jest.mock('@/lib/auth/guard', () => ({
-  withAdmin: (handler) => (req, res) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  withAdmin: (handler: any) => (req: any, res: any) => {
     req.session = { user: { id: 'admin-1', role: 'ADMIN' } };
     return handler(req, res);
   },
@@ -42,8 +43,14 @@ jest.mock('@/lib/password', () => ({
   hashPassword: jest.fn().mockResolvedValue('hashed-password'),
 }));
 
-function mockReqRes({ method = 'GET', body = {}, query = {} } = {}) {
-  const req = { method, body, query };
+interface MockReqResOptions {
+  method?: string;
+  body?: Record<string, unknown>;
+  query?: Record<string, string>;
+}
+
+function mockReqRes({ method = 'GET', body = {}, query = {} }: MockReqResOptions = {}) {
+  const req: Record<string, unknown> = { method, body, query };
   const res = {
     status: jest.fn().mockReturnThis(),
     json: jest.fn().mockReturnThis(),
@@ -143,8 +150,7 @@ describe('POST /api/admin/users', () => {
   });
 
   test('returns 409 on duplicate email (P2002)', async () => {
-    const err = new Error('Unique constraint');
-    err.code = 'P2002';
+    const err = Object.assign(new Error('Unique constraint'), { code: 'P2002' });
     prisma.user.create.mockRejectedValue(err);
     const { req, res } = mockReqRes({ method: 'POST', body: validBody });
     await indexHandler(req, res);
