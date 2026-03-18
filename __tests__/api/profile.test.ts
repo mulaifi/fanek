@@ -13,7 +13,7 @@ jest.mock('@/lib/prisma', () => ({
 }));
 
 jest.mock('@/lib/auth/guard', () => ({
-  withAuth: (h) => (req, res) => {
+  withAuth: (h: (req: unknown, res: unknown) => unknown) => (req: Record<string, unknown>, res: unknown) => {
     req.session = { user: { id: 'u1', role: 'ADMIN' } };
     return h(req, res);
   },
@@ -43,6 +43,16 @@ function mockReqRes({ method = 'PUT', body = {} } = {}) {
   return { req, res };
 }
 
+const mockPrisma = prisma as {
+  user: {
+    findUnique: jest.Mock;
+    update: jest.Mock;
+  };
+};
+const mockVerifyPassword = verifyPassword as jest.Mock;
+const mockHashPassword = hashPassword as jest.Mock;
+const mockCheckStrength = checkStrength as jest.Mock;
+
 beforeEach(() => {
   jest.clearAllMocks();
 });
@@ -50,52 +60,52 @@ beforeEach(() => {
 describe('PUT /api/profile', () => {
   test('rejects missing currentPassword with 400', async () => {
     const { req, res } = mockReqRes({ body: { newPassword: 'NewPass1!' } });
-    await handler(req, res);
+    await handler(req as never, res as never);
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.json.mock.calls[0][0].error).toMatch(/required/i);
   });
 
   test('rejects missing newPassword with 400', async () => {
     const { req, res } = mockReqRes({ body: { currentPassword: 'OldPass1!' } });
-    await handler(req, res);
+    await handler(req as never, res as never);
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.json.mock.calls[0][0].error).toMatch(/required/i);
   });
 
   test('rejects when current password is incorrect', async () => {
-    prisma.user.findUnique.mockResolvedValue({ id: 'u1', passwordHash: 'hashed' });
-    verifyPassword.mockResolvedValue(false);
+    mockPrisma.user.findUnique.mockResolvedValue({ id: 'u1', passwordHash: 'hashed' });
+    mockVerifyPassword.mockResolvedValue(false);
 
     const { req, res } = mockReqRes({ body: { currentPassword: 'WrongPass1!', newPassword: 'NewPass1!' } });
-    await handler(req, res);
+    await handler(req as never, res as never);
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.json.mock.calls[0][0].error).toMatch(/incorrect/i);
   });
 
   test('rejects weak new password with 400 and details', async () => {
-    prisma.user.findUnique.mockResolvedValue({ id: 'u1', passwordHash: 'hashed' });
-    verifyPassword.mockResolvedValue(true);
-    checkStrength.mockReturnValue({ valid: false, errors: ['Must contain a number'] });
+    mockPrisma.user.findUnique.mockResolvedValue({ id: 'u1', passwordHash: 'hashed' });
+    mockVerifyPassword.mockResolvedValue(true);
+    mockCheckStrength.mockReturnValue({ valid: false, errors: ['Must contain a number'] });
 
     const { req, res } = mockReqRes({ body: { currentPassword: 'OldPass1!', newPassword: 'weakpassword' } });
-    await handler(req, res);
+    await handler(req as never, res as never);
     expect(res.status).toHaveBeenCalledWith(400);
-    const body = res.json.mock.calls[0][0];
+    const body = res.json.mock.calls[0][0] as { error: string; details: string[] };
     expect(body.error).toBe('Weak password');
     expect(body.details).toContain('Must contain a number');
   });
 
   test('updates passwordHash and sets firstLogin false on success', async () => {
-    prisma.user.findUnique.mockResolvedValue({ id: 'u1', passwordHash: 'oldhash' });
-    verifyPassword.mockResolvedValue(true);
-    checkStrength.mockReturnValue({ valid: true, errors: [] });
-    hashPassword.mockResolvedValue('newhash');
-    prisma.user.update.mockResolvedValue({});
+    mockPrisma.user.findUnique.mockResolvedValue({ id: 'u1', passwordHash: 'oldhash' });
+    mockVerifyPassword.mockResolvedValue(true);
+    mockCheckStrength.mockReturnValue({ valid: true, errors: [] });
+    mockHashPassword.mockResolvedValue('newhash');
+    mockPrisma.user.update.mockResolvedValue({});
 
     const { req, res } = mockReqRes({ body: { currentPassword: 'OldPass1!', newPassword: 'NewPass1!' } });
-    await handler(req, res);
+    await handler(req as never, res as never);
 
-    expect(prisma.user.update).toHaveBeenCalledWith({
+    expect(mockPrisma.user.update).toHaveBeenCalledWith({
       where: { id: 'u1' },
       data: { passwordHash: 'newhash', firstLogin: false },
     });
@@ -103,10 +113,10 @@ describe('PUT /api/profile', () => {
   });
 
   test('returns 400 for OAuth users with no passwordHash', async () => {
-    prisma.user.findUnique.mockResolvedValue({ id: 'u1', passwordHash: null });
+    mockPrisma.user.findUnique.mockResolvedValue({ id: 'u1', passwordHash: null });
 
     const { req, res } = mockReqRes({ body: { currentPassword: 'OldPass1!', newPassword: 'NewPass1!' } });
-    await handler(req, res);
+    await handler(req as never, res as never);
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.json.mock.calls[0][0].error).toMatch(/OAuth/i);
   });

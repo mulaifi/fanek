@@ -6,7 +6,7 @@ jest.mock('@/lib/prisma', () => ({
     settings: { findUnique: jest.fn(), upsert: jest.fn() },
     user: { create: jest.fn() },
     serviceType: { create: jest.fn() },
-    $transaction: jest.fn((fn) => fn({
+    $transaction: jest.fn((fn: (tx: unknown) => unknown) => fn({
       settings: { upsert: jest.fn() },
       user: { create: jest.fn() },
       serviceType: { create: jest.fn() },
@@ -19,7 +19,7 @@ jest.mock('@/lib/settings', () => ({
   invalidateSettingsCache: jest.fn(),
 }));
 
-function mockReqRes(body) {
+function mockReqRes(body: unknown) {
   const req = { method: 'POST', body };
   const res = { status: jest.fn().mockReturnThis(), json: jest.fn().mockReturnThis() };
   return { req, res };
@@ -33,13 +33,13 @@ describe('POST /api/setup', () => {
   test('rejects non-POST', async () => {
     const { req, res } = mockReqRes({});
     req.method = 'GET';
-    await handler(req, res);
+    await handler(req as never, res as never);
     expect(res.status).toHaveBeenCalledWith(405);
   });
 
   test('rejects missing admin fields', async () => {
     const { req, res } = mockReqRes({ admin: {}, org: { name: 'Test' } });
-    await handler(req, res);
+    await handler(req as never, res as never);
     expect(res.status).toHaveBeenCalledWith(400);
   });
 
@@ -48,7 +48,7 @@ describe('POST /api/setup', () => {
       admin: { name: 'Admin', email: 'a@b.com', password: 'weak' },
       org: { name: 'Test' },
     });
-    await handler(req, res);
+    await handler(req as never, res as never);
     expect(res.status).toHaveBeenCalledWith(400);
   });
 });

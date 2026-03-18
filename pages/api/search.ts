@@ -1,12 +1,18 @@
+import type { NextApiResponse } from 'next';
+import type { AuthenticatedRequest } from '@/types';
 import { withAuth } from '@/lib/auth/guard';
 import prisma from '@/lib/prisma';
 
-async function handler(req, res) {
-  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+async function handler(req: AuthenticatedRequest, res: NextApiResponse): Promise<void> {
+  if (req.method !== 'GET') {
+    res.status(405).json({ error: 'Method not allowed' });
+    return;
+  }
 
-  const { q } = req.query;
+  const { q } = req.query as { q?: string };
   if (!q || q.trim().length === 0) {
-    return res.json({ customers: [], partners: [], services: [] });
+    res.json({ customers: [], partners: [], services: [] });
+    return;
   }
   const search = q.trim();
 
@@ -36,7 +42,7 @@ async function handler(req, res) {
     }),
   ]);
 
-  return res.json({ customers, partners, services });
+  res.json({ customers, partners, services });
 }
 
 export default withAuth(handler);

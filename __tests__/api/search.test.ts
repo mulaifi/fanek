@@ -11,7 +11,7 @@ jest.mock('@/lib/prisma', () => ({
 }));
 
 jest.mock('@/lib/auth/guard', () => ({
-  withAuth: (h) => (req, res) => {
+  withAuth: (h: (req: unknown, res: unknown) => unknown) => (req: Record<string, unknown>, res: unknown) => {
     req.session = { user: { id: 'u1', role: 'ADMIN' } };
     return h(req, res);
   },
@@ -35,6 +35,12 @@ function mockReqRes({ method = 'GET', query = {} } = {}) {
   return { req, res };
 }
 
+const mockPrisma = prisma as {
+  customer: { findMany: jest.Mock };
+  partner: { findMany: jest.Mock };
+  service: { findMany: jest.Mock };
+};
+
 beforeEach(() => {
   jest.clearAllMocks();
 });
@@ -42,14 +48,14 @@ beforeEach(() => {
 describe('GET /api/search', () => {
   test('returns empty arrays when query is missing', async () => {
     const { req, res } = mockReqRes({ query: {} });
-    await handler(req, res);
+    await handler(req as never, res as never);
     expect(res.json).toHaveBeenCalledWith({ customers: [], partners: [], services: [] });
-    expect(prisma.customer.findMany).not.toHaveBeenCalled();
+    expect(mockPrisma.customer.findMany).not.toHaveBeenCalled();
   });
 
   test('returns empty arrays when query is blank whitespace', async () => {
     const { req, res } = mockReqRes({ query: { q: '   ' } });
-    await handler(req, res);
+    await handler(req as never, res as never);
     expect(res.json).toHaveBeenCalledWith({ customers: [], partners: [], services: [] });
   });
 
@@ -57,37 +63,37 @@ describe('GET /api/search', () => {
     const customers = [{ id: 'c1', name: 'Acme', clientCode: 'ACM01', status: 'Active' }];
     const partners = [{ id: 'p1', name: 'Acme Partner', type: 'Reseller' }];
     const services = [{ id: 's1', notes: 'Acme note', serviceType: { name: 'Cloud' }, customer: { id: 'c1', name: 'Acme' } }];
-    prisma.customer.findMany.mockResolvedValue(customers);
-    prisma.partner.findMany.mockResolvedValue(partners);
-    prisma.service.findMany.mockResolvedValue(services);
+    mockPrisma.customer.findMany.mockResolvedValue(customers);
+    mockPrisma.partner.findMany.mockResolvedValue(partners);
+    mockPrisma.service.findMany.mockResolvedValue(services);
 
     const { req, res } = mockReqRes({ query: { q: 'Acme' } });
-    await handler(req, res);
+    await handler(req as never, res as never);
 
     expect(res.json).toHaveBeenCalledWith({ customers, partners, services });
   });
 
   test('limits results to 10 per group', async () => {
     const { req, res } = mockReqRes({ query: { q: 'test' } });
-    prisma.customer.findMany.mockResolvedValue([]);
-    prisma.partner.findMany.mockResolvedValue([]);
-    prisma.service.findMany.mockResolvedValue([]);
-    await handler(req, res);
+    mockPrisma.customer.findMany.mockResolvedValue([]);
+    mockPrisma.partner.findMany.mockResolvedValue([]);
+    mockPrisma.service.findMany.mockResolvedValue([]);
+    await handler(req as never, res as never);
 
-    expect(prisma.customer.findMany).toHaveBeenCalledWith(
+    expect(mockPrisma.customer.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ take: 10 })
     );
-    expect(prisma.partner.findMany).toHaveBeenCalledWith(
+    expect(mockPrisma.partner.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ take: 10 })
     );
-    expect(prisma.service.findMany).toHaveBeenCalledWith(
+    expect(mockPrisma.service.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ take: 10 })
     );
   });
 
   test('returns 405 for non-GET methods', async () => {
     const { req, res } = mockReqRes({ method: 'POST' });
-    await handler(req, res);
+    await handler(req as never, res as never);
     expect(res.status).toHaveBeenCalledWith(405);
   });
 });

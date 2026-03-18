@@ -1,8 +1,13 @@
+import type { NextApiResponse } from 'next';
+import type { AuthenticatedRequest } from '@/types';
 import { withAuth } from '@/lib/auth/guard';
 import prisma from '@/lib/prisma';
 
-async function handler(req, res) {
-  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+async function handler(req: AuthenticatedRequest, res: NextApiResponse): Promise<void> {
+  if (req.method !== 'GET') {
+    res.status(405).json({ error: 'Method not allowed' });
+    return;
+  }
 
   const [
     totalCustomers,
@@ -32,15 +37,15 @@ async function handler(req, res) {
   });
   const typeMap = Object.fromEntries(serviceTypes.map(t => [t.id, t]));
 
-  return res.json({
+  res.json({
     totalCustomers,
     totalServices,
     totalPartners,
     customersByStatus: customersByStatus.map(s => ({ status: s.status, count: s._count.status })),
     servicesByType: servicesByType.map(s => ({
       serviceTypeId: s.serviceTypeId,
-      name: typeMap[s.serviceTypeId]?.name || 'Unknown',
-      icon: typeMap[s.serviceTypeId]?.icon || null,
+      name: typeMap[s.serviceTypeId]?.name ?? 'Unknown',
+      icon: typeMap[s.serviceTypeId]?.icon ?? null,
       count: s._count.serviceTypeId,
     })),
     recentCustomers,

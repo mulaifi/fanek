@@ -23,7 +23,7 @@ jest.mock('@/lib/prisma', () => ({
 }));
 
 jest.mock('@/lib/auth/guard', () => ({
-  withAuth: (h) => (req, res) => {
+  withAuth: (h: (req: unknown, res: unknown) => unknown) => (req: Record<string, unknown>, res: unknown) => {
     req.session = { user: { id: 'u1', role: 'ADMIN' } };
     return h(req, res);
   },
@@ -47,35 +47,53 @@ function mockReqRes({ method = 'GET' } = {}) {
   return { req, res };
 }
 
+const mockPrisma = prisma as {
+  customer: {
+    count: jest.Mock;
+    groupBy: jest.Mock;
+    findMany: jest.Mock;
+  };
+  service: {
+    count: jest.Mock;
+    groupBy: jest.Mock;
+  };
+  partner: {
+    count: jest.Mock;
+  };
+  serviceType: {
+    findMany: jest.Mock;
+  };
+};
+
 beforeEach(() => {
   jest.clearAllMocks();
 });
 
 describe('GET /api/dashboard/stats', () => {
   test('returns all stat fields with correct counts', async () => {
-    prisma.customer.count.mockResolvedValue(5);
-    prisma.service.count.mockResolvedValue(12);
-    prisma.partner.count.mockResolvedValue(3);
-    prisma.customer.groupBy.mockResolvedValue([
+    mockPrisma.customer.count.mockResolvedValue(5);
+    mockPrisma.service.count.mockResolvedValue(12);
+    mockPrisma.partner.count.mockResolvedValue(3);
+    mockPrisma.customer.groupBy.mockResolvedValue([
       { status: 'Active', _count: { status: 4 } },
       { status: 'Suspended', _count: { status: 1 } },
     ]);
-    prisma.service.groupBy.mockResolvedValue([
+    mockPrisma.service.groupBy.mockResolvedValue([
       { serviceTypeId: 'st1', _count: { serviceTypeId: 8 } },
       { serviceTypeId: 'st2', _count: { serviceTypeId: 4 } },
     ]);
-    prisma.customer.findMany.mockResolvedValue([
+    mockPrisma.customer.findMany.mockResolvedValue([
       { id: 'c1', name: 'Acme', clientCode: 'AC01', status: 'Active', updatedAt: new Date() },
     ]);
-    prisma.serviceType.findMany.mockResolvedValue([
+    mockPrisma.serviceType.findMany.mockResolvedValue([
       { id: 'st1', name: 'Cloud', icon: 'cloud' },
       { id: 'st2', name: 'Networking', icon: null },
     ]);
 
     const { req, res } = mockReqRes();
-    await handler(req, res);
+    await handler(req as never, res as never);
 
-    const result = res.json.mock.calls[0][0];
+    const result = res.json.mock.calls[0][0] as Record<string, unknown[]>;
     expect(result.totalCustomers).toBe(5);
     expect(result.totalServices).toBe(12);
     expect(result.totalPartners).toBe(3);
@@ -85,22 +103,22 @@ describe('GET /api/dashboard/stats', () => {
   });
 
   test('enriches servicesByType with names and icons', async () => {
-    prisma.customer.count.mockResolvedValue(0);
-    prisma.service.count.mockResolvedValue(0);
-    prisma.partner.count.mockResolvedValue(0);
-    prisma.customer.groupBy.mockResolvedValue([]);
-    prisma.service.groupBy.mockResolvedValue([
+    mockPrisma.customer.count.mockResolvedValue(0);
+    mockPrisma.service.count.mockResolvedValue(0);
+    mockPrisma.partner.count.mockResolvedValue(0);
+    mockPrisma.customer.groupBy.mockResolvedValue([]);
+    mockPrisma.service.groupBy.mockResolvedValue([
       { serviceTypeId: 'st1', _count: { serviceTypeId: 3 } },
     ]);
-    prisma.customer.findMany.mockResolvedValue([]);
-    prisma.serviceType.findMany.mockResolvedValue([
+    mockPrisma.customer.findMany.mockResolvedValue([]);
+    mockPrisma.serviceType.findMany.mockResolvedValue([
       { id: 'st1', name: 'Cloud Storage', icon: 'storage' },
     ]);
 
     const { req, res } = mockReqRes();
-    await handler(req, res);
+    await handler(req as never, res as never);
 
-    const result = res.json.mock.calls[0][0];
+    const result = res.json.mock.calls[0][0] as { servicesByType: Array<Record<string, unknown>> };
     expect(result.servicesByType[0]).toMatchObject({
       serviceTypeId: 'st1',
       name: 'Cloud Storage',
@@ -110,27 +128,27 @@ describe('GET /api/dashboard/stats', () => {
   });
 
   test('uses "Unknown" for service types not found', async () => {
-    prisma.customer.count.mockResolvedValue(0);
-    prisma.service.count.mockResolvedValue(0);
-    prisma.partner.count.mockResolvedValue(0);
-    prisma.customer.groupBy.mockResolvedValue([]);
-    prisma.service.groupBy.mockResolvedValue([
+    mockPrisma.customer.count.mockResolvedValue(0);
+    mockPrisma.service.count.mockResolvedValue(0);
+    mockPrisma.partner.count.mockResolvedValue(0);
+    mockPrisma.customer.groupBy.mockResolvedValue([]);
+    mockPrisma.service.groupBy.mockResolvedValue([
       { serviceTypeId: 'missing-id', _count: { serviceTypeId: 2 } },
     ]);
-    prisma.customer.findMany.mockResolvedValue([]);
-    prisma.serviceType.findMany.mockResolvedValue([]);
+    mockPrisma.customer.findMany.mockResolvedValue([]);
+    mockPrisma.serviceType.findMany.mockResolvedValue([]);
 
     const { req, res } = mockReqRes();
-    await handler(req, res);
+    await handler(req as never, res as never);
 
-    const result = res.json.mock.calls[0][0];
+    const result = res.json.mock.calls[0][0] as { servicesByType: Array<Record<string, unknown>> };
     expect(result.servicesByType[0].name).toBe('Unknown');
     expect(result.servicesByType[0].icon).toBeNull();
   });
 
   test('returns 405 for non-GET methods', async () => {
     const { req, res } = mockReqRes({ method: 'POST' });
-    await handler(req, res);
+    await handler(req as never, res as never);
     expect(res.status).toHaveBeenCalledWith(405);
   });
 });
