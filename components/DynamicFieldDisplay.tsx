@@ -1,5 +1,5 @@
-import { Badge, Box, SimpleGrid, Text } from '@mantine/core';
-import { IconCheck, IconX } from '@tabler/icons-react';
+import { Badge } from '@/components/ui/badge';
+import { Check, X } from 'lucide-react';
 import type { ServiceTypeFieldInput } from '@/lib/validation';
 
 interface FieldValueProps {
@@ -10,45 +10,45 @@ interface FieldValueProps {
 function FieldValue({ field, value }: FieldValueProps) {
   if (value === null || value === undefined || value === '') {
     return (
-      <Text size="sm" c="dimmed">
-        -
-      </Text>
+      <span className="text-sm text-muted-foreground">-</span>
     );
   }
 
   switch (field.type) {
     case 'boolean':
       return value ? (
-        <Badge variant="light" color="green" leftSection={<IconCheck size={12} />}>
+        <Badge variant="secondary" className="gap-1 text-green-700 bg-green-100">
+          <Check className="h-3 w-3" />
           Yes
         </Badge>
       ) : (
-        <Badge variant="light" color="gray" leftSection={<IconX size={12} />}>
+        <Badge variant="secondary" className="gap-1 text-muted-foreground">
+          <X className="h-3 w-3" />
           No
         </Badge>
       );
 
     case 'currency':
       return (
-        <Text size="sm">
-          ${Number(value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-        </Text>
+        <span className="text-sm">
+          {field.currencySymbol || '$'}{Number(value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+        </span>
       );
 
     case 'date':
       return (
-        <Text size="sm">
+        <span className="text-sm">
           {new Date(value as string).toLocaleDateString()}
-        </Text>
+        </span>
       );
 
     case 'select':
       return (
-        <Badge variant="light">{String(value)}</Badge>
+        <Badge variant="secondary">{String(value)}</Badge>
       );
 
     default:
-      return <Text size="sm">{String(value)}</Text>;
+      return <span className="text-sm">{String(value)}</span>;
   }
 }
 
@@ -61,17 +61,17 @@ export default function DynamicFieldDisplay({ fieldSchema = [], values = {} }: D
   if (!fieldSchema.length) return null;
 
   return (
-    <SimpleGrid cols={2}>
+    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
       {fieldSchema.map((field) => (
-        <Box key={field.name}>
-          <Text size="xs" c="dimmed" fw={600}>
+        <div key={field.name}>
+          <p className="text-xs text-muted-foreground font-semibold mb-1">
             {field.label}
-          </Text>
-          <Box mt={2}>
+          </p>
+          <div>
             <FieldValue field={field} value={values[field.name]} />
-          </Box>
-        </Box>
+          </div>
+        </div>
       ))}
-    </SimpleGrid>
+    </div>
   );
 }
