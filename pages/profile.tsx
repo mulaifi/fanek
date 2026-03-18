@@ -3,26 +3,19 @@ import { useRouter } from 'next/router';
 import { useSession } from 'next-auth/react';
 import { getServerSession } from 'next-auth/next';
 import type { GetServerSidePropsContext } from 'next';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { toast } from 'sonner';
 import { getAuthOptions } from '@/lib/auth/options';
-import {
-  Alert,
-  Badge,
-  Box,
-  Button,
-  Container,
-  Divider,
-  Group,
-  Paper,
-  PasswordInput,
-  Progress,
-  SimpleGrid,
-  Stack,
-  Text,
-  TextInput,
-  Title,
-} from '@mantine/core';
-import { useForm } from '@mantine/form';
-import { notifications } from '@mantine/notifications';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { PasswordInput } from '@/components/ui/password-input';
+import { Separator } from '@/components/ui/separator';
 import AppShell from '@/components/AppShell';
 
 function getPasswordStrength(password: string): number {
@@ -48,28 +41,42 @@ function getStrengthLabel(strength: number): string {
   return 'Strong';
 }
 
+function getStrengthBarColor(strength: number): string {
+  if (strength < 50) return 'bg-red-500';
+  if (strength < 75) return 'bg-yellow-500';
+  return 'bg-green-500';
+}
+
+function getStrengthTextColor(strength: number): string {
+  if (strength < 50) return 'text-red-600';
+  if (strength < 75) return 'text-yellow-600';
+  return 'text-green-600';
+}
+
+const nameSchema = z.object({
+  name: z.string().min(1, 'Name is required'),
+});
+type NameFormValues = z.infer<typeof nameSchema>;
+
 interface NameFormProps {
   user?: { name?: string | null };
   onUpdate: (updates: { name: string }) => Promise<void>;
 }
 
-interface NameFormValues {
-  name: string;
-}
-
 function NameForm({ user, onUpdate }: NameFormProps) {
   const [saving, setSaving] = useState<boolean>(false);
-  const [success, setSuccess] = useState<boolean>(false);
 
-  const form = useForm<NameFormValues>({
-    initialValues: { name: user?.name || '' },
-    validate: {
-      name: (v) => (v.trim() ? null : 'Name is required'),
-    },
+  const {
+    register,
+    handleSubmit,
+    setError,
+    formState: { errors },
+  } = useForm<NameFormValues>({
+    resolver: zodResolver(nameSchema),
+    defaultValues: { name: user?.name || '' },
   });
 
-  async function handleSubmit(values: NameFormValues) {
-    setSuccess(false);
+  async function onSubmit(values: NameFormValues) {
     setSaving(true);
     const res = await fetch('/api/profile', {
       method: 'PUT',
@@ -79,42 +86,51 @@ function NameForm({ user, onUpdate }: NameFormProps) {
     const data = await res.json();
     setSaving(false);
     if (!res.ok) {
-      form.setFieldError('name', data.error || 'Failed to update name');
+      setError('name', { message: data.error || 'Failed to update name' });
     } else {
-      setSuccess(true);
-      onUpdate({ name: data.name });
-      notifications.show({ title: 'Name updated', message: 'Display name saved.', color: 'green' });
+      await onUpdate({ name: data.name });
+      toast.success('Name updated', { description: 'Display name saved.' });
     }
   }
 
   return (
-    <form onSubmit={form.onSubmit(handleSubmit)}>
-      <Stack gap="sm">
-        {success && (
-          <Alert color="green" title="Success">
-            Name updated successfully.
-          </Alert>
-        )}
-        <TextInput label="Full Name" required {...form.getInputProps('name')} />
-        <Group>
-          <Button type="submit" color="brand" loading={saving}>
-            Save Name
+    <form onSubmit={handleSubmit(onSubmit)}>
+      <div className="flex flex-col gap-3">
+        <div className="space-y-2">
+          <Label htmlFor="display-name">Full Name</Label>
+          <Input id="display-name" {...register('name')} />
+          {errors.name && (
+            <p className="text-sm text-destructive">{errors.name.message}</p>
+          )}
+        </div>
+        <div className="flex">
+          <Button type="submit" disabled={saving}>
+            {saving ? 'Saving...' : 'Save Name'}
           </Button>
-        </Group>
-      </Stack>
+        </div>
+      </div>
     </form>
   );
 }
 
+const passwordSchema = z
+  .object({
+    currentPassword: z.string().min(1, 'Current password is required'),
+    newPassword: z
+      .string()
+      .min(1, 'New password is required')
+      .min(8, 'Password must be at least 8 characters'),
+    confirmPassword: z.string().min(1, 'Please confirm your new password'),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: 'Passwords do not match',
+    path: ['confirmPassword'],
+  });
+type PasswordFormValues = z.infer<typeof passwordSchema>;
+
 interface PasswordFormProps {
   onSuccess?: (data: { firstLogin?: boolean }) => void;
   successMessage?: string;
-}
-
-interface PasswordFormValues {
-  currentPassword: string;
-  newPassword: string;
-  confirmPassword: string;
 }
 
 function PasswordForm({ onSuccess, successMessage }: PasswordFormProps) {
@@ -122,24 +138,25 @@ function PasswordForm({ onSuccess, successMessage }: PasswordFormProps) {
   const [apiError, setApiError] = useState<string>('');
   const [success, setSuccess] = useState<boolean>(false);
 
-  const form = useForm<PasswordFormValues>({
-    initialValues: {
+  const {
+    register,
+    handleSubmit,
+    watch,
+    reset,
+    formState: { errors },
+  } = useForm<PasswordFormValues>({
+    resolver: zodResolver(passwordSchema),
+    defaultValues: {
       currentPassword: '',
       newPassword: '',
       confirmPassword: '',
     },
-    validate: {
-      currentPassword: (v) => (v ? null : 'Current password is required'),
-      newPassword: (v) =>
-        !v ? 'New password is required' : v.length < 8 ? 'Password must be at least 8 characters' : null,
-      confirmPassword: (v, values) =>
-        !v ? 'Please confirm your new password' : v !== values.newPassword ? 'Passwords do not match' : null,
-    },
   });
 
-  const strength = getPasswordStrength(form.values.newPassword);
+  const newPasswordValue = watch('newPassword');
+  const strength = getPasswordStrength(newPasswordValue || '');
 
-  async function handleSubmit(values: PasswordFormValues) {
+  async function onSubmit(values: PasswordFormValues) {
     setApiError('');
     setSuccess(false);
     setSaving(true);
@@ -157,60 +174,67 @@ function PasswordForm({ onSuccess, successMessage }: PasswordFormProps) {
       setApiError(data.error || 'Failed to change password');
     } else {
       setSuccess(true);
-      form.reset();
+      reset();
       if (onSuccess) onSuccess(data);
     }
   }
 
   return (
-    <form onSubmit={form.onSubmit(handleSubmit)}>
-      <Stack gap="sm">
+    <form onSubmit={handleSubmit(onSubmit)}>
+      <div className="flex flex-col gap-3">
         {success && (
-          <Alert color="green" title="Success">
-            {successMessage || 'Password changed successfully.'}
+          <Alert className="border-green-200 bg-green-50 dark:bg-green-950/20">
+            <AlertTitle>Success</AlertTitle>
+            <AlertDescription>
+              {successMessage || 'Password changed successfully.'}
+            </AlertDescription>
           </Alert>
         )}
         {apiError && (
-          <Alert color="red" title="Error">
-            {apiError}
+          <Alert variant="destructive">
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{apiError}</AlertDescription>
           </Alert>
         )}
         <PasswordInput
           label="Current Password"
           required
-          {...form.getInputProps('currentPassword')}
+          error={errors.currentPassword?.message}
+          {...register('currentPassword')}
         />
-        <Box>
+        <div>
           <PasswordInput
             label="New Password"
             required
-            {...form.getInputProps('newPassword')}
+            error={errors.newPassword?.message}
+            {...register('newPassword')}
           />
-          {form.values.newPassword && (
-            <Box mt="xs">
-              <Progress
-                value={strength}
-                color={getStrengthColor(strength)}
-                size="xs"
-                mb={4}
-              />
-              <Text size="xs" c={getStrengthColor(strength)}>
+          {newPasswordValue && (
+            <div className="mt-2 space-y-1">
+              <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all ${getStrengthBarColor(strength)}`}
+                  style={{ width: `${strength}%` }}
+                />
+              </div>
+              <p className={`text-xs ${getStrengthTextColor(strength)}`}>
                 {getStrengthLabel(strength)}
-              </Text>
-            </Box>
+              </p>
+            </div>
           )}
-        </Box>
+        </div>
         <PasswordInput
           label="Confirm New Password"
           required
-          {...form.getInputProps('confirmPassword')}
+          error={errors.confirmPassword?.message}
+          {...register('confirmPassword')}
         />
-        <Group>
-          <Button type="submit" color="brand" loading={saving}>
-            Change Password
+        <div className="flex">
+          <Button type="submit" disabled={saving}>
+            {saving ? 'Saving...' : 'Change Password'}
           </Button>
-        </Group>
-      </Stack>
+        </div>
+      </div>
     </form>
   );
 }
@@ -221,81 +245,97 @@ export default function ProfilePage() {
   const user = session?.user;
   const isFirstLogin = user?.firstLogin;
 
-  const roleColors: Record<string, string> = { ADMIN: 'red', EDITOR: 'blue', VIEWER: 'gray' };
+  const roleColors: Record<string, string> = {
+    ADMIN: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
+    EDITOR: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
+    VIEWER: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
+  };
 
   const content = (
-    <Stack gap="md" maw={600}>
+    <div className="flex flex-col gap-4 max-w-[600px]">
       {isFirstLogin && (
-        <Alert color="blue" title="Welcome">
-          Please change your temporary password to continue.
+        <Alert className="border-blue-200 bg-blue-50 dark:bg-blue-950/20">
+          <AlertTitle>Welcome</AlertTitle>
+          <AlertDescription>
+            Please change your temporary password to continue.
+          </AlertDescription>
         </Alert>
       )}
 
       {!isFirstLogin && (
-        <Paper p="lg">
-          <Title order={5} mb="sm">Account Information</Title>
-          <Divider mb="md" />
-          <SimpleGrid cols={2} spacing="md">
-            <Box>
-              <Text size="xs" c="dimmed" fw={600} tt="uppercase" mb={4}>Email</Text>
-              <Text size="sm">{user?.email}</Text>
-            </Box>
-            <Box>
-              <Text size="xs" c="dimmed" fw={600} tt="uppercase" mb={4}>Role</Text>
-              <Badge color={roleColors[user?.role ?? ''] || 'gray'}>{user?.role}</Badge>
-            </Box>
-          </SimpleGrid>
-        </Paper>
+        <Card>
+          <CardContent className="pt-6">
+            <h3 className="text-sm font-semibold mb-2">Account Information</h3>
+            <Separator className="mb-4" />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-xs text-muted-foreground font-semibold uppercase mb-1">
+                  Email
+                </p>
+                <p className="text-sm">{user?.email}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground font-semibold uppercase mb-1">
+                  Role
+                </p>
+                <Badge
+                  className={`border-0 ${roleColors[user?.role ?? ''] || 'bg-gray-100 text-gray-600'}`}
+                >
+                  {user?.role}
+                </Badge>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {!isFirstLogin && (
-        <Paper p="lg">
-          <Title order={5} mb="sm">Display Name</Title>
-          <Divider mb="md" />
-          <NameForm
-            user={user}
-            onUpdate={async (updates) => {
-              await update(updates);
-            }}
-          />
-        </Paper>
+        <Card>
+          <CardContent className="pt-6">
+            <h3 className="text-sm font-semibold mb-2">Display Name</h3>
+            <Separator className="mb-4" />
+            <NameForm
+              user={user}
+              onUpdate={async (updates) => {
+                await update(updates);
+              }}
+            />
+          </CardContent>
+        </Card>
       )}
 
-      <Paper p="lg">
-        <Title order={5} mb="sm">Change Password</Title>
-        <Divider mb="md" />
-        <PasswordForm
-          successMessage={isFirstLogin ? 'Password changed successfully. Redirecting to dashboard...' : 'Password changed successfully.'}
-          onSuccess={(data) => {
-            if (data.firstLogin === false) {
-              setTimeout(async () => {
-                await update({ firstLogin: false });
-                router.replace('/dashboard');
-              }, 1500);
+      <Card>
+        <CardContent className="pt-6">
+          <h3 className="text-sm font-semibold mb-2">Change Password</h3>
+          <Separator className="mb-4" />
+          <PasswordForm
+            successMessage={
+              isFirstLogin
+                ? 'Password changed successfully. Redirecting to dashboard...'
+                : 'Password changed successfully.'
             }
-          }}
-        />
-      </Paper>
-    </Stack>
+            onSuccess={(data) => {
+              if (data.firstLogin === false) {
+                setTimeout(async () => {
+                  await update({ firstLogin: false });
+                  router.replace('/dashboard');
+                }, 1500);
+              }
+            }}
+          />
+        </CardContent>
+      </Card>
+    </div>
   );
 
   if (isFirstLogin) {
     return (
-      <Box
-        style={{
-          minHeight: '100vh',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          background: 'var(--mantine-color-body)',
-          padding: 24,
-        }}
-      >
-        <Container size="sm" w="100%">
-          <Title order={3} mb="md">Set Your Password</Title>
+      <div className="min-h-screen flex items-center justify-center bg-background p-6">
+        <div className="w-full max-w-lg">
+          <h1 className="text-xl font-bold mb-4">Set Your Password</h1>
           {content}
-        </Container>
-      </Box>
+        </div>
+      </div>
     );
   }
 
