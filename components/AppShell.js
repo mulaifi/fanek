@@ -231,7 +231,7 @@ export default function AppShell({ children, title }) {
             }}
           >
             <img
-              src="/fanek-logo.png"
+              src="/fanek-logo.svg"
               alt="Fanek"
               style={{ width: 32, height: 32, flexShrink: 0 }}
             />

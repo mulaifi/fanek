@@ -1,8 +1,6 @@
 <p align="center">
-  <img src="public/fanek-logo.png" alt="Fanek" width="180" />
+  <img src="public/fanek-logo-full.svg" alt="Fanek" width="320" />
 </p>
-
-<h1 align="center">Fanek</h1>
 
 <p align="center">
   <strong>Open-source client information manager for service providers</strong>

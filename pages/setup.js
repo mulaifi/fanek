@@ -127,7 +127,7 @@ export default function SetupPage() {
       <Container size="sm" w="100%">
         <Paper p="xl" radius="md">
           <Stack gap="xs" mb="xl" align="center">
-            <img src="/fanek-logo.png" alt="Fanek" style={{ width: 48, height: 48 }} />
+            <img src="/fanek-logo.svg" alt="Fanek" style={{ width: 48, height: 48 }} />
             <Title order={2} fw={700} ta="center">
               Fanek Setup
             </Title>
