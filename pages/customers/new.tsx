@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { getServerSession } from 'next-auth/next';
+import type { GetServerSidePropsContext } from 'next';
 import { getAuthOptions } from '@/lib/auth/options';
 import {
   Alert,
@@ -22,9 +23,9 @@ import { DEFAULT_CUSTOMER_STATUSES } from '@/lib/constants';
 
 export default function NewCustomerPage() {
   const router = useRouter();
-  const [submitting, setSubmitting] = useState(false);
-  const [apiError, setApiError] = useState('');
-  const [statuses, setStatuses] = useState(DEFAULT_CUSTOMER_STATUSES);
+  const [submitting, setSubmitting] = useState<boolean>(false);
+  const [apiError, setApiError] = useState<string>('');
+  const [statuses, setStatuses] = useState<readonly string[]>(DEFAULT_CUSTOMER_STATUSES);
 
   useEffect(() => {
     fetch('/api/settings')
@@ -35,7 +36,17 @@ export default function NewCustomerPage() {
       .catch(() => {});
   }, []);
 
-  const form = useForm({
+  interface NewCustomerFormValues {
+    name: string;
+    clientCode: string;
+    status: string;
+    vertical: string;
+    website: string;
+    address: string;
+    notes: string;
+  }
+
+  const form = useForm<NewCustomerFormValues>({
     initialValues: {
       name: '',
       clientCode: '',
@@ -52,12 +63,12 @@ export default function NewCustomerPage() {
     },
   });
 
-  async function handleSubmit(values) {
+  async function handleSubmit(values: NewCustomerFormValues) {
     setApiError('');
     setSubmitting(true);
 
-    const payload = { ...values };
-    Object.keys(payload).forEach((k) => {
+    const payload: Record<string, string> = { ...values };
+    (Object.keys(payload) as (keyof typeof payload)[]).forEach((k) => {
       if (payload[k] === '') delete payload[k];
     });
 
@@ -162,7 +173,7 @@ export default function NewCustomerPage() {
   );
 }
 
-export async function getServerSideProps(context) {
+export async function getServerSideProps(context: GetServerSidePropsContext) {
   const options = await getAuthOptions();
   const session = await getServerSession(context.req, context.res, options);
   if (!session) {

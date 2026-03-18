@@ -1,7 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
+import React from 'react';
 import { useRouter } from 'next/router';
 import { getServerSession } from 'next-auth/next';
 import { useSession } from 'next-auth/react';
+import type { GetServerSidePropsContext } from 'next';
+import type { DataTableSortStatus } from 'mantine-datatable';
 import { getAuthOptions } from '@/lib/auth/options';
 import {
   Avatar,
@@ -25,18 +28,27 @@ const PAGE_SIZE = 25;
 export default function CustomersIndexPage() {
   const router = useRouter();
   const { data: session } = useSession();
-  const canCreate = ['ADMIN', 'EDITOR'].includes(session?.user?.role);
+  const canCreate = ['ADMIN', 'EDITOR'].includes(session?.user?.role ?? '');
 
-  const [records, setRecords] = useState([]);
-  const [totalRecords, setTotalRecords] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(1);
-  const [sortStatus, setSortStatus] = useState({ columnAccessor: 'updatedAt', direction: 'desc' });
+  interface CustomerRow {
+    id: string;
+    name: string;
+    clientCode?: string | null;
+    status: string;
+    updatedAt: string;
+    _count?: { services: number };
+  }
 
-  const [searchInput, setSearchInput] = useState('');
-  const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('Active');
-  const [statuses, setStatuses] = useState(DEFAULT_CUSTOMER_STATUSES);
+  const [records, setRecords] = useState<CustomerRow[]>([]);
+  const [totalRecords, setTotalRecords] = useState<number>(0);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [page, setPage] = useState<number>(1);
+  const [sortStatus, setSortStatus] = useState<DataTableSortStatus<CustomerRow>>({ columnAccessor: 'updatedAt', direction: 'desc' });
+
+  const [searchInput, setSearchInput] = useState<string>('');
+  const [search, setSearch] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<string>('Active');
+  const [statuses, setStatuses] = useState<readonly string[]>(DEFAULT_CUSTOMER_STATUSES);
 
   useEffect(() => {
     fetch('/api/settings')
@@ -72,14 +84,14 @@ export default function CustomersIndexPage() {
     fetchData();
   }, [fetchData]);
 
-  function handleSearchKeyDown(e) {
+  function handleSearchKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === 'Enter') {
       setPage(1);
       setSearch(searchInput);
     }
   }
 
-  function handleStatusChange(value) {
+  function handleStatusChange(value: string | null) {
     setPage(1);
     setStatusFilter(value || '');
   }
@@ -89,7 +101,7 @@ export default function CustomersIndexPage() {
     ...statuses.map((s) => ({ value: s, label: s })),
   ];
 
-  const columns = [
+  const columns: import('mantine-datatable').DataTableColumn<CustomerRow>[] = [
     {
       accessor: 'avatar',
       title: '',
@@ -202,7 +214,7 @@ export default function CustomersIndexPage() {
   );
 }
 
-export async function getServerSideProps(context) {
+export async function getServerSideProps(context: GetServerSidePropsContext) {
   const options = await getAuthOptions();
   const session = await getServerSession(context.req, context.res, options);
   if (!session) {

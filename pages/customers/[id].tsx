@@ -2,7 +2,10 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/router';
 import { useSession } from 'next-auth/react';
 import { getServerSession } from 'next-auth/next';
+import type { GetServerSidePropsContext } from 'next';
 import { getAuthOptions } from '@/lib/auth/options';
+import type { ContactInput } from '@/lib/validation';
+import type { ServiceTypeFieldInput } from '@/lib/validation';
 import {
   ActionIcon,
   Alert,
@@ -38,8 +41,52 @@ import DynamicFieldDisplay from '@/components/DynamicFieldDisplay';
 import { statusColors } from '@/lib/theme';
 import { DEFAULT_CUSTOMER_STATUSES } from '@/lib/constants';
 
-function EditCustomerForm({ customer, statuses, onSave, onClose }) {
-  const form = useForm({
+interface ServiceTypeShape {
+  id: string;
+  name: string;
+  fieldSchema?: ServiceTypeFieldInput[];
+}
+
+interface ServiceShape {
+  id: string;
+  serviceType?: ServiceTypeShape;
+  fieldValues?: Record<string, unknown>;
+  createdAt: string;
+}
+
+interface CustomerShape {
+  id: string;
+  name: string;
+  clientCode?: string | null;
+  status: string;
+  vertical?: string | null;
+  website?: string | null;
+  address?: string | null;
+  notes?: string | null;
+  contacts?: ContactInput[];
+  services?: ServiceShape[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface EditCustomerFormValues {
+  name: string;
+  clientCode: string;
+  status: string;
+  vertical: string;
+  website: string;
+  address: string;
+}
+
+interface EditCustomerFormProps {
+  customer: CustomerShape;
+  statuses: readonly string[];
+  onSave: (data: CustomerShape) => void;
+  onClose: () => void;
+}
+
+function EditCustomerForm({ customer, statuses, onSave, onClose }: EditCustomerFormProps) {
+  const form = useForm<EditCustomerFormValues>({
     initialValues: {
       name: customer.name || '',
       clientCode: customer.clientCode || '',
@@ -55,14 +102,14 @@ function EditCustomerForm({ customer, statuses, onSave, onClose }) {
     },
   });
 
-  const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState('');
+  const [saving, setSaving] = useState<boolean>(false);
+  const [saveError, setSaveError] = useState<string>('');
 
-  async function handleSubmit(values) {
+  async function handleSubmit(values: EditCustomerFormValues) {
     setSaveError('');
     setSaving(true);
-    const payload = { ...values };
-    Object.keys(payload).forEach((k) => {
+    const payload: Record<string, string | null> = { ...values };
+    (Object.keys(payload) as (keyof typeof payload)[]).forEach((k) => {
       if (payload[k] === '') payload[k] = null;
     });
     const res = await fetch(`/api/customers/${customer.id}`, {
@@ -110,12 +157,19 @@ function EditCustomerForm({ customer, statuses, onSave, onClose }) {
   );
 }
 
-function AddServiceForm({ customerId, serviceTypes, onAdd, onClose }) {
-  const [selectedTypeId, setSelectedTypeId] = useState('');
-  const [serviceFields, setServiceFields] = useState({});
-  const [serviceErrors, setServiceErrors] = useState({});
-  const [adding, setAdding] = useState(false);
-  const [addError, setAddError] = useState('');
+interface AddServiceFormProps {
+  customerId: string | string[] | undefined;
+  serviceTypes: ServiceTypeShape[];
+  onAdd: (service: ServiceShape) => void;
+  onClose: () => void;
+}
+
+function AddServiceForm({ customerId, serviceTypes, onAdd, onClose }: AddServiceFormProps) {
+  const [selectedTypeId, setSelectedTypeId] = useState<string>('');
+  const [serviceFields, setServiceFields] = useState<Record<string, unknown>>({});
+  const [serviceErrors, setServiceErrors] = useState<Record<string, string>>({});
+  const [adding, setAdding] = useState<boolean>(false);
+  const [addError, setAddError] = useState<string>('');
 
   const selectedType = serviceTypes.find((t) => t.id === selectedTypeId);
 
@@ -125,7 +179,7 @@ function AddServiceForm({ customerId, serviceTypes, onAdd, onClose }) {
       setServiceErrors({ type: 'Please select a service type' });
       return;
     }
-    const errs = {};
+    const errs: Record<string, string> = {};
     (selectedType?.fieldSchema || []).forEach((f) => {
       if (f.required && !serviceFields[f.name]) {
         errs[f.name] = `${f.label} is required`;
@@ -192,17 +246,23 @@ function AddServiceForm({ customerId, serviceTypes, onAdd, onClose }) {
   );
 }
 
-function EditServiceForm({ service, onSave, onClose }) {
-  const [serviceFields, setServiceFields] = useState(service.fieldValues || {});
-  const [serviceErrors, setServiceErrors] = useState({});
-  const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState('');
+interface EditServiceFormProps {
+  service: ServiceShape;
+  onSave: (service: ServiceShape) => void;
+  onClose: () => void;
+}
+
+function EditServiceForm({ service, onSave, onClose }: EditServiceFormProps) {
+  const [serviceFields, setServiceFields] = useState<Record<string, unknown>>(service.fieldValues || {});
+  const [serviceErrors, setServiceErrors] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState<boolean>(false);
+  const [saveError, setSaveError] = useState<string>('');
 
   const fieldSchema = service.serviceType?.fieldSchema || [];
 
   async function handleSave() {
     setSaveError('');
-    const errs = {};
+    const errs: Record<string, string> = {};
     fieldSchema.forEach((f) => {
       if (f.required && !serviceFields[f.name]) {
         errs[f.name] = `${f.label} is required`;
@@ -252,10 +312,17 @@ function EditServiceForm({ service, onSave, onClose }) {
   );
 }
 
+interface InlineDeleteButtonProps {
+  onConfirm: () => void;
+  label?: string;
+  size?: string;
+  iconSize?: number;
+}
+
 /** Two-click inline delete button with 3-second auto-revert */
-function InlineDeleteButton({ onConfirm, label = 'Delete', size = 'lg', iconSize = 16 }) {
-  const [confirming, setConfirming] = useState(false);
-  const timerRef = useRef(null);
+function InlineDeleteButton({ onConfirm, label = 'Delete', size = 'lg', iconSize = 16 }: InlineDeleteButtonProps) {
+  const [confirming, setConfirming] = useState<boolean>(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const startConfirm = useCallback(() => {
     setConfirming(true);
@@ -293,10 +360,14 @@ function InlineDeleteButton({ onConfirm, label = 'Delete', size = 'lg', iconSize
   );
 }
 
+interface InlineDeleteServiceButtonProps {
+  onConfirm: () => void;
+}
+
 /** Small inline delete for service rows */
-function InlineDeleteServiceButton({ onConfirm }) {
-  const [confirming, setConfirming] = useState(false);
-  const timerRef = useRef(null);
+function InlineDeleteServiceButton({ onConfirm }: InlineDeleteServiceButtonProps) {
+  const [confirming, setConfirming] = useState<boolean>(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const startConfirm = useCallback(() => {
     setConfirming(true);
@@ -339,23 +410,23 @@ export default function CustomerDetailPage() {
   const { id } = router.query;
   const { data: session } = useSession();
 
-  const [customer, setCustomer] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [statuses, setStatuses] = useState(DEFAULT_CUSTOMER_STATUSES);
-  const [serviceTypes, setServiceTypes] = useState([]);
+  const [customer, setCustomer] = useState<CustomerShape | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string>('');
+  const [statuses, setStatuses] = useState<readonly string[]>(DEFAULT_CUSTOMER_STATUSES);
+  const [serviceTypes, setServiceTypes] = useState<ServiceTypeShape[]>([]);
 
-  const [notesValue, setNotesValue] = useState('');
-  const [notesSaving, setNotesSaving] = useState(false);
-  const [contactsValue, setContactsValue] = useState([]);
-  const [contactsSaving, setContactsSaving] = useState(false);
+  const [notesValue, setNotesValue] = useState<string>('');
+  const [notesSaving, setNotesSaving] = useState<boolean>(false);
+  const [contactsValue, setContactsValue] = useState<ContactInput[]>([]);
+  const [contactsSaving, setContactsSaving] = useState<boolean>(false);
 
   // Inline editing states
-  const [editingCustomer, setEditingCustomer] = useState(false);
-  const [addingService, setAddingService] = useState(false);
-  const [editingServiceId, setEditingServiceId] = useState(null);
+  const [editingCustomer, setEditingCustomer] = useState<boolean>(false);
+  const [addingService, setAddingService] = useState<boolean>(false);
+  const [editingServiceId, setEditingServiceId] = useState<string | null>(null);
 
-  const canEdit = ['ADMIN', 'EDITOR'].includes(session?.user?.role);
+  const canEdit = ['ADMIN', 'EDITOR'].includes(session?.user?.role ?? '');
   const isAdmin = session?.user?.role === 'ADMIN';
 
   useEffect(() => {
@@ -397,14 +468,14 @@ export default function CustomerDetailPage() {
     }
   }
 
-  async function handleDeleteService(svcId) {
+  async function handleDeleteService(svcId: string) {
     try {
       const res = await fetch(`/api/services/${svcId}`, { method: 'DELETE' });
       if (res.ok) {
-        setCustomer((prev) => ({
+        setCustomer((prev) => prev ? ({
           ...prev,
-          services: prev.services.filter((s) => s.id !== svcId),
-        }));
+          services: prev.services?.filter((s) => s.id !== svcId),
+        }) : prev);
       } else {
         const data = await res.json().catch(() => ({}));
         notifications.show({ title: 'Error', message: data.error || 'Failed to remove service.', color: 'red' });
@@ -424,7 +495,7 @@ export default function CustomerDetailPage() {
     const data = await res.json();
     setContactsSaving(false);
     if (res.ok) {
-      setCustomer((prev) => ({ ...prev, contacts: data.contacts }));
+      setCustomer((prev) => prev ? ({ ...prev, contacts: data.contacts }) : prev);
       setContactsValue(data.contacts || []);
       notifications.show({ title: 'Contacts saved', message: 'Contacts updated.', color: 'green' });
     } else {
@@ -442,7 +513,7 @@ export default function CustomerDetailPage() {
     const data = await res.json();
     setNotesSaving(false);
     if (res.ok) {
-      setCustomer((prev) => ({ ...prev, notes: data.notes }));
+      setCustomer((prev) => prev ? ({ ...prev, notes: data.notes }) : prev);
       notifications.show({ title: 'Notes saved', message: 'Notes updated.', color: 'green' });
     } else {
       notifications.show({ title: 'Error', message: 'Failed to save notes.', color: 'red' });
@@ -469,7 +540,7 @@ export default function CustomerDetailPage() {
     );
   }
 
-  const servicesByType = (customer.services || []).reduce((acc, svc) => {
+  const servicesByType = (customer.services || []).reduce<Record<string, ServiceShape[]>>((acc, svc) => {
     const typeName = svc.serviceType?.name || 'Unknown';
     if (!acc[typeName]) acc[typeName] = [];
     acc[typeName].push(svc);
@@ -492,7 +563,7 @@ export default function CustomerDetailPage() {
               customer={customer}
               statuses={statuses}
               onSave={(data) => {
-                setCustomer((prev) => ({ ...prev, ...data }));
+                setCustomer((prev) => prev ? ({ ...prev, ...data }) : prev);
                 setEditingCustomer(false);
                 notifications.show({ title: 'Saved', message: 'Customer updated.', color: 'green' });
               }}
@@ -591,10 +662,10 @@ export default function CustomerDetailPage() {
                     customerId={id}
                     serviceTypes={serviceTypes}
                     onAdd={(newService) => {
-                      setCustomer((prev) => ({
+                      setCustomer((prev) => prev ? ({
                         ...prev,
                         services: [newService, ...(prev.services || [])],
-                      }));
+                      }) : prev);
                       setAddingService(false);
                       notifications.show({ title: 'Service added', message: 'Service was added.', color: 'green' });
                     }}
@@ -616,10 +687,10 @@ export default function CustomerDetailPage() {
                             <EditServiceForm
                               service={svc}
                               onSave={(updated) => {
-                                setCustomer((prev) => ({
+                                setCustomer((prev) => prev ? ({
                                   ...prev,
-                                  services: prev.services.map((s) => (s.id === updated.id ? updated : s)),
-                                }));
+                                  services: prev.services?.map((s) => (s.id === updated.id ? updated : s)),
+                                }) : prev);
                                 setEditingServiceId(null);
                                 notifications.show({ title: 'Updated', message: 'Service updated.', color: 'green' });
                               }}
@@ -706,7 +777,7 @@ export default function CustomerDetailPage() {
   );
 }
 
-export async function getServerSideProps(context) {
+export async function getServerSideProps(context: GetServerSidePropsContext) {
   const options = await getAuthOptions();
   const session = await getServerSession(context.req, context.res, options);
   if (!session) {

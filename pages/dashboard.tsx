@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { getServerSession } from 'next-auth/next';
+import type { GetServerSidePropsContext } from 'next';
+import type { TablerIcon } from '@tabler/icons-react';
 import { getAuthOptions } from '@/lib/auth/options';
 import {
   Badge,
@@ -23,7 +25,14 @@ import dayjs from 'dayjs';
 import AppShell from '@/components/AppShell';
 import { statusColors, chartColors } from '@/lib/theme';
 
-function StatCard({ label, value, icon: Icon, color }) {
+interface StatCardProps {
+  label: string;
+  value?: number | null;
+  icon: TablerIcon;
+  color: string;
+}
+
+function StatCard({ label, value, icon: Icon, color }: StatCardProps) {
   return (
     <Paper p="lg">
       <Group justify="space-between" align="flex-start">
@@ -41,10 +50,19 @@ function StatCard({ label, value, icon: Icon, color }) {
   );
 }
 
+interface DashboardStats {
+  totalCustomers: number;
+  totalServices: number;
+  totalPartners: number;
+  customersByStatus: { status: string; count: number }[];
+  servicesByType: { name: string; count: number }[];
+  recentCustomers: { id: string; name: string; clientCode?: string | null; status: string; updatedAt: string }[];
+}
+
 export default function DashboardPage() {
   const router = useRouter();
-  const [stats, setStats] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     fetch('/api/dashboard/stats')
@@ -61,7 +79,8 @@ export default function DashboardPage() {
     Count: s.count,
   }));
 
-  const recentCustomerColumns = [
+  type RecentCustomer = DashboardStats['recentCustomers'][number];
+  const recentCustomerColumns: import('mantine-datatable').DataTableColumn<RecentCustomer>[] = [
     {
       accessor: 'name',
       title: 'Name',
@@ -183,7 +202,7 @@ export default function DashboardPage() {
   );
 }
 
-export async function getServerSideProps(context) {
+export async function getServerSideProps(context: GetServerSidePropsContext) {
   const options = await getAuthOptions();
   const session = await getServerSession(context.req, context.res, options);
   if (!session) {
