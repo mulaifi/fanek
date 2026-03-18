@@ -1,15 +1,20 @@
 import { PrismaAdapter } from '@next-auth/prisma-adapter';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import GoogleProvider from 'next-auth/providers/google';
+import type { NextAuthOptions, User } from 'next-auth';
+import type { Provider } from 'next-auth/providers/index';
 import prisma from '@/lib/prisma';
 import { verifyPassword } from '@/lib/password';
 import { getSettings } from '@/lib/settings';
 import { decrypt } from '@/lib/encryption';
 import logger from '@/lib/logger';
 
-export async function getAuthOptions() {
+export async function getAuthOptions(): Promise<NextAuthOptions> {
   const settings = await getSettings();
-  const providers = [
+  // authProviders is JsonValue from Prisma; cast for safe access
+  const authProviders = settings?.authProviders as Record<string, Record<string, unknown>> | null;
+
+  const providers: Provider[] = [
     CredentialsProvider({
       name: 'Email',
       credentials: {
@@ -34,19 +39,28 @@ export async function getAuthOptions() {
           data: { lastActiveAt: new Date() },
         }).catch(() => {});
 
-        return { id: user.id, name: user.name, email: user.email, role: user.role, firstLogin: user.firstLogin };
+        // Return custom user shape; role and firstLogin are picked up by the jwt callback.
+        // Cast through `unknown` then to `User` so NextAuth accepts it while preserving our fields.
+        return {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          firstLogin: user.firstLogin,
+        } as unknown as User;
       },
     }),
   ];
 
   // Add Google OAuth if configured
-  if (settings?.authProviders?.google?.enabled) {
-    const google = settings.authProviders.google;
+  if (authProviders?.google?.enabled) {
+    const google = authProviders.google;
     const secret = process.env.NEXTAUTH_SECRET;
+    if (!secret) throw new Error('NEXTAUTH_SECRET is required for OAuth providers');
     providers.push(
       GoogleProvider({
-        clientId: google.clientId,
-        clientSecret: decrypt(google.clientSecret, secret),
+        clientId: google.clientId as string,
+        clientSecret: decrypt(google.clientSecret as string, secret),
       })
     );
   }
@@ -59,7 +73,7 @@ export async function getAuthOptions() {
     ...(hasOAuthProviders && { adapter: PrismaAdapter(prisma) }),
     providers,
     session: {
-      strategy: 'jwt',
+      strategy: 'jwt' as const,
       maxAge: settings?.sessionMaxAge || 2592000,
     },
     pages: {
@@ -68,11 +82,12 @@ export async function getAuthOptions() {
     },
     callbacks: {
       async jwt({ token, user, trigger, session }) {
-        // On initial sign-in, user object is available
+        // On initial sign-in, user object is available with our custom fields
         if (user) {
-          token.id = user.id;
-          token.role = user.role;
-          token.firstLogin = user.firstLogin;
+          const u = user as { id: string; role: 'ADMIN' | 'EDITOR' | 'VIEWER'; firstLogin?: boolean };
+          token.id = u.id;
+          token.role = u.role;
+          token.firstLogin = u.firstLogin;
         }
         // When update() is called from the client
         if (trigger === 'update' && session) {
@@ -93,10 +108,12 @@ export async function getAuthOptions() {
         // For OAuth sign-ins, check domain restrictions
         if (account?.provider === 'google') {
           const settings = await getSettings();
-          const google = settings?.authProviders?.google;
-          if (google?.allowedDomains?.length > 0) {
+          const authProviders = settings?.authProviders as Record<string, Record<string, unknown>> | null;
+          const google = authProviders?.google;
+          const allowedDomains = google?.allowedDomains as string[] | undefined;
+          if (allowedDomains && allowedDomains.length > 0) {
             const domain = user.email?.split('@')[1];
-            if (!google.allowedDomains.includes(domain)) {
+            if (!allowedDomains.includes(domain ?? '')) {
               logger.warn({ email: user.email }, 'OAuth sign-in blocked: domain not allowed');
               return false;
             }
