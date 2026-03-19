@@ -2,7 +2,6 @@
 
 This guide covers everything you need to deploy, configure, and manage a Fanek instance. It assumes you are comfortable with a terminal and basic web administration.
 
----
 
 ## Contents
 
@@ -15,7 +14,6 @@ This guide covers everything you need to deploy, configure, and manage a Fanek i
 7. [CLI Tools](#7-cli-tools)
 8. [Roles and Permissions](#8-roles-and-permissions)
 
----
 
 ## 1. Installation
 
@@ -43,7 +41,6 @@ Requirements: Node.js 20 or later, PostgreSQL 16 or later.
 4. Start the development server: `npm run dev`
    - For production, build first: `npm run build && npm start`
 
----
 
 ## 2. Setup Wizard
 
@@ -78,7 +75,6 @@ You can edit, add, or remove any service type after setup. The template only set
 
 Fanek saves the configuration and redirects you to the dashboard after a short delay. Log in using the admin credentials you created in Step 1.
 
----
 
 ## 3. User Management
 
@@ -120,7 +116,6 @@ Deleted users lose access immediately. Their historical data (customers, service
 
 When a user logs in with a temporary password (either from an invite or a password reset), Fanek forces a password change before they can access any other page. After they set a new password, they land on the dashboard normally.
 
----
 
 ## 4. Service Catalog
 
@@ -177,7 +172,6 @@ Toggle **Active** off in the service type form and save. Inactive types are remo
 
 The Delete button is disabled if any services of that type exist. To delete a type, first delete or reassign all services that use it. Deletion is a two-click confirm action with a 3-second countdown.
 
----
 
 ## 5. Settings
 
@@ -225,7 +219,6 @@ Click **Export Data** to download a full JSON export of your Fanek data, includi
 
 Use this for backups, migrations, or integrations with other systems.
 
----
 
 ## 6. Audit Log
 
@@ -249,7 +242,6 @@ Click any row to expand it. The expanded view shows the full JSON payload of the
 
 The log is paginated at 20 entries per page.
 
----
 
 ## 7. CLI Tools
 
@@ -293,7 +285,6 @@ Use the CLI tools when:
 
 For day-to-day password resets and user management, use the browser UI at Admin > Users.
 
----
 
 ## 8. Roles and Permissions
 
