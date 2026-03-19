@@ -153,9 +153,31 @@
     "filterByStatus": "تصفية حسب الحالة",
     "allStatuses": "جميع الحالات",
     "exportCsv": "تصدير CSV",
-    "customerCreated": "تم إنشاء العميل بنجاح",
+    "customerCreated": "تمت إضافة العميل بنجاح.",
     "customerUpdated": "تم تحديث العميل بنجاح",
-    "customerDeleted": "تم حذف العميل بنجاح"
+    "customerDeleted": "تم حذف العميل بنجاح",
+    "customerDetails": "تفاصيل العميل",
+    "createCustomer": "إنشاء العميل",
+    "saveChanges": "حفظ التغييرات",
+    "saveNotes": "حفظ الملاحظات",
+    "selectStatus": "اختر الحالة",
+    "searchPlaceholder": "الاسم أو الرمز...",
+    "lastUpdated": "آخر تحديث",
+    "noCustomers": "لا يوجد عملاء",
+    "info": "معلومات",
+    "notFound": "العميل غير موجود",
+    "unknown": "غير معروف",
+    "noFieldsDefined": "لا توجد حقول محددة",
+    "added": "أُضيف",
+    "noEditPermission": "ليس لديك صلاحية تعديل جهات الاتصال.",
+    "contactsSaved": "تم تحديث جهات الاتصال.",
+    "notesSaved": "تم تحديث الملاحظات.",
+    "failedToCreate": "فشل إنشاء العميل",
+    "failedToSave": "فشل الحفظ",
+    "failedToLoad": "فشل تحميل العميل",
+    "failedToDelete": "فشل حذف العميل.",
+    "failedToSaveContacts": "فشل حفظ جهات الاتصال.",
+    "failedToSaveNotes": "فشل حفظ الملاحظات."
   },
   "partners": {
     "title": "الشركاء",
@@ -198,7 +220,10 @@
     "serviceDeleted": "تم حذف الخدمة بنجاح",
     "status": "الحالة",
     "active": "نشط",
-    "inactive": "غير نشط"
+    "inactive": "غير نشط",
+    "failedToAdd": "فشل إضافة الخدمة",
+    "failedToUpdate": "فشل تحديث الخدمة",
+    "failedToRemove": "فشل إزالة الخدمة."
   },
   "admin": {
     "users": {

@@ -7,7 +7,7 @@ import type { GetServerSidePropsContext } from 'next';
 import type { ColumnDef, SortingState } from '@tanstack/react-table';
 import { getAuthOptions } from '@/lib/auth/options';
 import { Search, Plus, Download } from 'lucide-react';
-import dayjs from 'dayjs';
+import { useTranslations, useFormatter } from 'next-intl';
 import AppShell from '@/components/AppShell';
 import { DataTable } from '@/components/ui/data-table';
 import { Badge } from '@/components/ui/badge';
@@ -37,6 +37,8 @@ interface CustomerRow {
 export default function CustomersIndexPage() {
   const router = useRouter();
   const { data: session } = useSession();
+  const t = useTranslations();
+  const format = useFormatter();
   const canCreate = ['ADMIN', 'EDITOR'].includes(session?.user?.role ?? '');
 
   const [records, setRecords] = useState<CustomerRow[]>([]);
@@ -113,7 +115,7 @@ export default function CustomersIndexPage() {
     },
     {
       accessorKey: 'name',
-      header: 'Name',
+      header: t('common.name'),
       enableSorting: true,
       cell: ({ row }) => (
         <div className="flex flex-col gap-0.5">
@@ -126,7 +128,7 @@ export default function CustomersIndexPage() {
     },
     {
       accessorKey: 'status',
-      header: 'Status',
+      header: t('common.status'),
       enableSorting: false,
       cell: ({ row }) => (
         <Badge className={`border-0 ${statusColors[row.original.status] || 'bg-gray-100 text-gray-600'}`}>
@@ -136,28 +138,33 @@ export default function CustomersIndexPage() {
     },
     {
       accessorKey: 'services',
-      header: 'Services',
+      header: t('customers.services'),
       enableSorting: false,
       cell: ({ row }) => row.original._count?.services ?? 0,
     },
     {
       accessorKey: 'updatedAt',
-      header: 'Last Updated',
+      header: t('customers.lastUpdated'),
       enableSorting: true,
-      cell: ({ row }) => dayjs(row.original.updatedAt).format('DD MMM YYYY'),
+      cell: ({ row }) =>
+        format.dateTime(new Date(row.original.updatedAt), {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+        }),
     },
   ];
 
   return (
-    <AppShell title="Customers">
+    <AppShell title={t('customers.title')}>
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-2">
             <div className="relative w-[220px]">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute start-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Name or code..."
-                className="pl-8"
+                placeholder={t('customers.searchPlaceholder')}
+                className="ps-8"
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 onKeyDown={handleSearchKeyDown}
@@ -168,10 +175,10 @@ export default function CustomersIndexPage() {
               onValueChange={handleStatusChange}
             >
               <SelectTrigger className="w-[160px]">
-                <SelectValue placeholder="All statuses" />
+                <SelectValue placeholder={t('customers.allStatuses')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="__all__">All statuses</SelectItem>
+                <SelectItem value="__all__">{t('customers.allStatuses')}</SelectItem>
                 {statuses.map((s) => (
                   <SelectItem key={s} value={s}>{s}</SelectItem>
                 ))}
@@ -181,8 +188,8 @@ export default function CustomersIndexPage() {
           <div className="flex items-center gap-2">
             {canCreate && (
               <Button onClick={() => router.push('/customers/new')}>
-                <Plus className="h-4 w-4 mr-1" />
-                New customer
+                <Plus className="h-4 w-4 me-1" />
+                {t('customers.newCustomer')}
               </Button>
             )}
             {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
@@ -190,8 +197,8 @@ export default function CustomersIndexPage() {
               href="/api/customers/export"
               className={buttonVariants({ variant: 'outline' })}
             >
-              <Download className="h-4 w-4 mr-1" />
-              Export CSV
+              <Download className="h-4 w-4 me-1" />
+              {t('customers.exportCsv')}
             </a>
           </div>
         </div>
@@ -210,7 +217,7 @@ export default function CustomersIndexPage() {
           pageSize={PAGE_SIZE}
           onPageChange={(idx) => setPage(idx + 1)}
           isLoading={loading}
-          emptyMessage="No customers found"
+          emptyMessage={t('customers.noCustomers')}
           onRowClick={(row) => router.push(`/customers/${row.id}`)}
         />
       </div>

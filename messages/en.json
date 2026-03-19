@@ -153,9 +153,31 @@
     "filterByStatus": "Filter by status",
     "allStatuses": "All Statuses",
     "exportCsv": "Export CSV",
-    "customerCreated": "Customer created successfully",
+    "customerCreated": "Customer added successfully.",
     "customerUpdated": "Customer updated successfully",
-    "customerDeleted": "Customer deleted successfully"
+    "customerDeleted": "Customer deleted successfully",
+    "customerDetails": "Customer Details",
+    "createCustomer": "Create Customer",
+    "saveChanges": "Save Changes",
+    "saveNotes": "Save Notes",
+    "selectStatus": "Select status",
+    "searchPlaceholder": "Name or code...",
+    "lastUpdated": "Last Updated",
+    "noCustomers": "No customers found",
+    "info": "Info",
+    "notFound": "Customer not found",
+    "unknown": "Unknown",
+    "noFieldsDefined": "No fields defined",
+    "added": "Added",
+    "noEditPermission": "You do not have permission to edit contacts.",
+    "contactsSaved": "Contacts updated.",
+    "notesSaved": "Notes updated.",
+    "failedToCreate": "Failed to create customer",
+    "failedToSave": "Failed to save",
+    "failedToLoad": "Failed to load customer",
+    "failedToDelete": "Failed to delete customer.",
+    "failedToSaveContacts": "Failed to save contacts.",
+    "failedToSaveNotes": "Failed to save notes."
   },
   "partners": {
     "title": "Partners",
@@ -198,7 +220,10 @@
     "serviceDeleted": "Service deleted successfully",
     "status": "Status",
     "active": "Active",
-    "inactive": "Inactive"
+    "inactive": "Inactive",
+    "failedToAdd": "Failed to add service",
+    "failedToUpdate": "Failed to update service",
+    "failedToRemove": "Failed to remove service."
   },
   "admin": {
     "users": {
