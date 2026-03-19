@@ -9,9 +9,9 @@ COPY prisma.config.ts ./
 RUN npm ci
 RUN npx prisma generate
 
-# Build
+# Build (DATABASE_URL needed for Next.js page data collection, not used at runtime)
 COPY . .
-RUN npm run build
+RUN DATABASE_URL="postgresql://build:build@localhost:5432/build" npm run build
 
 # Production
 FROM node:20-alpine AS runner
