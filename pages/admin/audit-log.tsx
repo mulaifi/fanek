@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { getServerSession } from 'next-auth/next';
 import type { GetServerSidePropsContext } from 'next';
 import { getAuthOptions } from '@/lib/auth/options';
@@ -63,7 +63,7 @@ export default function AuditLogPage() {
     return `/api/admin/audit-log?${params.toString()}`;
   }
 
-  async function loadPage(cursor: string | null) {
+  const loadPage = useCallback(async (cursor: string | null) => {
     setLoading(true);
     setError('');
     const res = await fetch(buildUrl(cursor));
@@ -75,7 +75,8 @@ export default function AuditLogPage() {
     } else {
       setError(data.error || t('admin.auditLog.failedLoad'));
     }
-  }
+  // eslint-disable-next-line @eslint-react/exhaustive-deps
+  }, [filterAction, filterResource, filterFrom, filterTo, t]);
 
   useEffect(() => {
     setCursors([null]);
