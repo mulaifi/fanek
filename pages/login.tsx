@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { signIn, getSession } from 'next-auth/react';
 import type { GetServerSidePropsContext } from 'next';
+import { useTranslations } from 'next-intl';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -10,9 +11,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PasswordInput } from '@/components/ui/password-input';
 import { Separator } from '@/components/ui/separator';
+import { LocaleSwitcher } from '@/components/LocaleSwitcher';
 import { Loader2 } from 'lucide-react';
 
 export default function LoginPage() {
+  const t = useTranslations();
   const router = useRouter();
   const { error: queryError } = router.query;
 
@@ -44,18 +47,17 @@ export default function LoginPage() {
     loadSettings();
   }, [router]);
 
-  const errorMessages = {
-    CredentialsSignin: 'Invalid email or password. Please try again.',
-    OAuthSignin: 'Could not sign in with Google. Please try again.',
-    OAuthCallback: 'Google sign-in was cancelled or failed.',
-    Default: 'An error occurred during sign-in. Please try again.',
-  };
-
   const queryErrorStr = Array.isArray(queryError) ? queryError[0] : queryError;
   const displayError =
     formError ||
     (queryErrorStr
-      ? (errorMessages[queryErrorStr as keyof typeof errorMessages] ?? errorMessages.Default)
+      ? queryErrorStr === 'CredentialsSignin'
+        ? t('auth.invalidCredentials')
+        : queryErrorStr === 'OAuthSignin'
+          ? t('auth.oauthError')
+          : queryErrorStr === 'OAuthCallback'
+            ? t('auth.oauthCancelled')
+            : t('auth.error')
       : null);
 
   async function handleCredentialsSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -70,7 +72,7 @@ export default function LoginPage() {
     });
 
     if (result?.error) {
-      setFormError('Invalid email or password. Please try again.');
+      setFormError(t('auth.invalidCredentials'));
       setSubmitting(false);
     } else {
       router.replace('/dashboard');
@@ -83,7 +85,10 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center py-8 px-4">
+    <div className="relative min-h-screen flex items-center justify-center py-8 px-4">
+      <div className="absolute top-4 end-4">
+        <LocaleSwitcher />
+      </div>
       <div className="w-full max-w-[420px]">
         <Card>
           <CardContent className="pt-6">
@@ -97,7 +102,7 @@ export default function LoginPage() {
                 </AvatarFallback>
               </Avatar>
               <h2 className="text-xl font-bold text-center">{orgName}</h2>
-              <p className="text-sm text-muted-foreground text-center">Sign in to your account</p>
+              <p className="text-sm text-muted-foreground text-center">{t('auth.signInToAccount')}</p>
             </div>
 
             {displayError && (
@@ -109,7 +114,7 @@ export default function LoginPage() {
             <form onSubmit={handleCredentialsSubmit}>
               <div className="flex flex-col gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email address</Label>
+                  <Label htmlFor="email">{t('auth.email')}</Label>
                   <Input
                     id="email"
                     type="email"
@@ -121,7 +126,7 @@ export default function LoginPage() {
                   />
                 </div>
                 <PasswordInput
-                  label="Password"
+                  label={t('auth.password')}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
@@ -130,11 +135,11 @@ export default function LoginPage() {
                 <Button type="submit" className="w-full mt-1" size="lg" disabled={submitting}>
                   {submitting ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Signing in...
+                      <Loader2 className="me-2 h-4 w-4 animate-spin" />
+                      {t('auth.signingIn')}
                     </>
                   ) : (
-                    'Sign in'
+                    t('auth.signIn')
                   )}
                 </Button>
               </div>
@@ -144,8 +149,8 @@ export default function LoginPage() {
               <>
                 <div className="relative my-4">
                   <Separator />
-                  <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2 text-sm text-muted-foreground">
-                    OR
+                  <span className="absolute start-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2 text-sm text-muted-foreground">
+                    {t('auth.orContinueWith')}
                   </span>
                 </div>
                 <Button
@@ -157,9 +162,9 @@ export default function LoginPage() {
                   <img
                     src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
                     alt="Google"
-                    className="w-5 h-5 mr-2"
+                    className="w-5 h-5 me-2"
                   />
-                  Sign in with Google
+                  {t('auth.signInWith', { provider: 'Google' })}
                 </Button>
               </>
             )}
