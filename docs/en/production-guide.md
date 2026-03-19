@@ -55,9 +55,10 @@ sudo apt install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
 
 # Allow your user to run Docker without sudo
 sudo usermod -aG docker $USER
-newgrp docker
 
-# Verify the installation
+# To apply the group changes, you must log out and log back in.
+
+# After logging back in, verify the installation:
 docker --version
 docker compose version
 ```
@@ -275,7 +276,6 @@ Restart=on-failure
 RestartSec=5
 
 # Load environment variables from the .env file
-Environment=NODE_ENV=production
 EnvironmentFile=/opt/fanek/.env
 
 [Install]
@@ -828,14 +828,14 @@ sudo crontab -e
 
 ```bash
 # Restore a database dump (replace the filename with your backup)
-docker exec -i fanek-db-1 pg_restore -U fanek -d fanek --clean --if-exists < /opt/backups/fanek-20260320.dump
+docker exec -i fanek-db-1 pg_restore -U fanek -d fanek --clean --if-exists < /opt/backups/fanek-YYYYMMDD.dump
 ```
 
 **Bare-metal deployments:**
 
 ```bash
 # Restore a database dump (replace the filename with your backup)
-pg_restore -U fanek -d fanek --clean --if-exists /opt/backups/fanek-20260320.dump
+pg_restore -U fanek -d fanek --clean --if-exists /opt/backups/fanek-YYYYMMDD.dump
 ```
 
 > **Warning:** Restoring replaces all existing data in the database. Always test the restore process on a separate instance before relying on it for disaster recovery.
@@ -846,6 +846,7 @@ The Fanek application itself is stateless. The code comes from the Git repositor
 
 - **Database** -- the backup procedures above.
 - **Docker `data` volume** -- contains the auto-generated `NEXTAUTH_SECRET`. If this volume is lost, the secret is lost and all user sessions become invalid (users will need to log in again). Back it up with: `docker cp fanek-app-1:/data /opt/backups/fanek-data/`
+  > **Container name note:** The container name `fanek-app-1` assumes the project directory is named `fanek`. If your directory has a different name, Docker Compose uses that name as a prefix. Run `docker compose ps` to find the actual container name.
 - **`.env` file** (bare-metal) -- contains your `NEXTAUTH_SECRET` and database credentials. Include it in your backup.
 
 ### Offsite backups
