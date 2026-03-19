@@ -2,15 +2,15 @@ services:
   db:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: clik
-      POSTGRES_PASSWORD: clik
-      POSTGRES_DB: clik
+      POSTGRES_USER: fanek
+      POSTGRES_PASSWORD: fanek
+      POSTGRES_DB: fanek
     volumes:
       - pgdata:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U clik"]
+      test: ["CMD-SHELL", "pg_isready -U fanek"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -18,14 +18,18 @@ services:
   app:
     build: .
     ports:
-      - "3000:3000"
+      - "${PORT:-3000}:${PORT:-3000}"
     environment:
-      DATABASE_URL: postgresql://clik:clik@db:5432/clik
-      NEXTAUTH_URL: http://localhost:3000
-      NEXTAUTH_SECRET: change-me-generate-with-openssl-rand-hex-32
+      DATABASE_URL: postgresql://fanek:fanek@db:5432/fanek
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-}
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-}
+      PORT: ${PORT:-3000}
+    volumes:
+      - data:/data
     depends_on:
       db:
         condition: service_healthy
 
 volumes:
   pgdata:
+  data:
