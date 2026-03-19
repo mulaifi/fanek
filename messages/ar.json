@@ -60,7 +60,8 @@
     "signOut": "تسجيل الخروج",
     "profile": "الملف الشخصي",
     "collapseSidebar": "طي الشريط الجانبي",
-    "expandSidebar": "توسيع الشريط الجانبي"
+    "expandSidebar": "توسيع الشريط الجانبي",
+    "help": "مساعدة"
   },
   "auth": {
     "signIn": "تسجيل الدخول",

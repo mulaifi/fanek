@@ -60,7 +60,7 @@ function InlineDeleteButton({ onConfirm, disabled }: InlineDeleteButtonProps) {
 
   const startConfirm = useCallback(() => {
     setConfirming(true);
-    timerRef.current = setTimeout(() => setConfirming(false), 3000);
+    timerRef.current = setTimeout(() => setConfirming(false), 5000);
   }, []);
 
   const handleConfirm = useCallback(() => {

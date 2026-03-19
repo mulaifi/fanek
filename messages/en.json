@@ -60,7 +60,8 @@
     "signOut": "Sign out",
     "profile": "Profile",
     "collapseSidebar": "Collapse sidebar",
-    "expandSidebar": "Expand sidebar"
+    "expandSidebar": "Expand sidebar",
+    "help": "Help"
   },
   "auth": {
     "signIn": "Sign in",

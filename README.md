@@ -75,12 +75,17 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) and complete the setup wizard.
 
+## Documentation
+
+- [Admin Guide](docs/en/admin-guide.md) -- Installation, setup, user management, service catalog configuration
+- [User Guide](docs/en/user-guide.md) -- Day-to-day usage: customers, services, partners, search
+
 ## Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
 | Framework | [Next.js](https://nextjs.org/) 16 (Pages Router) |
-| UI | [Mantine](https://mantine.dev/) v8 |
+| UI | [Tailwind CSS](https://tailwindcss.com/) v4 + [shadcn/ui](https://ui.shadcn.com/) |
 | Database | [PostgreSQL](https://www.postgresql.org/) 16+ |
 | ORM | [Prisma](https://www.prisma.io/) 7 |
 | Auth | [NextAuth.js](https://next-auth.js.org/) (credentials + OAuth) |

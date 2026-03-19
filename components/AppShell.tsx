@@ -16,6 +16,7 @@ import {
   User,
   PanelLeftClose,
   PanelLeftOpen,
+  HelpCircle,
   type LucideIcon,
 } from 'lucide-react';
 import {
@@ -410,6 +411,28 @@ export default function AppShell({ children, title }: AppShellProps) {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <a
+                    href={`https://github.com/mulaifi/fanek/tree/main/docs/${locale}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={t('nav.help')}
+                    className="flex items-center gap-3 w-full px-3 py-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-sidebar-accent transition-colors"
+                  >
+                    <HelpCircle size={18} className="shrink-0" />
+                    {expanded && (
+                      <span className="text-xs whitespace-nowrap overflow-hidden text-ellipsis">{t('nav.help')}</span>
+                    )}
+                  </a>
+                </TooltipTrigger>
+                {!expanded && (
+                  <TooltipContent side={dir === 'rtl' ? 'left' : 'right'}>
+                    {t('nav.help')}
+                  </TooltipContent>
+                )}
+              </Tooltip>
 
               <Tooltip>
                 <TooltipTrigger asChild>
