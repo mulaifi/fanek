@@ -7,7 +7,7 @@ import { SessionProvider } from 'next-auth/react';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { NextIntlClientProvider } from 'next-intl';
 import '@/lib/fonts'; // Side-effect: registers Inter + Tajawal @font-face
-import { getClientLocale, getDirection, type Locale } from '@/lib/i18n';
+import { getClientLocale, getFontFamily, type Locale } from '@/lib/i18n';
 import type { AppProps } from 'next/app';
 import type { Session } from 'next-auth';
 
@@ -27,20 +27,9 @@ export default function App({ Component, pageProps: { session, ...pageProps } }:
     setLocale(getClientLocale());
   }, []);
 
-  // Listen for locale changes (from LocaleSwitcher)
-  useEffect(() => {
-    const handleLocaleChange = () => setLocale(getClientLocale());
-    window.addEventListener('locale-changed', handleLocaleChange);
-    return () => window.removeEventListener('locale-changed', handleLocaleChange);
-  }, []);
-
   // Set font CSS variable based on locale direction
   useEffect(() => {
-    const dir = getDirection(locale);
-    const font = dir === 'rtl'
-      ? "'Tajawal', 'Tajawal Fallback', -apple-system, BlinkMacSystemFont, sans-serif"
-      : "'Inter', 'Inter Fallback', -apple-system, BlinkMacSystemFont, sans-serif";
-    document.documentElement.style.setProperty('--app-font', font);
+    document.documentElement.style.setProperty('--app-font', getFontFamily(locale));
   }, [locale]);
 
   return (

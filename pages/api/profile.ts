@@ -4,6 +4,7 @@ import { withAuth } from '@/lib/auth/guard';
 import prisma from '@/lib/prisma';
 import { verifyPassword, hashPassword, checkStrength } from '@/lib/password';
 import { createRateLimiter } from '@/lib/rateLimit';
+import { isValidLocale } from '@/lib/i18n';
 
 // 5 password change attempts per 15 minutes per user
 const passwordChangeLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 5 });
@@ -25,9 +26,8 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse): Promise
   const result: Record<string, unknown> = { success: true };
 
   // Handle locale update
-  const VALID_LOCALES = ['en', 'ar'];
   if (locale !== undefined) {
-    if (!VALID_LOCALES.includes(locale)) {
+    if (!isValidLocale(locale)) {
       res.status(400).json({ error: 'Invalid locale' });
       return;
     }
