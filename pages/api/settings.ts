@@ -21,5 +21,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     orgLogo: settings.orgLogo,
     customerStatuses: settings.customerStatuses,
     googleOAuthEnabled: !!authProviders?.google?.enabled,
+    defaultLocale: settings.defaultLocale ?? 'en',
   });
 }

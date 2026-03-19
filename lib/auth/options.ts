@@ -88,11 +88,13 @@ export async function getAuthOptions(): Promise<NextAuthOptions> {
           token.id = u.id;
           token.role = u.role;
           token.firstLogin = u.firstLogin;
+          token.locale = (user as { locale?: string | null }).locale ?? null;
         }
         // When update() is called from the client
         if (trigger === 'update' && session) {
           if (session.firstLogin !== undefined) token.firstLogin = session.firstLogin;
           if (session.name !== undefined) token.name = session.name;
+          if (session.locale !== undefined) token.locale = session.locale;
         }
         return token;
       },
@@ -101,6 +103,7 @@ export async function getAuthOptions(): Promise<NextAuthOptions> {
           session.user.id = token.id;
           session.user.role = token.role;
           session.user.firstLogin = token.firstLogin;
+          session.user.locale = (token.locale as string | null) ?? null;
         }
         return session;
       },
