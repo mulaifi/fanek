@@ -3,6 +3,7 @@ import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/router';
 import { useDebounce } from 'use-debounce';
 import { useTranslations, useLocale } from 'next-intl';
+import { useTheme } from 'next-themes';
 import {
   LayoutDashboard,
   Users,
@@ -136,6 +137,7 @@ export default function AppShell({ children, title }: AppShellProps) {
   const dir = getDirection(locale as Locale);
   const router = useRouter();
   const { data: session, status } = useSession();
+  const { resolvedTheme } = useTheme();
   const isDesktop = useIsDesktop();
 
   const [expanded, setExpanded] = useState(() => {
@@ -331,7 +333,7 @@ export default function AppShell({ children, title }: AppShellProps) {
             {/* Logo */}
             <div className="flex items-center px-3 gap-3 shrink-0" style={{ height: expanded ? 80 : 52 }}>
               <img
-                src="/fanek-logo.svg"
+                src={resolvedTheme === 'dark' ? '/Fanek_logo_dark.svg' : '/Fanek_logo_light.svg'}
                 alt={t('nav.appName')}
                 style={{ width: expanded ? 64 : 32, height: expanded ? 64 : 32, flexShrink: 0, transition: 'width 200ms ease, height 200ms ease' }}
               />

@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="public/fanek-logo-full.svg" alt="Fanek" width="320" />
+  <img src="public/Fanek_logo_light.svg" alt="Fanek" width="200" />
 </p>
 
 <p align="center">
@@ -41,6 +41,7 @@ That is what Fanek does. Nothing more, nothing less.
 | **Global Search** | Spotlight-style search (Cmd+K) across customers, partners, and services |
 | **CSV/JSON Export** | Export customer and partner data for reporting and integrations |
 | **OAuth Support** | Enable Google or other OAuth providers via Admin Settings (no file edits) |
+| **English and Arabic** | Full bilingual UI with RTL support; users switch language from the navigation bar |
 | **Dark/Light Mode** | Toggle between dark (default) and light themes |
 | **Docker Ready** | Ship and run with a single `docker compose up` |
 | **CLI Admin Tools** | `npm run reset-password` and `npm run list-users` for server-side admin |
