@@ -1,8 +1,14 @@
 import { Html, Head, Main, NextScript } from 'next/document';
+import type { DocumentContext, DocumentInitialProps } from 'next/document';
+import { getLocaleFromCookies, getDirection } from '@/lib/i18n';
 
-export default function Document() {
+interface DocumentProps extends DocumentInitialProps {
+  locale: string;
+}
+
+export default function Document({ locale }: DocumentProps) {
   return (
-    <Html lang="en" suppressHydrationWarning>
+    <Html lang={locale} dir={getDirection(locale as 'en' | 'ar')} suppressHydrationWarning>
       <Head>
         <link rel="icon" href="/favicon.ico" sizes="32x32" />
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
@@ -16,3 +22,9 @@ export default function Document() {
     </Html>
   );
 }
+
+Document.getInitialProps = async (ctx: DocumentContext): Promise<DocumentProps> => {
+  const initialProps = await ctx.defaultGetInitialProps(ctx);
+  const locale = getLocaleFromCookies(ctx.req?.headers.cookie);
+  return { ...initialProps, locale };
+};
