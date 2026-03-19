@@ -30,7 +30,20 @@
     "createdAt": "تاريخ الإنشاء",
     "updatedAt": "تاريخ التحديث",
     "success": "نجاح",
-    "error": "خطأ"
+    "error": "خطأ",
+    "yes": "نعم",
+    "no": "لا",
+    "selectOption": "اختر خياراً",
+    "toggleTheme": "تبديل المظهر",
+    "moveUp": "تحريك لأعلى",
+    "moveDown": "تحريك لأسفل",
+    "rowsPerPage": "الصفوف في الصفحة",
+    "pageOf": "صفحة {current} من {total}",
+    "previous": "السابق",
+    "add": "إضافة",
+    "hidePassword": "إخفاء كلمة المرور",
+    "showPassword": "إظهار كلمة المرور",
+    "failedToSave": "فشل الحفظ"
   },
   "nav": {
     "dashboard": "لوحة المعلومات",
@@ -177,7 +190,20 @@
     "failedToLoad": "فشل تحميل العميل",
     "failedToDelete": "فشل حذف العميل.",
     "failedToSaveContacts": "فشل حفظ جهات الاتصال.",
-    "failedToSaveNotes": "فشل حفظ الملاحظات."
+    "failedToSaveNotes": "فشل حفظ الملاحظات.",
+    "unnamedContact": "جهة اتصال بدون اسم",
+    "editContact": "تعديل جهة الاتصال",
+    "removeContact": "إزالة جهة الاتصال",
+    "noContactDetails": "لا توجد تفاصيل اتصال.",
+    "editingContact": "تعديل جهة الاتصال {n}",
+    "saveAndClose": "حفظ وإغلاق",
+    "titleRole": "المسمى الوظيفي",
+    "emailsLabel": "البريد الإلكتروني",
+    "phonesLabel": "أرقام الهاتف",
+    "category": "الفئة",
+    "addEmail": "إضافة بريد إلكتروني",
+    "addPhone": "إضافة رقم هاتف",
+    "addContact": "إضافة جهة اتصال"
   },
   "partners": {
     "title": "الشركاء",
@@ -310,7 +336,14 @@
       "serviceTypeName": "اسم نوع الخدمة",
       "editPrefix": "تعديل:",
       "createServiceType": "إنشاء نوع الخدمة",
-      "saveChanges": "حفظ التغييرات"
+      "saveChanges": "حفظ التغييرات",
+      "fieldSchemaHint": "حدّد حقول نوع الخدمة هذا. يجب أن تكون أسماء الحقول فريدة وتحتوي على أحرف وأرقام وشرطات سفلية فقط.",
+      "noFieldsDefined": "لا توجد حقول محددة. أضف حقلاً للبدء.",
+      "fieldN": "الحقل {n}",
+      "removeField": "إزالة الحقل",
+      "fieldNameHint": "معرّف فريد، بدون مسافات",
+      "displayLabel": "التسمية المعروضة",
+      "fieldOptionsHint": "أدخل الخيارات مفصولة بفواصل"
     },
     "settings": {
       "title": "الإعدادات",
@@ -345,7 +378,22 @@
       "failedSave": "فشل الحفظ",
       "logoSizeError": "يجب أن يكون حجم الشعار أقل من 256 كيلوبايت.",
       "langEnglish": "English",
-      "langArabic": "العربية"
+      "langArabic": "العربية",
+      "microsoftOAuth": "Microsoft OAuth",
+      "tenantId": "معرّف المستأجر",
+      "leaveBlankSecret": "اتركه فارغاً للاحتفاظ بالمفتاح السري الحالي",
+      "authSettingsSaved": "تم حفظ إعدادات المصادقة.",
+      "saveAuthSettings": "حفظ إعدادات المصادقة",
+      "statusNameEmpty": "اسم الحالة لا يمكن أن يكون فارغاً",
+      "statusAlreadyExists": "هذه الحالة موجودة بالفعل",
+      "atLeastOneStatus": "مطلوب حالة واحدة على الأقل",
+      "failedToSaveStatuses": "فشل حفظ الحالات",
+      "statusesSaved": "تم حفظ حالات العملاء.",
+      "statusesHint": "حدّد قيم حالة العميل المسموح بها. لا يمكن إزالة الحالات المستخدمة من قبل العملاء.",
+      "cannotRemoveStatus": "لا يمكن الإزالة: {count, plural, zero {لا يوجد عملاء} one {عميل واحد} two {عميلان} few {# عملاء} many {# عميلاً} other {# عميل}} يستخدم هذه الحالة",
+      "removeStatus": "إزالة الحالة",
+      "newStatusPlaceholder": "مثال: قيد الانتظار",
+      "saveStatuses": "حفظ الحالات"
     },
     "auditLog": {
       "title": "سجل المراجعة",

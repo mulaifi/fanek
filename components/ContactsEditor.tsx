@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -50,12 +51,13 @@ interface ContactViewProps {
 
 /** Read-only display of a single contact */
 function ContactView({ contact, onEdit, onRemove, canEdit }: ContactViewProps) {
+  const t = useTranslations();
   return (
     <Card className="mb-3">
       <CardContent className="pt-4">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold">{contact.name || 'Unnamed Contact'}</span>
+            <span className="text-sm font-semibold">{contact.name || t('customers.unnamedContact')}</span>
             {contact.title && <span className="text-sm text-muted-foreground">{contact.title}</span>}
           </div>
           {canEdit && (
@@ -67,7 +69,7 @@ function ContactView({ contact, onEdit, onRemove, canEdit }: ContactViewProps) {
                       <Pencil className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent>Edit contact</TooltipContent>
+                  <TooltipContent>{t('customers.editContact')}</TooltipContent>
                 </Tooltip>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -80,7 +82,7 @@ function ContactView({ contact, onEdit, onRemove, canEdit }: ContactViewProps) {
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent>Remove contact</TooltipContent>
+                  <TooltipContent>{t('customers.removeContact')}</TooltipContent>
                 </Tooltip>
               </div>
             </TooltipProvider>
@@ -118,7 +120,7 @@ function ContactView({ contact, onEdit, onRemove, canEdit }: ContactViewProps) {
         )}
 
         {!contact.emails?.length && !contact.phones?.length && (
-          <p className="text-sm text-muted-foreground">No contact details added.</p>
+          <p className="text-sm text-muted-foreground">{t('customers.noContactDetails')}</p>
         )}
       </CardContent>
     </Card>
@@ -145,15 +147,16 @@ function ContactEditForm({
   contact, ci, onUpdate, onRemove, onDone, saving,
   addEmail, updateEmail, removeEmail, addPhone, updatePhone, removePhone,
 }: ContactEditFormProps) {
+  const t = useTranslations();
   return (
     <Card className="mb-3 border-2 border-primary">
       <CardContent className="pt-4">
         <div className="flex items-center justify-between mb-4">
-          <span className="text-sm font-semibold">Editing Contact {ci + 1}</span>
+          <span className="text-sm font-semibold">{t('customers.editingContact', { n: ci + 1 })}</span>
           <div className="flex items-center gap-1">
             <Button size="sm" onClick={onDone} disabled={saving}>
-              {saving && <Loader2 className="h-3 w-3 mr-1 animate-spin" />}
-              Save &amp; Close
+              {saving && <Loader2 className="h-3 w-3 me-1 animate-spin" />}
+              {t('customers.saveAndClose')}
             </Button>
             <TooltipProvider>
               <Tooltip>
@@ -167,7 +170,7 @@ function ContactEditForm({
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>Remove contact</TooltipContent>
+                <TooltipContent>{t('customers.removeContact')}</TooltipContent>
               </Tooltip>
             </TooltipProvider>
           </div>
@@ -175,14 +178,14 @@ function ContactEditForm({
 
         <div className="grid grid-cols-2 gap-3 mb-4">
           <div className="space-y-1">
-            <Label>Name</Label>
+            <Label>{t('common.name')}</Label>
             <Input
               value={contact.name}
               onChange={(e) => onUpdate({ ...contact, name: e.currentTarget.value })}
             />
           </div>
           <div className="space-y-1">
-            <Label>Title / Role</Label>
+            <Label>{t('customers.titleRole')}</Label>
             <Input
               value={contact.title ?? ''}
               onChange={(e) => onUpdate({ ...contact, title: e.currentTarget.value })}
@@ -192,25 +195,25 @@ function ContactEditForm({
 
         <Separator className="mb-4" />
 
-        <p className="text-xs text-muted-foreground font-semibold mb-2">EMAILS</p>
+        <p className="text-xs text-muted-foreground font-semibold mb-2">{t('customers.emailsLabel')}</p>
         <div className="space-y-2 mb-2">
           {(contact.emails ?? []).map((email, ei) => (
             <div key={ei} className="flex items-end gap-2">
               <div className="space-y-1 flex-[2]">
-                {ei === 0 && <Label>Email</Label>}
+                {ei === 0 && <Label>{t('common.email')}</Label>}
                 <div className="relative">
-                  <Mail className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+                  <Mail className="absolute start-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
                   <Input
-                    aria-label={ei > 0 ? `Email ${ei + 1}` : undefined}
+                    aria-label={ei > 0 ? `${t('common.email')} ${ei + 1}` : undefined}
                     type="email"
                     value={email.value}
                     onChange={(e) => updateEmail(ci, ei, { ...email, value: e.currentTarget.value })}
-                    className="pl-8"
+                    className="ps-8"
                   />
                 </div>
               </div>
               <div className="space-y-1 flex-1">
-                {ei === 0 && <Label>Category</Label>}
+                {ei === 0 && <Label>{t('customers.category')}</Label>}
                 <Select
                   value={email.category}
                   onValueChange={(val) => updateEmail(ci, ei, { ...email, category: val })}
@@ -242,31 +245,31 @@ function ContactEditForm({
           className="mb-4"
           onClick={() => addEmail(ci)}
         >
-          <Plus className="h-3.5 w-3.5 mr-1" />
-          Add Email
+          <Plus className="h-3.5 w-3.5 me-1" />
+          {t('customers.addEmail')}
         </Button>
 
         <Separator className="mb-4" />
 
-        <p className="text-xs text-muted-foreground font-semibold mb-2">PHONES</p>
+        <p className="text-xs text-muted-foreground font-semibold mb-2">{t('customers.phonesLabel')}</p>
         <div className="space-y-2 mb-2">
           {(contact.phones ?? []).map((phone, pi) => (
             <div key={pi} className="flex items-end gap-2">
               <div className="space-y-1 flex-[2]">
-                {pi === 0 && <Label>Phone</Label>}
+                {pi === 0 && <Label>{t('common.phone')}</Label>}
                 <div className="relative">
-                  <Phone className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+                  <Phone className="absolute start-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
                   <Input
-                    aria-label={pi > 0 ? `Phone ${pi + 1}` : undefined}
+                    aria-label={pi > 0 ? `${t('common.phone')} ${pi + 1}` : undefined}
                     type="tel"
                     value={phone.value}
                     onChange={(e) => updatePhone(ci, pi, { ...phone, value: e.currentTarget.value })}
-                    className="pl-8"
+                    className="ps-8"
                   />
                 </div>
               </div>
               <div className="space-y-1 flex-1">
-                {pi === 0 && <Label>Category</Label>}
+                {pi === 0 && <Label>{t('customers.category')}</Label>}
                 <Select
                   value={phone.category}
                   onValueChange={(val) => updatePhone(ci, pi, { ...phone, category: val })}
@@ -297,8 +300,8 @@ function ContactEditForm({
           size="sm"
           onClick={() => addPhone(ci)}
         >
-          <Plus className="h-3.5 w-3.5 mr-1" />
-          Add Phone
+          <Plus className="h-3.5 w-3.5 me-1" />
+          {t('customers.addPhone')}
         </Button>
       </CardContent>
     </Card>
@@ -313,6 +316,7 @@ interface ContactsEditorProps {
 }
 
 export default function ContactsEditor({ contacts = [], onChange, onSave, saving }: ContactsEditorProps) {
+  const t = useTranslations();
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const canEdit = !!onChange;
 
@@ -381,7 +385,7 @@ export default function ContactsEditor({ contacts = [], onChange, onSave, saving
   return (
     <div>
       {contacts.length === 0 && !canEdit && (
-        <p className="text-sm text-muted-foreground">No contacts.</p>
+        <p className="text-sm text-muted-foreground">{t('customers.noContacts')}</p>
       )}
 
       {contacts.map((contact, ci) =>
@@ -414,8 +418,8 @@ export default function ContactsEditor({ contacts = [], onChange, onSave, saving
 
       {canEdit && (
         <Button variant="outline" onClick={addContact}>
-          <UserPlus className="h-4 w-4 mr-2" />
-          Add Contact
+          <UserPlus className="h-4 w-4 me-2" />
+          {t('customers.addContact')}
         </Button>
       )}
     </div>

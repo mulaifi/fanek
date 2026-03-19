@@ -30,7 +30,20 @@
     "createdAt": "Created",
     "updatedAt": "Updated",
     "success": "Success",
-    "error": "Error"
+    "error": "Error",
+    "yes": "Yes",
+    "no": "No",
+    "selectOption": "Select an option",
+    "toggleTheme": "Toggle theme",
+    "moveUp": "Move up",
+    "moveDown": "Move down",
+    "rowsPerPage": "Rows per page",
+    "pageOf": "Page {current} of {total}",
+    "previous": "Previous",
+    "add": "Add",
+    "hidePassword": "Hide password",
+    "showPassword": "Show password",
+    "failedToSave": "Failed to save"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -177,7 +190,20 @@
     "failedToLoad": "Failed to load customer",
     "failedToDelete": "Failed to delete customer.",
     "failedToSaveContacts": "Failed to save contacts.",
-    "failedToSaveNotes": "Failed to save notes."
+    "failedToSaveNotes": "Failed to save notes.",
+    "unnamedContact": "Unnamed Contact",
+    "editContact": "Edit contact",
+    "removeContact": "Remove contact",
+    "noContactDetails": "No contact details added.",
+    "editingContact": "Editing Contact {n}",
+    "saveAndClose": "Save & Close",
+    "titleRole": "Title / Role",
+    "emailsLabel": "EMAILS",
+    "phonesLabel": "PHONES",
+    "category": "Category",
+    "addEmail": "Add Email",
+    "addPhone": "Add Phone",
+    "addContact": "Add Contact"
   },
   "partners": {
     "title": "Partners",
@@ -310,7 +336,14 @@
       "serviceTypeName": "Service Type Name",
       "editPrefix": "Edit:",
       "createServiceType": "Create Service Type",
-      "saveChanges": "Save Changes"
+      "saveChanges": "Save Changes",
+      "fieldSchemaHint": "Define the fields for this service type. Field names must be unique and use only letters, numbers, and underscores.",
+      "noFieldsDefined": "No fields defined. Add a field to get started.",
+      "fieldN": "Field {n}",
+      "removeField": "Remove field",
+      "fieldNameHint": "Unique identifier, no spaces",
+      "displayLabel": "Display Label",
+      "fieldOptionsHint": "Enter options separated by commas"
     },
     "settings": {
       "title": "Settings",
@@ -345,7 +378,22 @@
       "failedSave": "Failed to save",
       "logoSizeError": "Logo must be under 256 KB.",
       "langEnglish": "English",
-      "langArabic": "Arabic (العربية)"
+      "langArabic": "Arabic (العربية)",
+      "microsoftOAuth": "Microsoft OAuth",
+      "tenantId": "Tenant ID",
+      "leaveBlankSecret": "Leave blank to keep the existing secret",
+      "authSettingsSaved": "Authentication settings saved.",
+      "saveAuthSettings": "Save Authentication Settings",
+      "statusNameEmpty": "Status name cannot be empty",
+      "statusAlreadyExists": "This status already exists",
+      "atLeastOneStatus": "At least one status is required",
+      "failedToSaveStatuses": "Failed to save statuses",
+      "statusesSaved": "Customer statuses saved.",
+      "statusesHint": "Define the allowed customer status values. Statuses in use by customers cannot be removed.",
+      "cannotRemoveStatus": "Cannot remove: {count, plural, one {# customer} other {# customers}} use this status",
+      "removeStatus": "Remove status",
+      "newStatusPlaceholder": "e.g. On Hold",
+      "saveStatuses": "Save Statuses"
     },
     "auditLog": {
       "title": "Audit Log",

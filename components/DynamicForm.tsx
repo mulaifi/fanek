@@ -1,3 +1,4 @@
+import { useTranslations } from 'next-intl';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -25,6 +26,8 @@ export default function DynamicForm({
   errors = {},
   disabled = false,
 }: DynamicFormProps) {
+  const t = useTranslations();
+
   function handleChange(fieldName: string, value: unknown) {
     onChange({ ...values, [fieldName]: value });
   }
@@ -41,7 +44,7 @@ export default function DynamicForm({
               <div key={field.name} className="space-y-2">
                 <Label htmlFor={field.name}>
                   {field.label}
-                  {field.required && <span className="text-destructive ml-1">*</span>}
+                  {field.required && <span className="text-destructive ms-1">*</span>}
                 </Label>
                 <Select
                   value={(value as string) || undefined}
@@ -49,12 +52,12 @@ export default function DynamicForm({
                   disabled={disabled}
                 >
                   <SelectTrigger id={field.name}>
-                    <SelectValue placeholder="Select an option" />
+                    <SelectValue placeholder={t('common.selectOption')} />
                   </SelectTrigger>
                   <SelectContent>
                     {!field.required && (
                       <SelectItem value="__none__">
-                        <span className="text-muted-foreground">None</span>
+                        <span className="text-muted-foreground">{t('common.none')}</span>
                       </SelectItem>
                     )}
                     {(field.options || []).map((opt) => (
@@ -87,10 +90,10 @@ export default function DynamicForm({
               <div key={field.name} className="space-y-2">
                 <Label htmlFor={field.name}>
                   {field.label}
-                  {field.required && <span className="text-destructive ml-1">*</span>}
+                  {field.required && <span className="text-destructive ms-1">*</span>}
                 </Label>
                 <div className="flex items-center">
-                  <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground text-sm h-9">
+                  <span className="inline-flex items-center px-3 rounded-s-md border border-e-0 border-input bg-muted text-muted-foreground text-sm h-9">
                     {field.currencySymbol || '$'}
                   </span>
                   <Input
@@ -105,7 +108,7 @@ export default function DynamicForm({
                     }
                     min={0}
                     step="0.01"
-                    className="rounded-l-none"
+                    className="rounded-s-none"
                     required={field.required}
                     disabled={disabled}
                   />
@@ -119,7 +122,7 @@ export default function DynamicForm({
               <div key={field.name} className="space-y-2">
                 <Label htmlFor={field.name}>
                   {field.label}
-                  {field.required && <span className="text-destructive ml-1">*</span>}
+                  {field.required && <span className="text-destructive ms-1">*</span>}
                 </Label>
                 <Input
                   id={field.name}
@@ -143,7 +146,7 @@ export default function DynamicForm({
               <div key={field.name} className="space-y-2">
                 <Label htmlFor={field.name}>
                   {field.label}
-                  {field.required && <span className="text-destructive ml-1">*</span>}
+                  {field.required && <span className="text-destructive ms-1">*</span>}
                 </Label>
                 <Input
                   id={field.name}
@@ -162,7 +165,7 @@ export default function DynamicForm({
               <div key={field.name} className="space-y-2">
                 <Label htmlFor={field.name}>
                   {field.label}
-                  {field.required && <span className="text-destructive ml-1">*</span>}
+                  {field.required && <span className="text-destructive ms-1">*</span>}
                 </Label>
                 <Input
                   id={field.name}

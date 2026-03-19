@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -17,6 +18,7 @@ interface StatusManagerProps {
 }
 
 export default function StatusManager({ statuses = [], statusUsage = {}, onSave }: StatusManagerProps) {
+  const t = useTranslations();
   const [items, setItems] = useState(statuses);
   const [newStatus, setNewStatus] = useState('');
   const [newError, setNewError] = useState('');
@@ -27,11 +29,11 @@ export default function StatusManager({ statuses = [], statusUsage = {}, onSave 
   function handleAdd() {
     const trimmed = newStatus.trim();
     if (!trimmed) {
-      setNewError('Status name cannot be empty');
+      setNewError(t('admin.settings.statusNameEmpty'));
       return;
     }
     if (items.includes(trimmed)) {
-      setNewError('This status already exists');
+      setNewError(t('admin.settings.statusAlreadyExists'));
       return;
     }
     setItems([...items, trimmed]);
@@ -59,7 +61,7 @@ export default function StatusManager({ statuses = [], statusUsage = {}, onSave 
     setError('');
     setSuccess(false);
     if (items.length === 0) {
-      setError('At least one status is required');
+      setError(t('admin.settings.atLeastOneStatus'));
       return;
     }
     setSaving(true);
@@ -71,7 +73,7 @@ export default function StatusManager({ statuses = [], statusUsage = {}, onSave 
     const data = await res.json();
     setSaving(false);
     if (!res.ok) {
-      setError(data.error || 'Failed to save statuses');
+      setError(data.error || t('admin.settings.failedToSaveStatuses'));
     } else {
       setSuccess(true);
       onSave?.(data);
@@ -87,12 +89,12 @@ export default function StatusManager({ statuses = [], statusUsage = {}, onSave 
       )}
       {success && (
         <Alert className="mb-4 border-green-200 bg-green-50 text-green-800">
-          <AlertDescription>Customer statuses saved.</AlertDescription>
+          <AlertDescription>{t('admin.settings.statusesSaved')}</AlertDescription>
         </Alert>
       )}
 
       <p className="text-sm text-muted-foreground mb-4">
-        Define the allowed customer status values. Statuses in use by customers cannot be removed.
+        {t('admin.settings.statusesHint')}
       </p>
 
       <div className="space-y-2 mb-4">
@@ -100,8 +102,8 @@ export default function StatusManager({ statuses = [], statusUsage = {}, onSave 
           const usageCount = statusUsage?.[status] || 0;
           const inUse = usageCount > 0;
           const removeTooltip = inUse
-            ? `Cannot remove: ${usageCount} customer${usageCount !== 1 ? 's' : ''} use this status`
-            : 'Remove status';
+            ? t('admin.settings.cannotRemoveStatus', { count: usageCount })
+            : t('admin.settings.removeStatus');
 
           return (
             <TooltipProvider key={index}>
@@ -152,7 +154,7 @@ export default function StatusManager({ statuses = [], statusUsage = {}, onSave 
       <div className="flex items-start gap-2 mb-6">
         <div className="space-y-1">
           <Input
-            placeholder="e.g. On Hold"
+            placeholder={t('admin.settings.newStatusPlaceholder')}
             value={newStatus}
             onChange={(e) => setNewStatus(e.currentTarget.value)}
             className="w-[200px]"
@@ -166,13 +168,13 @@ export default function StatusManager({ statuses = [], statusUsage = {}, onSave 
           {newError && <p className="text-sm text-destructive">{newError}</p>}
         </div>
         <Button variant="outline" size="sm" onClick={handleAdd}>
-          <Plus className="h-3.5 w-3.5 mr-1.5" />
-          Add
+          <Plus className="h-3.5 w-3.5 me-1.5" />
+          {t('common.add')}
         </Button>
       </div>
 
       <Button onClick={handleSave} disabled={saving}>
-        {saving ? 'Saving...' : 'Save Statuses'}
+        {saving ? t('common.saving') : t('admin.settings.saveStatuses')}
       </Button>
     </div>
   );
