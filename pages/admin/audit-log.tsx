@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { getServerSession } from 'next-auth/next';
 import type { GetServerSidePropsContext } from 'next';
 import { getAuthOptions } from '@/lib/auth/options';
@@ -53,35 +53,29 @@ export default function AuditLogPage() {
   const [filterFrom, setFilterFrom] = useState<string>('');
   const [filterTo, setFilterTo] = useState<string>('');
 
-  const buildUrl = useCallback(
-    (cursor: string | null) => {
-      const params = new URLSearchParams();
-      if (filterAction) params.set('action', filterAction);
-      if (filterResource) params.set('resource', filterResource);
-      if (filterFrom) params.set('from', filterFrom);
-      if (filterTo) params.set('to', filterTo);
-      if (cursor) params.set('cursor', cursor);
-      return `/api/admin/audit-log?${params.toString()}`;
-    },
-    [filterAction, filterResource, filterFrom, filterTo]
-  );
+  function buildUrl(cursor: string | null) {
+    const params = new URLSearchParams();
+    if (filterAction) params.set('action', filterAction);
+    if (filterResource) params.set('resource', filterResource);
+    if (filterFrom) params.set('from', filterFrom);
+    if (filterTo) params.set('to', filterTo);
+    if (cursor) params.set('cursor', cursor);
+    return `/api/admin/audit-log?${params.toString()}`;
+  }
 
-  const loadPage = useCallback(
-    async (cursor: string | null) => {
-      setLoading(true);
-      setError('');
-      const res = await fetch(buildUrl(cursor));
-      const data = await res.json();
-      setLoading(false);
-      if (res.ok) {
-        setLogs(data.data || []);
-        setNextCursor(data.nextCursor || null);
-      } else {
-        setError(data.error || t('admin.auditLog.failedLoad'));
-      }
-    },
-    [buildUrl]
-  );
+  async function loadPage(cursor: string | null) {
+    setLoading(true);
+    setError('');
+    const res = await fetch(buildUrl(cursor));
+    const data = await res.json();
+    setLoading(false);
+    if (res.ok) {
+      setLogs(data.data || []);
+      setNextCursor(data.nextCursor || null);
+    } else {
+      setError(data.error || t('admin.auditLog.failedLoad'));
+    }
+  }
 
   useEffect(() => {
     setCursors([null]);
