@@ -7,6 +7,7 @@ import type { ServiceTypeFieldInput } from '@/lib/validation';
 import { toast } from 'sonner';
 import { Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
 import AppShell from '@/components/AppShell';
+import ServiceIcon, { serviceIconNames } from '@/components/ServiceIcon';
 import ServiceTypeEditor from '@/components/admin/ServiceTypeEditor';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -23,6 +24,13 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 
 interface ServiceTypeRow {
@@ -253,8 +261,8 @@ export default function ServiceCatalogPage() {
                   }}
                 >
                   <TableCell>
-                    <span className="font-medium">
-                      {st.icon ? `${st.icon} ` : ''}
+                    <span className="font-medium flex items-center gap-2">
+                      <ServiceIcon name={st.icon} className="h-4 w-4 text-muted-foreground shrink-0" />
                       {st.name}
                     </span>
                   </TableCell>
@@ -368,14 +376,30 @@ function ServiceTypeForm({ initial, editingType, onClose, onSuccess }: ServiceTy
             <p className="text-xs text-destructive">{formErrors.name}</p>
           )}
         </div>
-        <div className="flex flex-col gap-1 w-24">
-          <Label htmlFor="st-icon">{t('admin.serviceCatalog.iconEmoji')}</Label>
-          <Input
-            id="st-icon"
-            placeholder="e.g. ☁️"
-            value={form.icon}
-            onChange={(e) => setForm({ ...form, icon: e.target.value })}
-          />
+        <div className="flex flex-col gap-1 w-40">
+          <Label htmlFor="st-icon">{t('admin.serviceCatalog.icon')}</Label>
+          <Select value={form.icon} onValueChange={(v) => setForm({ ...form, icon: v })}>
+            <SelectTrigger id="st-icon">
+              <SelectValue placeholder={t('admin.serviceCatalog.selectIcon')}>
+                {form.icon && (
+                  <span className="flex items-center gap-2">
+                    <ServiceIcon name={form.icon} className="h-4 w-4" />
+                    {form.icon}
+                  </span>
+                )}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {serviceIconNames.map((name) => (
+                <SelectItem key={name} value={name}>
+                  <span className="flex items-center gap-2">
+                    <ServiceIcon name={name} className="h-4 w-4" />
+                    {name}
+                  </span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
       <div className="flex flex-col gap-1">

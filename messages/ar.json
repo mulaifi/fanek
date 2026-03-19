@@ -314,6 +314,7 @@
       "typeName": "اسم النوع",
       "icon": "الأيقونة",
       "iconEmoji": "الأيقونة (رمز تعبيري)",
+      "selectIcon": "اختر أيقونة",
       "fieldSchema": "هيكل الحقول",
       "addField": "إضافة حقل",
       "fieldName": "اسم الحقل",

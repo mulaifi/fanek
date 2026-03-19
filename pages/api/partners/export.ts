@@ -3,6 +3,7 @@ import type { AuthenticatedRequest } from '@/types';
 import { withAuth } from '@/lib/auth/guard';
 import prisma from '@/lib/prisma';
 import { stringify } from 'csv-stringify/sync';
+import { sanitizeCsvValue } from '@/lib/export';
 
 async function handler(req: AuthenticatedRequest, res: NextApiResponse): Promise<void> {
   if (req.method !== 'GET') {
@@ -15,9 +16,9 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse): Promise
   const partners = await prisma.partner.findMany({ where, orderBy: { name: 'asc' } });
   const csv = stringify(
     partners.map((p) => ({
-      Name: p.name,
-      Type: p.type,
-      Notes: p.notes || '',
+      Name: sanitizeCsvValue(p.name),
+      Type: sanitizeCsvValue(p.type),
+      Notes: sanitizeCsvValue(p.notes || ''),
       Created: p.createdAt.toISOString().split('T')[0],
     })),
     { header: true }

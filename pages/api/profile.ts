@@ -25,34 +25,18 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse): Promise
   const userId = req.session.user.id;
   const result: Record<string, unknown> = { success: true };
 
-  // Handle locale update
-  if (locale !== undefined) {
-    if (!isValidLocale(locale)) {
-      res.status(400).json({ error: 'Invalid locale' });
-      return;
-    }
-    await prisma.user.update({
-      where: { id: userId },
-      data: { locale },
-    });
-    result.locale = locale;
+  // ---- Validate all fields before applying any changes ----
+
+  if (locale !== undefined && !isValidLocale(locale)) {
+    res.status(400).json({ error: 'Invalid locale' });
+    return;
   }
 
-  // Handle name update
-  if (name !== undefined) {
-    if (typeof name !== 'string' || name.trim() === '') {
-      res.status(400).json({ error: 'Name must be a non-empty string' });
-      return;
-    }
-    const updated = await prisma.user.update({
-      where: { id: userId },
-      data: { name: name.trim() },
-      select: { name: true },
-    });
-    result.name = updated.name;
+  if (name !== undefined && (typeof name !== 'string' || name.trim() === '')) {
+    res.status(400).json({ error: 'Name must be a non-empty string' });
+    return;
   }
 
-  // Handle password change
   if (currentPassword || newPassword) {
     if (!currentPassword || !newPassword) {
       res.status(400).json({ error: 'Current password and new password are required' });
@@ -83,10 +67,34 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse): Promise
       res.status(400).json({ error: 'Weak password', details: strength.errors });
       return;
     }
+  }
 
+  // ---- All validations passed, now apply changes ----
+
+  // Handle locale update
+  if (locale !== undefined) {
+    await prisma.user.update({
+      where: { id: userId },
+      data: { locale },
+    });
+    result.locale = locale;
+  }
+
+  // Handle name update
+  if (name !== undefined) {
+    const updated = await prisma.user.update({
+      where: { id: userId },
+      data: { name: name.trim() },
+      select: { name: true },
+    });
+    result.name = updated.name;
+  }
+
+  // Handle password change
+  if (currentPassword && newPassword) {
     const newHash = await hashPassword(newPassword);
     await prisma.user.update({
-      where: { id: user.id },
+      where: { id: userId },
       data: { passwordHash: newHash, firstLogin: false },
     });
     result.firstLogin = false;

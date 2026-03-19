@@ -183,7 +183,19 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse): Promise
 
     logger.info({ fields: Object.keys(updateData) }, 'Settings updated');
 
-    res.json(updated);
+    // Redact encrypted secrets from auth providers before sending response
+    const sanitizedUpdated: Record<string, unknown> = { ...updated };
+    if (updated.authProviders && typeof updated.authProviders === 'object' && !Array.isArray(updated.authProviders)) {
+      const providers = { ...(updated.authProviders as Record<string, Record<string, unknown>>) };
+      for (const providerKey of Object.keys(providers)) {
+        if (providers[providerKey]?.clientSecret) {
+          providers[providerKey] = { ...providers[providerKey], clientSecret: '••••••••' };
+        }
+      }
+      sanitizedUpdated.authProviders = providers;
+    }
+
+    res.json(sanitizedUpdated);
     return;
   }
 
