@@ -1,7 +1,7 @@
 import handler from '../../pages/api/profile';
 import prisma from '@/lib/prisma';
 import { verifyPassword, hashPassword, checkStrength } from '@/lib/password';
-import { createRateLimiter } from '@/lib/rateLimit';
+
 
 jest.mock('@/lib/prisma', () => ({
   __esModule: true,

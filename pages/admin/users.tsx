@@ -135,7 +135,7 @@ export default function AdminUsersPage() {
   const [editingRoleUserId, setEditingRoleUserId] = useState<string | null>(null);
   const [resetPasswordResult, setResetPasswordResult] = useState<ResetPasswordResult | null>(null);
 
-  async function loadUsers() {
+  const loadUsers = useCallback(async () => {
     setLoading(true);
     const res = await fetch('/api/admin/users');
     const data = await res.json();
@@ -145,11 +145,11 @@ export default function AdminUsersPage() {
     } else {
       setError(data.error || t('admin.users.failedLoadUsers'));
     }
-  }
+  }, [t]);
 
   useEffect(() => {
     loadUsers();
-  }, []);
+  }, [loadUsers]);
 
   function handleInviteSuccess(result: InviteResult) {
     setUsers((prev) => [result.user, ...prev]);

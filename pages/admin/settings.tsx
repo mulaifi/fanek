@@ -61,7 +61,7 @@ export default function AdminSettingsPage() {
         setError(t('admin.settings.failedLoad'));
         setLoading(false);
       });
-  }, []);
+  }, [t]);
 
   function handleLogoFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];

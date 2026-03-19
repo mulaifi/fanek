@@ -1,4 +1,4 @@
-const { test, expect } = require('@playwright/test');
+const { test } = require('@playwright/test');
 
 test.describe('Service Management', () => {
   test('adds a service to a customer', async ({ page }) => {
