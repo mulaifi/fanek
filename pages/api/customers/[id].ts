@@ -2,12 +2,15 @@ import type { NextApiResponse } from 'next';
 import type { AuthenticatedRequest } from '@/types';
 import { withAuth } from '@/lib/auth/guard';
 import prisma from '@/lib/prisma';
-import { customerSchema } from '@/lib/validation';
+import { customerSchema, isValidCuid } from '@/lib/validation';
 import { logAudit } from '@/lib/audit';
 import { getSettings } from '@/lib/settings';
 
 async function handler(req: AuthenticatedRequest, res: NextApiResponse): Promise<void> {
   const id = req.query.id as string;
+  if (!isValidCuid(id)) {
+    return res.status(400).json({ error: 'Invalid customer ID format' });
+  }
 
   if (req.method === 'GET') {
     const customer = await prisma.customer.findUnique({

@@ -16,8 +16,9 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse): Promise
     const limitVal = Array.isArray(limit) ? limit[0] : limit;
     const pageVal = Array.isArray(page) ? page[0] : page;
     const validSort = ALLOWED_SORT_FIELDS.includes(sortVal ?? '') ? (sortVal ?? 'name') : 'name';
+    const normalizedOrder = orderVal?.toLowerCase() ?? '';
     const validOrder: 'asc' | 'desc' =
-      ['asc', 'desc'].includes(orderVal?.toLowerCase() ?? '') ? (orderVal!.toLowerCase() as 'asc' | 'desc') : 'asc';
+      normalizedOrder === 'asc' || normalizedOrder === 'desc' ? normalizedOrder : 'asc';
     const take = Math.min(parseInt(limitVal ?? '25', 10) || 25, 100);
     const skip = (Math.max(parseInt(pageVal ?? '1', 10) || 1, 1) - 1) * take;
     const where: Record<string, unknown> = {};

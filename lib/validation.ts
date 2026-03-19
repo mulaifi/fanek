@@ -19,7 +19,7 @@ export const serviceTypeSchema = z.object({
 });
 
 export const contactSchema = z.object({
-  name: z.string(),
+  name: z.string().min(1, 'Contact name is required'),
   title: z.string().optional(),
   emails: z.array(z.object({ value: z.string().email(), category: z.string() })).optional(),
   phones: z.array(z.object({ value: z.string(), category: z.string() })).optional(),
@@ -62,3 +62,11 @@ export type ContactInput = z.infer<typeof contactSchema>;
 export type CustomerInput = z.infer<typeof customerSchema>;
 export type PartnerInput = z.infer<typeof partnerSchema>;
 export type ServiceInput = z.infer<typeof serviceSchema>;
+
+/** CUID format: starts with 'c' followed by lowercase alphanumeric characters */
+const CUID_REGEX = /^c[a-z0-9]{20,}$/;
+
+/** Validate that a string is a valid CUID. Returns true if valid. */
+export function isValidCuid(value: unknown): value is string {
+  return typeof value === 'string' && CUID_REGEX.test(value);
+}

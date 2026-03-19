@@ -97,9 +97,9 @@ export default function SetupPage() {
           return;
         }
         setActiveStep(3);
-        // Redirect to dashboard after a short delay
+        // Redirect to login after a short delay so user can authenticate
         setTimeout(() => {
-          router.replace('/dashboard');
+          router.replace('/login');
         }, 2500);
       } catch {
         setError(t('setup.networkError'));

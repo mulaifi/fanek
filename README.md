@@ -77,8 +77,13 @@ Open [http://localhost:3000](http://localhost:3000) and complete the setup wizar
 
 ## Documentation
 
+**English:**
 - [Admin Guide](docs/en/admin-guide.md) -- Installation, setup, user management, service catalog configuration
 - [User Guide](docs/en/user-guide.md) -- Day-to-day usage: customers, services, partners, search
+
+**العربية:**
+- [دليل المسؤول](docs/ar/admin-guide.md) -- التثبيت، الإعداد، إدارة المستخدمين، تهيئة كتالوج الخدمات
+- [دليل المستخدم](docs/ar/user-guide.md) -- الاستخدام اليومي: العملاء، الخدمات، الشركاء، البحث
 
 ## Tech Stack
 

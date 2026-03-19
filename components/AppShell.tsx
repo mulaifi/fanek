@@ -200,7 +200,10 @@ export default function AppShell({ children, title }: AppShellProps) {
     }
 
     fetch(`/api/search?q=${encodeURIComponent(debouncedQuery)}`)
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error('Search request failed');
+        return r.json();
+      })
       .then((data) => {
         const actions: SpotlightAction[] = [];
 

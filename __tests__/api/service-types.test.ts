@@ -63,8 +63,8 @@ beforeEach(() => {
 describe('GET /api/service-types', () => {
   test('returns list ordered by sortOrder', async () => {
     const serviceTypes = [
-      { id: 'st1', name: 'Connectivity', sortOrder: 1, _count: { services: 3 } },
-      { id: 'st2', name: 'Security', sortOrder: 2, _count: { services: 1 } },
+      { id: 'clxxxxxxxxxxxxxxxxstyp0001', name: 'Connectivity', sortOrder: 1, _count: { services: 3 } },
+      { id: 'clxxxxxxxxxxxxxxxxstyp0002', name: 'Security', sortOrder: 2, _count: { services: 1 } },
     ];
     prisma.serviceType.findMany.mockResolvedValue(serviceTypes);
     const { req, res } = mockReqRes();
@@ -108,7 +108,7 @@ describe('POST /api/service-types', () => {
   };
 
   test('creates service type with valid data', async () => {
-    const created = { id: 'st1', ...validBody };
+    const created = { id: 'clxxxxxxxxxxxxxxxxstyp0001', ...validBody };
     prisma.serviceType.create.mockResolvedValue(created);
     const { req, res } = mockReqRes({ method: 'POST', body: validBody });
     await indexHandler(req, res);
@@ -171,16 +171,16 @@ describe('index handler - unsupported methods', () => {
 
 describe('GET /api/service-types/[id]', () => {
   test('returns service type with service count', async () => {
-    const serviceType = { id: 'st1', name: 'Connectivity', _count: { services: 5 } };
+    const serviceType = { id: 'clxxxxxxxxxxxxxxxxstyp0001', name: 'Connectivity', _count: { services: 5 } };
     prisma.serviceType.findUnique.mockResolvedValue(serviceType);
-    const { req, res } = mockReqRes({ query: { id: 'st1' } });
+    const { req, res } = mockReqRes({ query: { id: 'clxxxxxxxxxxxxxxxxstyp0001' } });
     await idHandler(req, res);
     expect(res.json).toHaveBeenCalledWith(serviceType);
   });
 
   test('returns 404 when service type not found', async () => {
     prisma.serviceType.findUnique.mockResolvedValue(null);
-    const { req, res } = mockReqRes({ query: { id: 'missing' } });
+    const { req, res } = mockReqRes({ query: { id: 'clxxxxxxxxxxxxxxxxmiss0001' } });
     await idHandler(req, res);
     expect(res.status).toHaveBeenCalledWith(404);
   });
@@ -190,23 +190,23 @@ describe('GET /api/service-types/[id]', () => {
 
 describe('PUT /api/service-types/[id]', () => {
   test('updates service type and logs audit', async () => {
-    const existing = { id: 'st1', name: 'Old Name', fieldSchema: [], sortOrder: 1, active: true };
+    const existing = { id: 'clxxxxxxxxxxxxxxxxstyp0001', name: 'Old Name', fieldSchema: [], sortOrder: 1, active: true };
     const updated = { ...existing, name: 'New Name' };
     prisma.serviceType.findUnique.mockResolvedValue(existing);
     prisma.serviceType.update.mockResolvedValue(updated);
     const { req, res } = mockReqRes({
       method: 'PUT',
       body: { name: 'New Name' },
-      query: { id: 'st1' },
+      query: { id: 'clxxxxxxxxxxxxxxxxstyp0001' },
     });
     await idHandler(req, res);
     expect(prisma.serviceType.update).toHaveBeenCalledWith({
-      where: { id: 'st1' },
+      where: { id: 'clxxxxxxxxxxxxxxxxstyp0001' },
       data: { name: 'New Name' },
     });
     expect(res.json).toHaveBeenCalledWith(updated);
     expect(logAudit).toHaveBeenCalledWith(
-      expect.objectContaining({ action: 'UPDATE', resource: 'serviceType', resourceId: 'st1' })
+      expect.objectContaining({ action: 'UPDATE', resource: 'serviceType', resourceId: 'clxxxxxxxxxxxxxxxxstyp0001' })
     );
   });
 
@@ -214,7 +214,7 @@ describe('PUT /api/service-types/[id]', () => {
     const { req, res } = mockReqRes({
       method: 'PUT',
       body: { name: 'New' },
-      query: { id: 'st1' },
+      query: { id: 'clxxxxxxxxxxxxxxxxstyp0001' },
       role: 'EDITOR',
     });
     await idHandler(req, res);
@@ -226,7 +226,7 @@ describe('PUT /api/service-types/[id]', () => {
     const { req, res } = mockReqRes({
       method: 'PUT',
       body: { name: 'New' },
-      query: { id: 'missing' },
+      query: { id: 'clxxxxxxxxxxxxxxxxmiss0001' },
     });
     await idHandler(req, res);
     expect(res.status).toHaveBeenCalledWith(404);
@@ -237,10 +237,10 @@ describe('PUT /api/service-types/[id]', () => {
 
 describe('DELETE /api/service-types/[id]', () => {
   test('returns 409 when services exist for this type', async () => {
-    const existing = { id: 'st1', name: 'Connectivity' };
+    const existing = { id: 'clxxxxxxxxxxxxxxxxstyp0001', name: 'Connectivity' };
     prisma.serviceType.findUnique.mockResolvedValue(existing);
     prisma.service.count.mockResolvedValue(3);
-    const { req, res } = mockReqRes({ method: 'DELETE', query: { id: 'st1' } });
+    const { req, res } = mockReqRes({ method: 'DELETE', query: { id: 'clxxxxxxxxxxxxxxxxstyp0001' } });
     await idHandler(req, res);
     expect(res.status).toHaveBeenCalledWith(409);
     const response = res.json.mock.calls[0][0];
@@ -249,28 +249,28 @@ describe('DELETE /api/service-types/[id]', () => {
   });
 
   test('deletes service type and logs audit when no services exist', async () => {
-    const existing = { id: 'st1', name: 'Connectivity' };
+    const existing = { id: 'clxxxxxxxxxxxxxxxxstyp0001', name: 'Connectivity' };
     prisma.serviceType.findUnique.mockResolvedValue(existing);
     prisma.service.count.mockResolvedValue(0);
     prisma.serviceType.delete.mockResolvedValue({});
-    const { req, res } = mockReqRes({ method: 'DELETE', query: { id: 'st1' } });
+    const { req, res } = mockReqRes({ method: 'DELETE', query: { id: 'clxxxxxxxxxxxxxxxxstyp0001' } });
     await idHandler(req, res);
-    expect(prisma.serviceType.delete).toHaveBeenCalledWith({ where: { id: 'st1' } });
+    expect(prisma.serviceType.delete).toHaveBeenCalledWith({ where: { id: 'clxxxxxxxxxxxxxxxxstyp0001' } });
     expect(res.json).toHaveBeenCalledWith({ success: true });
     expect(logAudit).toHaveBeenCalledWith(
-      expect.objectContaining({ action: 'DELETE', resource: 'serviceType', resourceId: 'st1' })
+      expect.objectContaining({ action: 'DELETE', resource: 'serviceType', resourceId: 'clxxxxxxxxxxxxxxxxstyp0001' })
     );
   });
 
   test('returns 403 for EDITOR role', async () => {
-    const { req, res } = mockReqRes({ method: 'DELETE', query: { id: 'st1' }, role: 'EDITOR' });
+    const { req, res } = mockReqRes({ method: 'DELETE', query: { id: 'clxxxxxxxxxxxxxxxxstyp0001' }, role: 'EDITOR' });
     await idHandler(req, res);
     expect(res.status).toHaveBeenCalledWith(403);
   });
 
   test('returns 404 if service type does not exist', async () => {
     prisma.serviceType.findUnique.mockResolvedValue(null);
-    const { req, res } = mockReqRes({ method: 'DELETE', query: { id: 'missing' } });
+    const { req, res } = mockReqRes({ method: 'DELETE', query: { id: 'clxxxxxxxxxxxxxxxxmiss0001' } });
     await idHandler(req, res);
     expect(res.status).toHaveBeenCalledWith(404);
     expect(prisma.serviceType.delete).not.toHaveBeenCalled();
