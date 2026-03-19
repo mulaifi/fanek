@@ -65,8 +65,8 @@ beforeEach(() => {
 describe('GET /api/customers', () => {
   test('returns paginated list with total count', async () => {
     const customers = [
-      { id: 'c1', name: 'Acme', clientCode: 'AC01', _count: { services: 2 } },
-      { id: 'c2', name: 'Beta', clientCode: 'BT01', _count: { services: 0 } },
+      { id: 'clxxxxxxxxxxxxxxxxcust0001', name: 'Acme', clientCode: 'AC01', _count: { services: 2 } },
+      { id: 'clxxxxxxxxxxxxxxxxcust0002', name: 'Beta', clientCode: 'BT01', _count: { services: 0 } },
     ];
     prisma.customer.findMany.mockResolvedValue(customers);
     prisma.customer.count.mockResolvedValue(2);
@@ -77,8 +77,8 @@ describe('GET /api/customers', () => {
 
   test('returns correct total when more results exist than page size', async () => {
     const customers = [
-      { id: 'c1', name: 'Acme', clientCode: 'AC01', _count: { services: 0 } },
-      { id: 'c2', name: 'Beta', clientCode: 'BT01', _count: { services: 0 } },
+      { id: 'clxxxxxxxxxxxxxxxxcust0001', name: 'Acme', clientCode: 'AC01', _count: { services: 0 } },
+      { id: 'clxxxxxxxxxxxxxxxxcust0002', name: 'Beta', clientCode: 'BT01', _count: { services: 0 } },
     ];
     prisma.customer.findMany.mockResolvedValue(customers);
     prisma.customer.count.mockResolvedValue(5);
@@ -118,7 +118,7 @@ describe('POST /api/customers', () => {
   };
 
   test('creates customer with valid data', async () => {
-    const created = { id: 'c1', ...validBody };
+    const created = { id: 'clxxxxxxxxxxxxxxxxcust0001', ...validBody };
     prisma.customer.create.mockResolvedValue(created);
     const { req, res } = mockReqRes({ method: 'POST', body: validBody });
     await indexHandler(req, res);
@@ -136,7 +136,7 @@ describe('POST /api/customers', () => {
   });
 
   test('accepts missing clientCode (optional field)', async () => {
-    prisma.customer.create.mockResolvedValue({ id: 'c2', name: 'Acme Corp', clientCode: null, status: 'Active' });
+    prisma.customer.create.mockResolvedValue({ id: 'clxxxxxxxxxxxxxxxxcust0002', name: 'Acme Corp', clientCode: null, status: 'Active' });
     const { req, res } = mockReqRes({ method: 'POST', body: { name: 'Acme Corp' } });
     await indexHandler(req, res);
     expect(res.status).toHaveBeenCalledWith(201);
@@ -182,16 +182,16 @@ describe('index handler - unsupported methods', () => {
 
 describe('GET /api/customers/[id]', () => {
   test('returns customer with services', async () => {
-    const customer = { id: 'c1', name: 'Acme', services: [] };
+    const customer = { id: 'clxxxxxxxxxxxxxxxxcust0001', name: 'Acme', services: [] };
     prisma.customer.findUnique.mockResolvedValue(customer);
-    const { req, res } = mockReqRes({ query: { id: 'c1' } });
+    const { req, res } = mockReqRes({ query: { id: 'clxxxxxxxxxxxxxxxxcust0001' } });
     await idHandler(req, res);
     expect(res.json).toHaveBeenCalledWith(customer);
   });
 
   test('returns 404 when customer not found', async () => {
     prisma.customer.findUnique.mockResolvedValue(null);
-    const { req, res } = mockReqRes({ query: { id: 'missing' } });
+    const { req, res } = mockReqRes({ query: { id: 'clxxxxxxxxxxxxxxxxmiss0001' } });
     await idHandler(req, res);
     expect(res.status).toHaveBeenCalledWith(404);
   });
@@ -201,20 +201,20 @@ describe('GET /api/customers/[id]', () => {
 
 describe('PUT /api/customers/[id]', () => {
   test('updates customer and logs audit', async () => {
-    const existing = { id: 'c1', name: 'Old Name', clientCode: 'OLD01', status: 'Active' };
+    const existing = { id: 'clxxxxxxxxxxxxxxxxcust0001', name: 'Old Name', clientCode: 'OLD01', status: 'Active' };
     const updated = { ...existing, name: 'New Name' };
     prisma.customer.findUnique.mockResolvedValue(existing);
     prisma.customer.update.mockResolvedValue(updated);
     const { req, res } = mockReqRes({
       method: 'PUT',
       body: { name: 'New Name' },
-      query: { id: 'c1' },
+      query: { id: 'clxxxxxxxxxxxxxxxxcust0001' },
     });
     await idHandler(req, res);
-    expect(prisma.customer.update).toHaveBeenCalledWith({ where: { id: 'c1' }, data: { name: 'New Name' } });
+    expect(prisma.customer.update).toHaveBeenCalledWith({ where: { id: 'clxxxxxxxxxxxxxxxxcust0001' }, data: { name: 'New Name' } });
     expect(res.json).toHaveBeenCalledWith(updated);
     expect(logAudit).toHaveBeenCalledWith(
-      expect.objectContaining({ action: 'UPDATE', resource: 'customer', resourceId: 'c1' })
+      expect.objectContaining({ action: 'UPDATE', resource: 'customer', resourceId: 'clxxxxxxxxxxxxxxxxcust0001' })
     );
   });
 
@@ -222,7 +222,7 @@ describe('PUT /api/customers/[id]', () => {
     const { req, res } = mockReqRes({
       method: 'PUT',
       body: { name: 'New' },
-      query: { id: 'c1' },
+      query: { id: 'clxxxxxxxxxxxxxxxxcust0001' },
       role: 'VIEWER',
     });
     await idHandler(req, res);
@@ -234,7 +234,7 @@ describe('PUT /api/customers/[id]', () => {
     const { req, res } = mockReqRes({
       method: 'PUT',
       body: { name: 'New' },
-      query: { id: 'missing' },
+      query: { id: 'clxxxxxxxxxxxxxxxxmiss0001' },
     });
     await idHandler(req, res);
     expect(res.status).toHaveBeenCalledWith(404);
@@ -245,27 +245,27 @@ describe('PUT /api/customers/[id]', () => {
 
 describe('DELETE /api/customers/[id]', () => {
   test('deletes customer when ADMIN and logs audit', async () => {
-    const existing = { id: 'c1', name: 'Acme', clientCode: 'ACME01' };
+    const existing = { id: 'clxxxxxxxxxxxxxxxxcust0001', name: 'Acme', clientCode: 'ACME01' };
     prisma.customer.findUnique.mockResolvedValue(existing);
     prisma.customer.delete.mockResolvedValue({});
-    const { req, res } = mockReqRes({ method: 'DELETE', query: { id: 'c1' } });
+    const { req, res } = mockReqRes({ method: 'DELETE', query: { id: 'clxxxxxxxxxxxxxxxxcust0001' } });
     await idHandler(req, res);
-    expect(prisma.customer.delete).toHaveBeenCalledWith({ where: { id: 'c1' } });
+    expect(prisma.customer.delete).toHaveBeenCalledWith({ where: { id: 'clxxxxxxxxxxxxxxxxcust0001' } });
     expect(res.json).toHaveBeenCalledWith({ success: true });
     expect(logAudit).toHaveBeenCalledWith(
-      expect.objectContaining({ action: 'DELETE', resource: 'customer', resourceId: 'c1' })
+      expect.objectContaining({ action: 'DELETE', resource: 'customer', resourceId: 'clxxxxxxxxxxxxxxxxcust0001' })
     );
   });
 
   test('returns 403 for EDITOR role', async () => {
-    const { req, res } = mockReqRes({ method: 'DELETE', query: { id: 'c1' }, role: 'EDITOR' });
+    const { req, res } = mockReqRes({ method: 'DELETE', query: { id: 'clxxxxxxxxxxxxxxxxcust0001' }, role: 'EDITOR' });
     await idHandler(req, res);
     expect(res.status).toHaveBeenCalledWith(403);
   });
 
   test('returns 404 if customer does not exist', async () => {
     prisma.customer.findUnique.mockResolvedValue(null);
-    const { req, res } = mockReqRes({ method: 'DELETE', query: { id: 'missing' } });
+    const { req, res } = mockReqRes({ method: 'DELETE', query: { id: 'clxxxxxxxxxxxxxxxxmiss0001' } });
     await idHandler(req, res);
     expect(res.status).toHaveBeenCalledWith(404);
     expect(prisma.customer.delete).not.toHaveBeenCalled();

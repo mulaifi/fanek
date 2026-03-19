@@ -26,7 +26,7 @@ jest.mock('@/lib/prisma', () => ({
 jest.mock('@/lib/auth/guard', () => ({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   withAdmin: (handler: any) => (req: any, res: any) => {
-    req.session = { user: { id: 'admin-1', role: 'ADMIN' } };
+    req.session = { user: { id: 'clxxxxxxxxxxxxxxxxadmn0001', role: 'ADMIN' } };
     return handler(req, res);
   },
 }));
@@ -69,8 +69,8 @@ beforeEach(() => {
 describe('GET /api/admin/users', () => {
   test('returns list of users without passwordHash', async () => {
     const users = [
-      { id: 'u1', name: 'Alice', email: 'alice@example.com', role: 'ADMIN', firstLogin: false, lastActiveAt: null, createdAt: new Date(), updatedAt: new Date() },
-      { id: 'u2', name: 'Bob', email: 'bob@example.com', role: 'VIEWER', firstLogin: true, lastActiveAt: null, createdAt: new Date(), updatedAt: new Date() },
+      { id: 'clxxxxxxxxxxxxxxxxuser0001', name: 'Alice', email: 'alice@example.com', role: 'ADMIN', firstLogin: false, lastActiveAt: null, createdAt: new Date(), updatedAt: new Date() },
+      { id: 'clxxxxxxxxxxxxxxxxuser0002', name: 'Bob', email: 'bob@example.com', role: 'VIEWER', firstLogin: true, lastActiveAt: null, createdAt: new Date(), updatedAt: new Date() },
     ];
     prisma.user.findMany.mockResolvedValue(users);
     const { req, res } = mockReqRes();
@@ -97,7 +97,7 @@ describe('POST /api/admin/users', () => {
   const validBody = { name: 'Charlie', email: 'charlie@example.com', role: 'EDITOR' };
 
   test('creates user and returns user plus tempPassword', async () => {
-    const createdUser = { id: 'u3', name: 'Charlie', email: 'charlie@example.com', role: 'EDITOR', firstLogin: true };
+    const createdUser = { id: 'clxxxxxxxxxxxxxxxxuser0003', name: 'Charlie', email: 'charlie@example.com', role: 'EDITOR', firstLogin: true };
     prisma.user.create.mockResolvedValue(createdUser);
     const { req, res } = mockReqRes({ method: 'POST', body: validBody });
     await indexHandler(req, res);
@@ -110,7 +110,7 @@ describe('POST /api/admin/users', () => {
   });
 
   test('creates user with firstLogin: true by default', async () => {
-    const createdUser = { id: 'u3', name: 'Charlie', email: 'charlie@example.com', role: 'EDITOR', firstLogin: true };
+    const createdUser = { id: 'clxxxxxxxxxxxxxxxxuser0003', name: 'Charlie', email: 'charlie@example.com', role: 'EDITOR', firstLogin: true };
     prisma.user.create.mockResolvedValue(createdUser);
     const { req, res } = mockReqRes({ method: 'POST', body: validBody });
     await indexHandler(req, res);
@@ -122,12 +122,12 @@ describe('POST /api/admin/users', () => {
   });
 
   test('logs audit on user creation', async () => {
-    const createdUser = { id: 'u3', name: 'Charlie', email: 'charlie@example.com', role: 'EDITOR', firstLogin: true };
+    const createdUser = { id: 'clxxxxxxxxxxxxxxxxuser0003', name: 'Charlie', email: 'charlie@example.com', role: 'EDITOR', firstLogin: true };
     prisma.user.create.mockResolvedValue(createdUser);
     const { req, res } = mockReqRes({ method: 'POST', body: validBody });
     await indexHandler(req, res);
     expect(logAudit).toHaveBeenCalledWith(
-      expect.objectContaining({ action: 'CREATE', resource: 'user', resourceId: 'u3' })
+      expect.objectContaining({ action: 'CREATE', resource: 'user', resourceId: 'clxxxxxxxxxxxxxxxxuser0003' })
     );
   });
 
@@ -162,9 +162,9 @@ describe('POST /api/admin/users', () => {
 
 describe('GET /api/admin/users/[id]', () => {
   test('returns single user without passwordHash', async () => {
-    const user = { id: 'u1', name: 'Alice', email: 'alice@example.com', role: 'ADMIN' };
+    const user = { id: 'clxxxxxxxxxxxxxxxxuser0001', name: 'Alice', email: 'alice@example.com', role: 'ADMIN' };
     prisma.user.findUnique.mockResolvedValue(user);
-    const { req, res } = mockReqRes({ query: { id: 'u1' } });
+    const { req, res } = mockReqRes({ query: { id: 'clxxxxxxxxxxxxxxxxuser0001' } });
     await idHandler(req, res);
     expect(res.json).toHaveBeenCalledWith(user);
     const callArgs = prisma.user.findUnique.mock.calls[0][0];
@@ -173,7 +173,7 @@ describe('GET /api/admin/users/[id]', () => {
 
   test('returns 404 when user not found', async () => {
     prisma.user.findUnique.mockResolvedValue(null);
-    const { req, res } = mockReqRes({ query: { id: 'missing' } });
+    const { req, res } = mockReqRes({ query: { id: 'clxxxxxxxxxxxxxxxxmiss0001' } });
     await idHandler(req, res);
     expect(res.status).toHaveBeenCalledWith(404);
   });
@@ -183,30 +183,30 @@ describe('GET /api/admin/users/[id]', () => {
 
 describe('PUT /api/admin/users/[id]', () => {
   test('updates user role and logs audit', async () => {
-    const existing = { id: 'u2', name: 'Bob', email: 'bob@example.com', role: 'VIEWER' };
+    const existing = { id: 'clxxxxxxxxxxxxxxxxuser0002', name: 'Bob', email: 'bob@example.com', role: 'VIEWER' };
     const updated = { ...existing, role: 'EDITOR' };
     prisma.user.findUnique.mockResolvedValue(existing);
     prisma.user.update.mockResolvedValue(updated);
-    const { req, res } = mockReqRes({ method: 'PUT', body: { role: 'EDITOR' }, query: { id: 'u2' } });
+    const { req, res } = mockReqRes({ method: 'PUT', body: { role: 'EDITOR' }, query: { id: 'clxxxxxxxxxxxxxxxxuser0002' } });
     await idHandler(req, res);
     expect(prisma.user.update).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { id: 'u2' }, data: { role: 'EDITOR' } })
+      expect.objectContaining({ where: { id: 'clxxxxxxxxxxxxxxxxuser0002' }, data: { role: 'EDITOR' } })
     );
     expect(res.json).toHaveBeenCalledWith(updated);
     expect(logAudit).toHaveBeenCalledWith(
-      expect.objectContaining({ action: 'UPDATE', resource: 'user', resourceId: 'u2' })
+      expect.objectContaining({ action: 'UPDATE', resource: 'user', resourceId: 'clxxxxxxxxxxxxxxxxuser0002' })
     );
   });
 
   test('rejects invalid role with 400', async () => {
-    const { req, res } = mockReqRes({ method: 'PUT', body: { role: 'SUPERUSER' }, query: { id: 'u2' } });
+    const { req, res } = mockReqRes({ method: 'PUT', body: { role: 'SUPERUSER' }, query: { id: 'clxxxxxxxxxxxxxxxxuser0002' } });
     await idHandler(req, res);
     expect(res.status).toHaveBeenCalledWith(400);
   });
 
   test('returns 404 when user not found', async () => {
     prisma.user.findUnique.mockResolvedValue(null);
-    const { req, res } = mockReqRes({ method: 'PUT', body: { role: 'EDITOR' }, query: { id: 'missing' } });
+    const { req, res } = mockReqRes({ method: 'PUT', body: { role: 'EDITOR' }, query: { id: 'clxxxxxxxxxxxxxxxxmiss0001' } });
     await idHandler(req, res);
     expect(res.status).toHaveBeenCalledWith(404);
   });
@@ -216,21 +216,21 @@ describe('PUT /api/admin/users/[id]', () => {
 
 describe('DELETE /api/admin/users/[id]', () => {
   test('deletes user and logs audit', async () => {
-    const existing = { id: 'u2', name: 'Bob', email: 'bob@example.com', role: 'VIEWER' };
+    const existing = { id: 'clxxxxxxxxxxxxxxxxuser0002', name: 'Bob', email: 'bob@example.com', role: 'VIEWER' };
     prisma.user.findUnique.mockResolvedValue(existing);
     prisma.user.delete.mockResolvedValue({});
-    const { req, res } = mockReqRes({ method: 'DELETE', query: { id: 'u2' } });
+    const { req, res } = mockReqRes({ method: 'DELETE', query: { id: 'clxxxxxxxxxxxxxxxxuser0002' } });
     await idHandler(req, res);
-    expect(prisma.user.delete).toHaveBeenCalledWith({ where: { id: 'u2' } });
+    expect(prisma.user.delete).toHaveBeenCalledWith({ where: { id: 'clxxxxxxxxxxxxxxxxuser0002' } });
     expect(res.json).toHaveBeenCalledWith({ success: true });
     expect(logAudit).toHaveBeenCalledWith(
-      expect.objectContaining({ action: 'DELETE', resource: 'user', resourceId: 'u2' })
+      expect.objectContaining({ action: 'DELETE', resource: 'user', resourceId: 'clxxxxxxxxxxxxxxxxuser0002' })
     );
   });
 
   test('prevents deleting own account (self-delete)', async () => {
     // admin-1 is the session user id from the mock
-    const { req, res } = mockReqRes({ method: 'DELETE', query: { id: 'admin-1' } });
+    const { req, res } = mockReqRes({ method: 'DELETE', query: { id: 'clxxxxxxxxxxxxxxxxadmn0001' } });
     await idHandler(req, res);
     expect(res.status).toHaveBeenCalledWith(400);
     const response = res.json.mock.calls[0][0];
@@ -240,7 +240,7 @@ describe('DELETE /api/admin/users/[id]', () => {
 
   test('returns 404 when user not found', async () => {
     prisma.user.findUnique.mockResolvedValue(null);
-    const { req, res } = mockReqRes({ method: 'DELETE', query: { id: 'missing' } });
+    const { req, res } = mockReqRes({ method: 'DELETE', query: { id: 'clxxxxxxxxxxxxxxxxmiss0001' } });
     await idHandler(req, res);
     expect(res.status).toHaveBeenCalledWith(404);
     expect(prisma.user.delete).not.toHaveBeenCalled();
@@ -251,14 +251,14 @@ describe('DELETE /api/admin/users/[id]', () => {
 
 describe('POST /api/admin/users/[id]/reset-password', () => {
   test('resets password and returns tempPassword', async () => {
-    const user = { id: 'u2', name: 'Bob', email: 'bob@example.com' };
+    const user = { id: 'clxxxxxxxxxxxxxxxxuser0002', name: 'Bob', email: 'bob@example.com' };
     prisma.user.findUnique.mockResolvedValue(user);
     prisma.user.update.mockResolvedValue({});
-    const { req, res } = mockReqRes({ method: 'POST', query: { id: 'u2' } });
+    const { req, res } = mockReqRes({ method: 'POST', query: { id: 'clxxxxxxxxxxxxxxxxuser0002' } });
     await resetPasswordHandler(req, res);
     expect(prisma.user.update).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { id: 'u2' },
+        where: { id: 'clxxxxxxxxxxxxxxxxuser0002' },
         data: expect.objectContaining({ firstLogin: true }),
       })
     );
@@ -269,13 +269,13 @@ describe('POST /api/admin/users/[id]/reset-password', () => {
 
   test('returns 404 when user not found', async () => {
     prisma.user.findUnique.mockResolvedValue(null);
-    const { req, res } = mockReqRes({ method: 'POST', query: { id: 'missing' } });
+    const { req, res } = mockReqRes({ method: 'POST', query: { id: 'clxxxxxxxxxxxxxxxxmiss0001' } });
     await resetPasswordHandler(req, res);
     expect(res.status).toHaveBeenCalledWith(404);
   });
 
   test('returns 405 for non-POST methods', async () => {
-    const { req, res } = mockReqRes({ method: 'GET', query: { id: 'u2' } });
+    const { req, res } = mockReqRes({ method: 'GET', query: { id: 'clxxxxxxxxxxxxxxxxuser0002' } });
     await resetPasswordHandler(req, res);
     expect(res.status).toHaveBeenCalledWith(405);
   });
@@ -285,37 +285,37 @@ describe('POST /api/admin/users/[id]/reset-password', () => {
 
 describe('POST /api/admin/users/[id]/revoke-sessions', () => {
   test('deletes all sessions for user', async () => {
-    const user = { id: 'u2', email: 'bob@example.com' };
+    const user = { id: 'clxxxxxxxxxxxxxxxxuser0002', email: 'bob@example.com' };
     prisma.user.findUnique.mockResolvedValue(user);
     prisma.session.deleteMany.mockResolvedValue({ count: 3 });
-    const { req, res } = mockReqRes({ method: 'POST', query: { id: 'u2' } });
+    const { req, res } = mockReqRes({ method: 'POST', query: { id: 'clxxxxxxxxxxxxxxxxuser0002' } });
     await revokeSessionsHandler(req, res);
-    expect(prisma.session.deleteMany).toHaveBeenCalledWith({ where: { userId: 'u2' } });
+    expect(prisma.session.deleteMany).toHaveBeenCalledWith({ where: { userId: 'clxxxxxxxxxxxxxxxxuser0002' } });
     const response = res.json.mock.calls[0][0];
     expect(response.success).toBe(true);
     expect(response.sessionsRevoked).toBe(3);
   });
 
   test('logs audit after revoking sessions', async () => {
-    const user = { id: 'u2', email: 'bob@example.com' };
+    const user = { id: 'clxxxxxxxxxxxxxxxxuser0002', email: 'bob@example.com' };
     prisma.user.findUnique.mockResolvedValue(user);
     prisma.session.deleteMany.mockResolvedValue({ count: 2 });
-    const { req, res } = mockReqRes({ method: 'POST', query: { id: 'u2' } });
+    const { req, res } = mockReqRes({ method: 'POST', query: { id: 'clxxxxxxxxxxxxxxxxuser0002' } });
     await revokeSessionsHandler(req, res);
     expect(logAudit).toHaveBeenCalledWith(
-      expect.objectContaining({ action: 'UPDATE', resource: 'user', resourceId: 'u2' })
+      expect.objectContaining({ action: 'UPDATE', resource: 'user', resourceId: 'clxxxxxxxxxxxxxxxxuser0002' })
     );
   });
 
   test('returns 404 when user not found', async () => {
     prisma.user.findUnique.mockResolvedValue(null);
-    const { req, res } = mockReqRes({ method: 'POST', query: { id: 'missing' } });
+    const { req, res } = mockReqRes({ method: 'POST', query: { id: 'clxxxxxxxxxxxxxxxxmiss0001' } });
     await revokeSessionsHandler(req, res);
     expect(res.status).toHaveBeenCalledWith(404);
   });
 
   test('returns 405 for non-POST methods', async () => {
-    const { req, res } = mockReqRes({ method: 'GET', query: { id: 'u2' } });
+    const { req, res } = mockReqRes({ method: 'GET', query: { id: 'clxxxxxxxxxxxxxxxxuser0002' } });
     await revokeSessionsHandler(req, res);
     expect(res.status).toHaveBeenCalledWith(405);
   });

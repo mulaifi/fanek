@@ -21,8 +21,9 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse): Promise
     const sort = normalize(rawSort);
     const order = normalize(rawOrder);
     const validSort = ALLOWED_SORT_FIELDS.includes(sort ?? '') ? (sort ?? 'name') : 'name';
+    const normalizedOrder = order?.toLowerCase() ?? '';
     const validOrder: 'asc' | 'desc' =
-      ['asc', 'desc'].includes(order?.toLowerCase() ?? '') ? (order!.toLowerCase() as 'asc' | 'desc') : 'asc';
+      normalizedOrder === 'asc' || normalizedOrder === 'desc' ? normalizedOrder : 'asc';
     const take = Math.min(parseInt(limit ?? '25', 10) || 25, 100);
     const skip = (Math.max(parseInt(page ?? '1', 10) || 1, 1) - 1) * take;
     const where: Record<string, unknown> = {};

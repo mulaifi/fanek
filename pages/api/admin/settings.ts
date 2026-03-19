@@ -20,7 +20,18 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse): Promise
       res.status(404).json({ error: 'Settings not found' });
       return;
     }
-    res.json(settings);
+    // Redact encrypted secrets from auth providers before sending to client
+    const sanitizedSettings: Record<string, unknown> = { ...settings };
+    if (settings.authProviders && typeof settings.authProviders === 'object' && !Array.isArray(settings.authProviders)) {
+      const providers = { ...(settings.authProviders as Record<string, Record<string, unknown>>) };
+      for (const providerKey of Object.keys(providers)) {
+        if (providers[providerKey]?.clientSecret) {
+          providers[providerKey] = { ...providers[providerKey], clientSecret: '••••••••' };
+        }
+      }
+      sanitizedSettings.authProviders = providers;
+    }
+    res.json(sanitizedSettings);
     return;
   }
 

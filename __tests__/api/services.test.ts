@@ -179,7 +179,7 @@ describe('GET /api/services/[id]', () => {
 
   test('returns 404 when service not found', async () => {
     prisma.service.findUnique.mockResolvedValue(null);
-    const { req, res } = mockReqRes({ query: { id: 'missing' } });
+    const { req, res } = mockReqRes({ query: { id: 'clxxxxxxxxxxxxxxxxmiss0001' } });
     await idHandler(req, res);
     expect(res.status).toHaveBeenCalledWith(404);
   });
@@ -230,7 +230,7 @@ describe('PUT /api/services/[id]', () => {
     const { req, res } = mockReqRes({
       method: 'PUT',
       body: { fieldValues: {} },
-      query: { id: 'missing' },
+      query: { id: 'clxxxxxxxxxxxxxxxxmiss0001' },
     });
     await idHandler(req, res);
     expect(res.status).toHaveBeenCalledWith(404);
@@ -266,7 +266,7 @@ describe('DELETE /api/services/[id]', () => {
 
   test('returns 404 if service does not exist', async () => {
     prisma.service.findUnique.mockResolvedValue(null);
-    const { req, res } = mockReqRes({ method: 'DELETE', query: { id: 'missing' } });
+    const { req, res } = mockReqRes({ method: 'DELETE', query: { id: 'clxxxxxxxxxxxxxxxxmiss0001' } });
     await idHandler(req, res);
     expect(res.status).toHaveBeenCalledWith(404);
     expect(prisma.service.delete).not.toHaveBeenCalled();

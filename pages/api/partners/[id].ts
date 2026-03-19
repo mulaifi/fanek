@@ -2,11 +2,14 @@ import type { NextApiResponse } from 'next';
 import type { AuthenticatedRequest } from '@/types';
 import { withAuth } from '@/lib/auth/guard';
 import prisma from '@/lib/prisma';
-import { partnerSchema } from '@/lib/validation';
+import { partnerSchema, isValidCuid } from '@/lib/validation';
 import { logAudit } from '@/lib/audit';
 
 async function handler(req: AuthenticatedRequest, res: NextApiResponse): Promise<void> {
   const id = req.query.id as string;
+  if (!isValidCuid(id)) {
+    return res.status(400).json({ error: 'Invalid partner ID format' });
+  }
 
   if (req.method === 'GET') {
     const partner = await prisma.partner.findUnique({

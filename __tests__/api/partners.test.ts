@@ -72,8 +72,8 @@ beforeEach(() => {
 describe('GET /api/partners', () => {
   test('returns paginated list with total count', async () => {
     const partners = [
-      { id: 'p1', name: 'Acme Partners', type: 'Reseller' },
-      { id: 'p2', name: 'Beta Partners', type: 'Vendor' },
+      { id: 'clxxxxxxxxxxxxxxxxpart0001', name: 'Acme Partners', type: 'Reseller' },
+      { id: 'clxxxxxxxxxxxxxxxxpart0002', name: 'Beta Partners', type: 'Vendor' },
     ];
     prisma.partner.findMany.mockResolvedValue(partners);
     prisma.partner.count.mockResolvedValue(2);
@@ -84,8 +84,8 @@ describe('GET /api/partners', () => {
 
   test('returns correct total when more results exist than page size', async () => {
     const partners = [
-      { id: 'p1', name: 'Acme Partners', type: 'Reseller' },
-      { id: 'p2', name: 'Beta Partners', type: 'Vendor' },
+      { id: 'clxxxxxxxxxxxxxxxxpart0001', name: 'Acme Partners', type: 'Reseller' },
+      { id: 'clxxxxxxxxxxxxxxxxpart0002', name: 'Beta Partners', type: 'Vendor' },
     ];
     prisma.partner.findMany.mockResolvedValue(partners);
     prisma.partner.count.mockResolvedValue(5);
@@ -124,7 +124,7 @@ describe('POST /api/partners', () => {
   };
 
   test('creates partner with valid data', async () => {
-    const created = { id: 'p1', ...validBody };
+    const created = { id: 'clxxxxxxxxxxxxxxxxpart0001', ...validBody };
     prisma.partner.create.mockResolvedValue(created);
     const { req, res } = mockReqRes({ method: 'POST', body: validBody });
     await indexHandler(req, res);
@@ -176,16 +176,16 @@ describe('index handler - unsupported methods', () => {
 
 describe('GET /api/partners/[id]', () => {
   test('returns partner by id', async () => {
-    const partner = { id: 'p1', name: 'Acme Partners', type: 'Reseller' };
+    const partner = { id: 'clxxxxxxxxxxxxxxxxpart0001', name: 'Acme Partners', type: 'Reseller' };
     prisma.partner.findUnique.mockResolvedValue(partner);
-    const { req, res } = mockReqRes({ query: { id: 'p1' } });
+    const { req, res } = mockReqRes({ query: { id: 'clxxxxxxxxxxxxxxxxpart0001' } });
     await idHandler(req, res);
     expect(res.json).toHaveBeenCalledWith(partner);
   });
 
   test('returns 404 when partner not found', async () => {
     prisma.partner.findUnique.mockResolvedValue(null);
-    const { req, res } = mockReqRes({ query: { id: 'missing' } });
+    const { req, res } = mockReqRes({ query: { id: 'clxxxxxxxxxxxxxxxxmiss0001' } });
     await idHandler(req, res);
     expect(res.status).toHaveBeenCalledWith(404);
   });
@@ -195,20 +195,20 @@ describe('GET /api/partners/[id]', () => {
 
 describe('PUT /api/partners/[id]', () => {
   test('updates partner and logs audit', async () => {
-    const existing = { id: 'p1', name: 'Old Name', type: 'Reseller' };
+    const existing = { id: 'clxxxxxxxxxxxxxxxxpart0001', name: 'Old Name', type: 'Reseller' };
     const updated = { ...existing, name: 'New Name' };
     prisma.partner.findUnique.mockResolvedValue(existing);
     prisma.partner.update.mockResolvedValue(updated);
     const { req, res } = mockReqRes({
       method: 'PUT',
       body: { name: 'New Name' },
-      query: { id: 'p1' },
+      query: { id: 'clxxxxxxxxxxxxxxxxpart0001' },
     });
     await idHandler(req, res);
-    expect(prisma.partner.update).toHaveBeenCalledWith({ where: { id: 'p1' }, data: { name: 'New Name' } });
+    expect(prisma.partner.update).toHaveBeenCalledWith({ where: { id: 'clxxxxxxxxxxxxxxxxpart0001' }, data: { name: 'New Name' } });
     expect(res.json).toHaveBeenCalledWith(updated);
     expect(logAudit).toHaveBeenCalledWith(
-      expect.objectContaining({ action: 'UPDATE', resource: 'partner', resourceId: 'p1' })
+      expect.objectContaining({ action: 'UPDATE', resource: 'partner', resourceId: 'clxxxxxxxxxxxxxxxxpart0001' })
     );
   });
 
@@ -216,7 +216,7 @@ describe('PUT /api/partners/[id]', () => {
     const { req, res } = mockReqRes({
       method: 'PUT',
       body: { name: 'New' },
-      query: { id: 'p1' },
+      query: { id: 'clxxxxxxxxxxxxxxxxpart0001' },
       role: 'VIEWER',
     });
     await idHandler(req, res);
@@ -228,7 +228,7 @@ describe('PUT /api/partners/[id]', () => {
     const { req, res } = mockReqRes({
       method: 'PUT',
       body: { name: 'New' },
-      query: { id: 'missing' },
+      query: { id: 'clxxxxxxxxxxxxxxxxmiss0001' },
     });
     await idHandler(req, res);
     expect(res.status).toHaveBeenCalledWith(404);
@@ -239,27 +239,27 @@ describe('PUT /api/partners/[id]', () => {
 
 describe('DELETE /api/partners/[id]', () => {
   test('deletes partner when ADMIN and logs audit', async () => {
-    const existing = { id: 'p1', name: 'Acme Partners', type: 'Reseller' };
+    const existing = { id: 'clxxxxxxxxxxxxxxxxpart0001', name: 'Acme Partners', type: 'Reseller' };
     prisma.partner.findUnique.mockResolvedValue(existing);
     prisma.partner.delete.mockResolvedValue({});
-    const { req, res } = mockReqRes({ method: 'DELETE', query: { id: 'p1' } });
+    const { req, res } = mockReqRes({ method: 'DELETE', query: { id: 'clxxxxxxxxxxxxxxxxpart0001' } });
     await idHandler(req, res);
-    expect(prisma.partner.delete).toHaveBeenCalledWith({ where: { id: 'p1' } });
+    expect(prisma.partner.delete).toHaveBeenCalledWith({ where: { id: 'clxxxxxxxxxxxxxxxxpart0001' } });
     expect(res.json).toHaveBeenCalledWith({ success: true });
     expect(logAudit).toHaveBeenCalledWith(
-      expect.objectContaining({ action: 'DELETE', resource: 'partner', resourceId: 'p1' })
+      expect.objectContaining({ action: 'DELETE', resource: 'partner', resourceId: 'clxxxxxxxxxxxxxxxxpart0001' })
     );
   });
 
   test('returns 403 for EDITOR role', async () => {
-    const { req, res } = mockReqRes({ method: 'DELETE', query: { id: 'p1' }, role: 'EDITOR' });
+    const { req, res } = mockReqRes({ method: 'DELETE', query: { id: 'clxxxxxxxxxxxxxxxxpart0001' }, role: 'EDITOR' });
     await idHandler(req, res);
     expect(res.status).toHaveBeenCalledWith(403);
   });
 
   test('returns 404 if partner does not exist', async () => {
     prisma.partner.findUnique.mockResolvedValue(null);
-    const { req, res } = mockReqRes({ method: 'DELETE', query: { id: 'missing' } });
+    const { req, res } = mockReqRes({ method: 'DELETE', query: { id: 'clxxxxxxxxxxxxxxxxmiss0001' } });
     await idHandler(req, res);
     expect(res.status).toHaveBeenCalledWith(404);
     expect(prisma.partner.delete).not.toHaveBeenCalled();
@@ -271,7 +271,7 @@ describe('DELETE /api/partners/[id]', () => {
 describe('GET /api/partners/export', () => {
   test('returns CSV with correct columns', async () => {
     const partners = [
-      { id: 'p1', name: 'Acme Partners', type: 'Reseller', notes: 'Top partner', createdAt: new Date('2025-01-15') },
+      { id: 'clxxxxxxxxxxxxxxxxpart0001', name: 'Acme Partners', type: 'Reseller', notes: 'Top partner', createdAt: new Date('2025-01-15') },
     ];
     prisma.partner.findMany.mockResolvedValue(partners);
     const { req, res } = mockReqRes({ query: {} });

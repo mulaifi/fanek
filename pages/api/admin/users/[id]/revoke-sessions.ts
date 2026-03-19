@@ -2,6 +2,7 @@ import type { NextApiResponse } from 'next';
 import type { AuthenticatedRequest } from '@/types';
 import { withAdmin } from '@/lib/auth/guard';
 import prisma from '@/lib/prisma';
+import { isValidCuid } from '@/lib/validation';
 import { logAudit } from '@/lib/audit';
 import logger from '@/lib/logger';
 
@@ -12,6 +13,10 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse): Promise
   }
 
   const id = req.query.id as string;
+  if (!isValidCuid(id)) {
+    res.status(400).json({ error: 'Invalid user ID format' });
+    return;
+  }
 
   const user = await prisma.user.findUnique({
     where: { id },
