@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { getServerSession } from 'next-auth/next';
 import type { GetServerSidePropsContext } from 'next';
 import { getAuthOptions } from '@/lib/auth/options';
+import { useTranslations } from 'next-intl';
 import type { ServiceTypeFieldInput } from '@/lib/validation';
 import { toast } from 'sonner';
 import { Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
@@ -53,6 +54,7 @@ interface InlineDeleteButtonProps {
 
 /** Two-click inline delete button with 3-second auto-revert */
 function InlineDeleteButton({ onConfirm, disabled }: InlineDeleteButtonProps) {
+  const t = useTranslations();
   const [confirming, setConfirming] = useState<boolean>(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -82,10 +84,10 @@ function InlineDeleteButton({ onConfirm, disabled }: InlineDeleteButtonProps) {
     return (
       <div className="flex items-center gap-1">
         <Button size="sm" variant="destructive" onClick={handleConfirm}>
-          Confirm?
+          {t('admin.users.confirmQuestion')}
         </Button>
         <Button size="sm" variant="outline" onClick={handleCancel}>
-          Cancel
+          {t('common.cancel')}
         </Button>
       </div>
     );
@@ -100,12 +102,13 @@ function InlineDeleteButton({ onConfirm, disabled }: InlineDeleteButtonProps) {
       onClick={startConfirm}
     >
       <Trash2 className="h-3.5 w-3.5" />
-      Delete
+      {t('common.delete')}
     </Button>
   );
 }
 
 export default function ServiceCatalogPage() {
+  const t = useTranslations();
   const [serviceTypes, setServiceTypes] = useState<ServiceTypeRow[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
@@ -119,7 +122,7 @@ export default function ServiceCatalogPage() {
     const data = await res.json();
     setLoading(false);
     if (res.ok) setServiceTypes(data.data || []);
-    else setError(data.error || 'Failed to load service types');
+    else setError(data.error || t('admin.serviceCatalog.failedLoadServiceTypes'));
   }
 
   useEffect(() => {
@@ -130,15 +133,15 @@ export default function ServiceCatalogPage() {
     const res = await fetch(`/api/service-types/${st.id}`, { method: 'DELETE' });
     if (res.ok) {
       setServiceTypes((prev) => prev.filter((s) => s.id !== st.id));
-      toast.success('Service type deleted.');
+      toast.success(t('admin.serviceCatalog.typeDeleted'));
     } else {
       const data = await res.json();
-      toast.error(data.error || 'Failed to delete.');
+      toast.error(data.error || t('admin.serviceCatalog.failedDeleteServiceType'));
     }
   }
 
   return (
-    <AppShell title="Service Catalog">
+    <AppShell title={t('admin.serviceCatalog.title')}>
       {error && (
         <Alert variant="destructive" className="mb-4">
           <AlertDescription>{error}</AlertDescription>
@@ -155,7 +158,7 @@ export default function ServiceCatalogPage() {
             }}
           >
             <Plus className="h-4 w-4" />
-            New Service Type
+            {t('admin.serviceCatalog.newServiceType')}
           </Button>
         )}
       </div>
@@ -164,7 +167,7 @@ export default function ServiceCatalogPage() {
       {showCreateForm && (
         <Card className="mb-4 border-2 border-primary">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm">New Service Type</CardTitle>
+            <CardTitle className="text-sm">{t('admin.serviceCatalog.newServiceType')}</CardTitle>
           </CardHeader>
           <CardContent>
             <ServiceTypeForm
@@ -184,12 +187,12 @@ export default function ServiceCatalogPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Description</TableHead>
-              <TableHead>Fields</TableHead>
-              <TableHead>Services</TableHead>
-              <TableHead className="whitespace-nowrap">Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead>{t('admin.serviceCatalog.colName')}</TableHead>
+              <TableHead>{t('admin.serviceCatalog.colDescription')}</TableHead>
+              <TableHead>{t('admin.serviceCatalog.colFields')}</TableHead>
+              <TableHead>{t('admin.serviceCatalog.colServices')}</TableHead>
+              <TableHead className="whitespace-nowrap">{t('admin.serviceCatalog.colStatus')}</TableHead>
+              <TableHead className="text-end">{t('admin.serviceCatalog.colActions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -206,7 +209,7 @@ export default function ServiceCatalogPage() {
                   colSpan={6}
                   className="text-center py-8 text-sm text-muted-foreground"
                 >
-                  No service types defined yet
+                  {t('admin.serviceCatalog.noServiceTypes')}
                 </TableCell>
               </TableRow>
             )}
@@ -216,7 +219,9 @@ export default function ServiceCatalogPage() {
                   <TableCell colSpan={6} className="p-4">
                     <Card className="border-2 border-primary">
                       <CardHeader className="pb-2">
-                        <CardTitle className="text-sm">Edit: {st.name}</CardTitle>
+                        <CardTitle className="text-sm">
+                          {t('admin.serviceCatalog.editPrefix')} {st.name}
+                        </CardTitle>
                       </CardHeader>
                       <CardContent>
                         <ServiceTypeForm
@@ -255,15 +260,17 @@ export default function ServiceCatalogPage() {
                   </TableCell>
                   <TableCell>{st.description || '-'}</TableCell>
                   <TableCell>
-                    <Badge variant="secondary">{(st.fieldSchema || []).length} fields</Badge>
+                    <Badge variant="secondary">
+                      {t('admin.serviceCatalog.fieldsCount', { count: (st.fieldSchema || []).length })}
+                    </Badge>
                   </TableCell>
                   <TableCell>{st._count?.services ?? 0}</TableCell>
                   <TableCell>
                     <Badge variant={st.active ? 'default' : 'secondary'}>
-                      {st.active ? 'Active' : 'Inactive'}
+                      {st.active ? t('admin.serviceCatalog.active') : t('admin.serviceCatalog.inactive')}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-end">
                     <div
                       className="flex items-center gap-1 justify-end"
                       onClick={(e) => e.stopPropagation()}
@@ -278,7 +285,7 @@ export default function ServiceCatalogPage() {
                         }}
                       >
                         <Pencil className="h-3.5 w-3.5" />
-                        Edit
+                        {t('common.edit')}
                       </Button>
                       <InlineDeleteButton
                         onConfirm={() => handleDelete(st)}
@@ -304,6 +311,7 @@ interface ServiceTypeFormProps {
 }
 
 function ServiceTypeForm({ initial, editingType, onClose, onSuccess }: ServiceTypeFormProps) {
+  const t = useTranslations();
   const [form, setForm] = useState<ServiceTypeFormShape>(initial);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [saveError, setSaveError] = useState<string>('');
@@ -312,7 +320,7 @@ function ServiceTypeForm({ initial, editingType, onClose, onSuccess }: ServiceTy
   async function handleSave() {
     setSaveError('');
     const errs: Record<string, string> = {};
-    if (!form.name.trim()) errs.name = 'Name is required';
+    if (!form.name.trim()) errs.name = t('admin.serviceCatalog.nameRequired');
     if (Object.keys(errs).length > 0) {
       setFormErrors(errs);
       return;
@@ -332,7 +340,7 @@ function ServiceTypeForm({ initial, editingType, onClose, onSuccess }: ServiceTy
     setSaving(false);
 
     if (!res.ok) {
-      setSaveError(data.error || 'Failed to save');
+      setSaveError(data.error || t('admin.serviceCatalog.failedSave'));
     } else {
       onSuccess();
     }
@@ -348,7 +356,7 @@ function ServiceTypeForm({ initial, editingType, onClose, onSuccess }: ServiceTy
       <div className="flex items-start gap-4">
         <div className="flex flex-col gap-1 flex-1">
           <Label htmlFor="st-name">
-            Service Type Name <span className="text-destructive">*</span>
+            {t('admin.serviceCatalog.serviceTypeName')} <span className="text-destructive">*</span>
           </Label>
           <Input
             id="st-name"
@@ -361,7 +369,7 @@ function ServiceTypeForm({ initial, editingType, onClose, onSuccess }: ServiceTy
           )}
         </div>
         <div className="flex flex-col gap-1 w-24">
-          <Label htmlFor="st-icon">Icon (emoji)</Label>
+          <Label htmlFor="st-icon">{t('admin.serviceCatalog.iconEmoji')}</Label>
           <Input
             id="st-icon"
             placeholder="e.g. ☁️"
@@ -371,7 +379,7 @@ function ServiceTypeForm({ initial, editingType, onClose, onSuccess }: ServiceTy
         </div>
       </div>
       <div className="flex flex-col gap-1">
-        <Label htmlFor="st-desc">Description</Label>
+        <Label htmlFor="st-desc">{t('common.description')}</Label>
         <Textarea
           id="st-desc"
           rows={2}
@@ -385,11 +393,11 @@ function ServiceTypeForm({ initial, editingType, onClose, onSuccess }: ServiceTy
           checked={form.active}
           onCheckedChange={(checked) => setForm({ ...form, active: checked })}
         />
-        <Label htmlFor="st-active">Active (visible when adding services)</Label>
+        <Label htmlFor="st-active">{t('admin.serviceCatalog.activeVisible')}</Label>
       </div>
 
       <div>
-        <p className="text-sm font-semibold mb-2 mt-1">Field Schema</p>
+        <p className="text-sm font-semibold mb-2 mt-1">{t('admin.serviceCatalog.fieldSchema')}</p>
         <ServiceTypeEditor
           fieldSchema={form.fieldSchema}
           onChange={(fieldSchema) => setForm({ ...form, fieldSchema })}
@@ -398,11 +406,11 @@ function ServiceTypeForm({ initial, editingType, onClose, onSuccess }: ServiceTy
 
       <div className="flex justify-end gap-2 mt-2">
         <Button variant="outline" onClick={onClose}>
-          Cancel
+          {t('common.cancel')}
         </Button>
         <Button onClick={handleSave} disabled={saving}>
-          {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-          {editingType ? 'Save Changes' : 'Create Service Type'}
+          {saving && <Loader2 className="h-4 w-4 animate-spin me-2" />}
+          {editingType ? t('admin.serviceCatalog.saveChanges') : t('admin.serviceCatalog.createServiceType')}
         </Button>
       </div>
     </div>

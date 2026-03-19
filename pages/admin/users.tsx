@@ -3,6 +3,7 @@ import { useSession } from 'next-auth/react';
 import { getServerSession } from 'next-auth/next';
 import type { GetServerSidePropsContext } from 'next';
 import { getAuthOptions } from '@/lib/auth/options';
+import { useTranslations } from 'next-intl';
 import type { ColumnDef } from '@tanstack/react-table';
 import { toast } from 'sonner';
 import { Plus, Pencil, Key, LogOut, Trash2, Loader2 } from 'lucide-react';
@@ -62,11 +63,12 @@ interface InlineConfirmButtonProps {
 function InlineConfirmButton({
   onConfirm,
   label,
-  confirmLabel = 'Confirm?',
+  confirmLabel,
   icon,
   disabled = false,
   variant = 'ghost',
 }: InlineConfirmButtonProps) {
+  const t = useTranslations();
   const [confirming, setConfirming] = useState<boolean>(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -97,10 +99,10 @@ function InlineConfirmButton({
     return (
       <div className="flex items-center gap-1">
         <Button size="sm" variant="destructive" onClick={handleConfirm}>
-          {confirmLabel}
+          {confirmLabel ?? t('admin.users.confirmQuestion')}
         </Button>
         <Button size="sm" variant="outline" onClick={handleCancel}>
-          Cancel
+          {t('common.cancel')}
         </Button>
       </div>
     );
@@ -121,6 +123,7 @@ function InlineConfirmButton({
 }
 
 export default function AdminUsersPage() {
+  const t = useTranslations();
   const { data: session } = useSession();
 
   const [users, setUsers] = useState<UserRow[]>([]);
@@ -140,7 +143,7 @@ export default function AdminUsersPage() {
     if (res.ok) {
       setUsers(data.data || []);
     } else {
-      setError(data.error || 'Failed to load users');
+      setError(data.error || t('admin.users.failedLoadUsers'));
     }
   }
 
@@ -157,7 +160,7 @@ export default function AdminUsersPage() {
   function handleRoleUpdated(userId: string, newRole: UserRole) {
     setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u)));
     setEditingRoleUserId(null);
-    toast.success('Role updated successfully.');
+    toast.success(t('admin.users.roleUpdated'));
   }
 
   async function handleResetPassword(user: UserRow) {
@@ -166,7 +169,7 @@ export default function AdminUsersPage() {
     if (res.ok) {
       setResetPasswordResult({ userId: user.id, userName: user.name, tempPassword: data.tempPassword });
     } else {
-      toast.error(data.error || 'Failed to reset password.');
+      toast.error(data.error || t('admin.users.failedResetPassword'));
     }
   }
 
@@ -174,44 +177,44 @@ export default function AdminUsersPage() {
     try {
       const res = await fetch(`/api/admin/users/${user.id}/revoke-sessions`, { method: 'POST' });
       if (res.ok) {
-        toast.success(`Sessions revoked for ${user.name}.`);
+        toast.success(t('admin.users.sessionsRevoked', { name: user.name }));
       } else {
         const data = await res.json();
-        toast.error(data.error || 'Failed to revoke sessions.');
+        toast.error(data.error || t('admin.users.failedRevokeSessions'));
       }
     } catch {
-      toast.error('Network error: failed to revoke sessions.');
+      toast.error(t('admin.users.networkErrorRevoke'));
     }
   }
 
   async function handleDelete(user: UserRow) {
     if (user.id === session?.user?.id) {
-      toast.error('You cannot delete your own account.');
+      toast.error(t('admin.users.cannotDeleteSelf'));
       return;
     }
     const res = await fetch(`/api/admin/users/${user.id}`, { method: 'DELETE' });
     if (res.ok) {
       setUsers((prev) => prev.filter((u) => u.id !== user.id));
-      toast.success('User deleted.');
+      toast.success(t('admin.users.userDeleted'));
     } else {
       const data = await res.json();
-      toast.error(data.error || 'Failed to delete user.');
+      toast.error(data.error || t('admin.users.failedDeleteUser'));
     }
   }
 
   const columns: ColumnDef<UserRow>[] = [
     {
       accessorKey: 'name',
-      header: 'Name',
+      header: t('admin.users.name'),
       cell: ({ row }) => <span className="font-medium">{row.original.name}</span>,
     },
     {
       accessorKey: 'email',
-      header: 'Email',
+      header: t('admin.users.email'),
     },
     {
       accessorKey: 'role',
-      header: 'Role',
+      header: t('admin.users.role'),
       cell: ({ row }) => {
         const user = row.original;
         if (editingRoleUserId === user.id) {
@@ -232,7 +235,7 @@ export default function AdminUsersPage() {
     },
     {
       accessorKey: 'createdAt',
-      header: 'Created',
+      header: t('admin.users.created'),
       cell: ({ row }) => new Date(row.original.createdAt).toLocaleDateString(),
     },
     {
@@ -249,26 +252,26 @@ export default function AdminUsersPage() {
               onClick={() => setEditingRoleUserId(user.id)}
             >
               <Pencil className="h-3.5 w-3.5" />
-              Edit Role
+              {t('admin.users.editRole')}
             </Button>
             <InlineConfirmButton
               onConfirm={() => handleResetPassword(user)}
-              label="Reset Password"
-              confirmLabel="Reset?"
+              label={t('admin.users.resetPassword')}
+              confirmLabel={t('admin.users.resetQuestion')}
               icon={<Key className="h-3.5 w-3.5" />}
               variant="ghost"
             />
             <InlineConfirmButton
               onConfirm={() => handleRevokeSessions(user)}
-              label="Revoke Sessions"
-              confirmLabel="Revoke?"
+              label={t('admin.users.revokeSessions')}
+              confirmLabel={t('admin.users.revokeQuestion')}
               icon={<LogOut className="h-3.5 w-3.5" />}
               variant="ghost"
             />
             <InlineConfirmButton
               onConfirm={() => handleDelete(user)}
-              label="Delete"
-              confirmLabel="Confirm?"
+              label={t('admin.users.deleteUser')}
+              confirmLabel={t('admin.users.confirmQuestion')}
               icon={<Trash2 className="h-3.5 w-3.5" />}
               variant="ghost"
               disabled={user.id === session?.user?.id}
@@ -280,7 +283,7 @@ export default function AdminUsersPage() {
   ];
 
   return (
-    <AppShell title="Users">
+    <AppShell title={t('admin.users.title')}>
       {error && (
         <Alert variant="destructive" className="mb-4">
           <AlertDescription>{error}</AlertDescription>
@@ -290,9 +293,9 @@ export default function AdminUsersPage() {
       {/* Invite result banner */}
       {inviteResult && (
         <Alert className="mb-4">
-          <AlertTitle>User Created</AlertTitle>
+          <AlertTitle>{t('admin.users.userCreatedTitle')}</AlertTitle>
           <AlertDescription>
-            <p className="text-sm mb-2">Share this temporary password with the user. It will not be shown again.</p>
+            <p className="text-sm mb-2">{t('admin.users.userCreatedDesc')}</p>
             <code className="font-mono bg-muted px-2 py-1 rounded text-sm block mt-1">
               {inviteResult.tempPassword}
             </code>
@@ -302,7 +305,7 @@ export default function AdminUsersPage() {
               className="mt-2"
               onClick={() => setInviteResult(null)}
             >
-              Dismiss
+              {t('admin.users.dismiss')}
             </Button>
           </AlertDescription>
         </Alert>
@@ -311,10 +314,10 @@ export default function AdminUsersPage() {
       {/* Reset password result banner */}
       {resetPasswordResult && (
         <Alert className="mb-4">
-          <AlertTitle>Password Reset</AlertTitle>
+          <AlertTitle>{t('admin.users.passwordResetTitle')}</AlertTitle>
           <AlertDescription>
             <p className="text-sm mb-2">
-              New temporary password for {resetPasswordResult.userName} (shown once only):
+              {t('admin.users.passwordResetDesc', { name: resetPasswordResult.userName })}
             </p>
             <code className="font-mono bg-muted px-2 py-1 rounded text-sm block mt-1">
               {resetPasswordResult.tempPassword}
@@ -325,7 +328,7 @@ export default function AdminUsersPage() {
               className="mt-2"
               onClick={() => setResetPasswordResult(null)}
             >
-              Dismiss
+              {t('admin.users.dismiss')}
             </Button>
           </AlertDescription>
         </Alert>
@@ -335,7 +338,7 @@ export default function AdminUsersPage() {
         {!showInviteForm && (
           <Button onClick={() => setShowInviteForm(true)} className="gap-2">
             <Plus className="h-4 w-4" />
-            Invite User
+            {t('admin.users.inviteUser')}
           </Button>
         )}
       </div>
@@ -344,7 +347,7 @@ export default function AdminUsersPage() {
       {showInviteForm && (
         <Card className="mb-4 border-2 border-primary">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Invite New User</CardTitle>
+            <CardTitle className="text-sm">{t('admin.users.inviteNewUser')}</CardTitle>
           </CardHeader>
           <CardContent>
             <InviteUserForm
@@ -363,7 +366,7 @@ export default function AdminUsersPage() {
         <DataTable
           columns={columns}
           data={users}
-          emptyMessage="No users found"
+          emptyMessage={t('admin.users.noUsers')}
         />
       )}
     </AppShell>
@@ -377,6 +380,7 @@ interface InlineEditRoleProps {
 }
 
 function InlineEditRole({ user, onSave, onCancel }: InlineEditRoleProps) {
+  const t = useTranslations();
   const [role, setRole] = useState<UserRole>(user.role);
   const [saving, setSaving] = useState<boolean>(false);
 
@@ -392,10 +396,10 @@ function InlineEditRole({ user, onSave, onCancel }: InlineEditRoleProps) {
         onSave(user.id, role);
       } else {
         const data = await res.json();
-        toast.error(data.error || 'Failed to update role.');
+        toast.error(data.error || t('admin.users.failedUpdateRole'));
       }
     } catch {
-      toast.error('Network error: failed to update role.');
+      toast.error(t('admin.users.networkErrorRole'));
     } finally {
       setSaving(false);
     }
@@ -408,17 +412,17 @@ function InlineEditRole({ user, onSave, onCancel }: InlineEditRoleProps) {
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="VIEWER">Viewer</SelectItem>
-          <SelectItem value="EDITOR">Editor</SelectItem>
-          <SelectItem value="ADMIN">Admin</SelectItem>
+          <SelectItem value="VIEWER">{t('admin.users.roleViewer')}</SelectItem>
+          <SelectItem value="EDITOR">{t('admin.users.roleEditor')}</SelectItem>
+          <SelectItem value="ADMIN">{t('admin.users.roleAdmin')}</SelectItem>
         </SelectContent>
       </Select>
       <Button size="sm" onClick={handleSave} disabled={saving} className="h-7 text-xs">
-        {saving && <Loader2 className="h-3 w-3 animate-spin mr-1" />}
-        Save
+        {saving && <Loader2 className="h-3 w-3 animate-spin me-1" />}
+        {t('common.save')}
       </Button>
       <Button size="sm" variant="outline" onClick={onCancel} className="h-7 text-xs">
-        Cancel
+        {t('common.cancel')}
       </Button>
     </div>
   );
@@ -436,6 +440,7 @@ interface InviteFormErrors {
 }
 
 function InviteUserForm({ onClose, onSuccess }: InviteUserFormProps) {
+  const t = useTranslations();
   const [form, setForm] = useState<{ name: string; email: string; role: UserRole }>({
     name: '',
     email: '',
@@ -446,9 +451,9 @@ function InviteUserForm({ onClose, onSuccess }: InviteUserFormProps) {
 
   async function handleSubmit() {
     const errs: InviteFormErrors = {};
-    if (!form.name.trim()) errs.name = 'Name is required';
-    if (!form.email.trim()) errs.email = 'Email is required';
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) errs.email = 'Enter a valid email';
+    if (!form.name.trim()) errs.name = t('admin.users.nameRequired');
+    if (!form.email.trim()) errs.email = t('admin.users.emailRequired');
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) errs.email = t('admin.users.emailInvalid');
     if (Object.keys(errs).length > 0) {
       setErrors(errs);
       return;
@@ -462,7 +467,7 @@ function InviteUserForm({ onClose, onSuccess }: InviteUserFormProps) {
     const data = await res.json();
     setInviting(false);
     if (!res.ok) {
-      setErrors({ _form: data.error || 'Failed to create user' });
+      setErrors({ _form: data.error || t('admin.users.failedCreateUser') });
     } else {
       onSuccess(data);
     }
@@ -477,7 +482,7 @@ function InviteUserForm({ onClose, onSuccess }: InviteUserFormProps) {
       )}
       <div className="flex flex-col gap-1">
         <Label htmlFor="invite-name">
-          Full Name <span className="text-destructive">*</span>
+          {t('admin.users.fullName')} <span className="text-destructive">*</span>
         </Label>
         <Input
           id="invite-name"
@@ -488,7 +493,7 @@ function InviteUserForm({ onClose, onSuccess }: InviteUserFormProps) {
       </div>
       <div className="flex flex-col gap-1">
         <Label htmlFor="invite-email">
-          Email Address <span className="text-destructive">*</span>
+          {t('admin.users.emailAddress')} <span className="text-destructive">*</span>
         </Label>
         <Input
           id="invite-email"
@@ -499,7 +504,7 @@ function InviteUserForm({ onClose, onSuccess }: InviteUserFormProps) {
         {errors.email && <p className="text-xs text-destructive">{errors.email}</p>}
       </div>
       <div className="flex flex-col gap-1">
-        <Label htmlFor="invite-role">Role</Label>
+        <Label htmlFor="invite-role">{t('admin.users.role')}</Label>
         <Select
           value={form.role}
           onValueChange={(v) => setForm({ ...form, role: v as UserRole })}
@@ -508,19 +513,19 @@ function InviteUserForm({ onClose, onSuccess }: InviteUserFormProps) {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="VIEWER">Viewer</SelectItem>
-            <SelectItem value="EDITOR">Editor</SelectItem>
-            <SelectItem value="ADMIN">Admin</SelectItem>
+            <SelectItem value="VIEWER">{t('admin.users.roleViewer')}</SelectItem>
+            <SelectItem value="EDITOR">{t('admin.users.roleEditor')}</SelectItem>
+            <SelectItem value="ADMIN">{t('admin.users.roleAdmin')}</SelectItem>
           </SelectContent>
         </Select>
       </div>
       <div className="flex justify-end gap-2">
         <Button variant="outline" onClick={onClose}>
-          Cancel
+          {t('common.cancel')}
         </Button>
         <Button onClick={handleSubmit} disabled={inviting}>
-          {inviting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-          Send Invite
+          {inviting && <Loader2 className="h-4 w-4 animate-spin me-2" />}
+          {t('admin.users.sendInvite')}
         </Button>
       </div>
     </div>

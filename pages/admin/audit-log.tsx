@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { getServerSession } from 'next-auth/next';
 import type { GetServerSidePropsContext } from 'next';
 import { getAuthOptions } from '@/lib/auth/options';
+import { useTranslations } from 'next-intl';
 import type { ColumnDef, Row } from '@tanstack/react-table';
 import AppShell from '@/components/AppShell';
 import { DataTable } from '@/components/ui/data-table';
@@ -39,6 +40,7 @@ interface AuditLogEntry {
 }
 
 export default function AuditLogPage() {
+  const t = useTranslations();
   const [logs, setLogs] = useState<AuditLogEntry[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
@@ -75,7 +77,7 @@ export default function AuditLogPage() {
         setLogs(data.data || []);
         setNextCursor(data.nextCursor || null);
       } else {
-        setError(data.error || 'Failed to load audit log');
+        setError(data.error || t('admin.auditLog.failedLoad'));
       }
     },
     [buildUrl]
@@ -109,7 +111,7 @@ export default function AuditLogPage() {
   const columns: ColumnDef<AuditLogEntry>[] = [
     {
       accessorKey: 'createdAt',
-      header: 'Timestamp',
+      header: t('admin.auditLog.timestamp'),
       cell: ({ row }) => (
         <span className="text-xs whitespace-nowrap">
           {new Date(row.original.createdAt).toLocaleString()}
@@ -118,7 +120,7 @@ export default function AuditLogPage() {
     },
     {
       accessorKey: 'user',
-      header: 'User',
+      header: t('admin.auditLog.user'),
       cell: ({ row }) => (
         <div className="flex flex-col gap-0">
           <span className="text-sm">{row.original.user?.name || '-'}</span>
@@ -128,7 +130,7 @@ export default function AuditLogPage() {
     },
     {
       accessorKey: 'action',
-      header: 'Action',
+      header: t('admin.auditLog.action'),
       cell: ({ row }) => (
         <Badge variant={ACTION_BADGE_VARIANT[row.original.action] || 'secondary'}>
           {row.original.action}
@@ -137,11 +139,11 @@ export default function AuditLogPage() {
     },
     {
       accessorKey: 'resource',
-      header: 'Resource',
+      header: t('admin.auditLog.resource'),
     },
     {
       accessorKey: 'resourceId',
-      header: 'Resource ID',
+      header: t('admin.auditLog.resourceId'),
       cell: ({ row }) => (
         <span className="font-mono text-xs">
           {row.original.resourceId
@@ -157,7 +159,7 @@ export default function AuditLogPage() {
   function renderSubComponent({ row }: { row: Row<AuditLogEntry> }) {
     if (!row.original.details) {
       return (
-        <p className="text-sm text-muted-foreground p-4">No details available.</p>
+        <p className="text-sm text-muted-foreground p-4">{t('admin.auditLog.noDetails')}</p>
       );
     }
     return (
@@ -168,7 +170,7 @@ export default function AuditLogPage() {
   }
 
   return (
-    <AppShell title="Audit Log">
+    <AppShell title={t('admin.auditLog.title')}>
       {error && (
         <Alert variant="destructive" className="mb-4">
           <AlertDescription>{error}</AlertDescription>
@@ -177,16 +179,16 @@ export default function AuditLogPage() {
 
       <div className="flex flex-wrap gap-3 mb-4">
         <div className="flex flex-col gap-1">
-          <Label className="text-xs text-muted-foreground">Action</Label>
+          <Label className="text-xs text-muted-foreground">{t('admin.auditLog.action')}</Label>
           <Select
             value={filterAction || '_all'}
             onValueChange={(v) => setFilterAction(v === '_all' ? '' : v)}
           >
             <SelectTrigger className="w-36">
-              <SelectValue placeholder="All" />
+              <SelectValue placeholder={t('admin.auditLog.allActions')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="_all">All actions</SelectItem>
+              <SelectItem value="_all">{t('admin.auditLog.allActions')}</SelectItem>
               {ACTIONS.map((a) => (
                 <SelectItem key={a} value={a}>
                   {a}
@@ -196,16 +198,16 @@ export default function AuditLogPage() {
           </Select>
         </div>
         <div className="flex flex-col gap-1">
-          <Label className="text-xs text-muted-foreground">Resource</Label>
+          <Label className="text-xs text-muted-foreground">{t('admin.auditLog.resource')}</Label>
           <Select
             value={filterResource || '_all'}
             onValueChange={(v) => setFilterResource(v === '_all' ? '' : v)}
           >
             <SelectTrigger className="w-40">
-              <SelectValue placeholder="All" />
+              <SelectValue placeholder={t('admin.auditLog.allResources')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="_all">All resources</SelectItem>
+              <SelectItem value="_all">{t('admin.auditLog.allResources')}</SelectItem>
               {RESOURCES.map((r) => (
                 <SelectItem key={r} value={r}>
                   {r}
@@ -216,7 +218,7 @@ export default function AuditLogPage() {
         </div>
         <div className="flex flex-col gap-1">
           <Label htmlFor="filter-from" className="text-xs text-muted-foreground">
-            From
+            {t('admin.auditLog.filterFrom')}
           </Label>
           <Input
             id="filter-from"
@@ -228,7 +230,7 @@ export default function AuditLogPage() {
         </div>
         <div className="flex flex-col gap-1">
           <Label htmlFor="filter-to" className="text-xs text-muted-foreground">
-            To
+            {t('admin.auditLog.filterTo')}
           </Label>
           <Input
             id="filter-to"
@@ -244,7 +246,7 @@ export default function AuditLogPage() {
         columns={columns}
         data={logs}
         isLoading={loading}
-        emptyMessage="No audit log entries found"
+        emptyMessage={t('admin.auditLog.noEntries')}
         pageCount={pageCount}
         pageIndex={currentPage}
         pageSize={PAGE_SIZE}
