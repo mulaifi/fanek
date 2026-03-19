@@ -39,10 +39,7 @@ That's it. The Docker entrypoint automatically:
 
 **Customization:** To override defaults, create a `.env` file in the project root before starting. Docker Compose picks it up automatically. See the [README](../../README.md) for all environment variables.
 
-**Production notes:**
-- Set `NEXTAUTH_URL` to your actual domain (e.g. `https://fanek.example.com`) in `.env`
-- Consider using an external PostgreSQL instance with proper backups
-- Change the default database credentials in `docker-compose.yml` or via `.env`
+**Going to production?** See the [Production Deployment Guide](production-guide.md) for reverse proxy setup, SSL, firewall configuration, backups, and ongoing maintenance.
 
 ### Manual installation
 
