@@ -5,6 +5,7 @@ const config = {
     '^@/lib/(.*)$': '<rootDir>/lib/$1',
     '^@/components/(.*)$': '<rootDir>/components/$1',
     '^@/types/(.*)$': '<rootDir>/types/$1',
+    '^@/messages/(.*)$': '<rootDir>/messages/$1',
   },
   transform: {
     '^.+\\.(ts|tsx|js|jsx)$': ['@swc/jest', {
