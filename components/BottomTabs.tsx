@@ -1,5 +1,6 @@
 import { useRouter } from 'next/router';
 import { useSession } from 'next-auth/react';
+import { useTranslations } from 'next-intl';
 import {
   LayoutDashboard,
   Users,
@@ -14,19 +15,21 @@ interface NavTab {
   icon: LucideIcon;
 }
 
-const mainTabs: NavTab[] = [
-  { href: '/dashboard', label: 'Home', icon: LayoutDashboard },
-  { href: '/customers', label: 'Customers', icon: Users },
-  { href: '/partners', label: 'Partners', icon: Handshake },
-];
-
-const adminTab: NavTab = { href: '/admin/users', label: 'Admin', icon: Settings };
-
 export default function BottomTabs() {
   const router = useRouter();
   const { data: session } = useSession();
+  const t = useTranslations('nav');
 
   const isAdmin = session?.user?.role === 'ADMIN';
+
+  const mainTabs: NavTab[] = [
+    { href: '/dashboard', label: t('dashboard'), icon: LayoutDashboard },
+    { href: '/customers', label: t('customers'), icon: Users },
+    { href: '/partners', label: t('partners'), icon: Handshake },
+  ];
+
+  const adminTab: NavTab = { href: '/admin/users', label: t('admin'), icon: Settings };
+
   const tabs = isAdmin ? [...mainTabs, adminTab] : mainTabs;
 
   function isActive(href: string): boolean {
@@ -34,7 +37,7 @@ export default function BottomTabs() {
   }
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 h-14 bg-background border-t border-border z-50 flex items-center">
+    <div className="fixed bottom-0 start-0 end-0 h-14 bg-background border-t border-border z-50 flex items-center">
       <div className="flex w-full h-full">
         {tabs.map((tab) => {
           const active = isActive(tab.href);
