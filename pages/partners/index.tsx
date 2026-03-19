@@ -6,7 +6,7 @@ import type { GetServerSidePropsContext } from 'next';
 import type { ColumnDef, SortingState } from '@tanstack/react-table';
 import { getAuthOptions } from '@/lib/auth/options';
 import { Search, Plus, Download } from 'lucide-react';
-import dayjs from 'dayjs';
+import { useTranslations, useFormatter } from 'next-intl';
 import AppShell from '@/components/AppShell';
 import { DataTable } from '@/components/ui/data-table';
 import { Badge } from '@/components/ui/badge';
@@ -43,6 +43,8 @@ interface PartnerRow {
 export default function PartnersIndexPage() {
   const router = useRouter();
   const { data: session } = useSession();
+  const t = useTranslations();
+  const format = useFormatter();
   const canCreate = ['ADMIN', 'EDITOR'].includes(session?.user?.role ?? '');
 
   const [records, setRecords] = useState<PartnerRow[]>([]);
@@ -99,7 +101,7 @@ export default function PartnersIndexPage() {
   const columns: ColumnDef<PartnerRow>[] = [
     {
       accessorKey: 'name',
-      header: 'Name',
+      header: t('common.name'),
       enableSorting: true,
       cell: ({ row }) => (
         <span className="text-sm font-medium">{row.original.name}</span>
@@ -107,7 +109,7 @@ export default function PartnersIndexPage() {
     },
     {
       accessorKey: 'type',
-      header: 'Type',
+      header: t('common.type'),
       enableSorting: false,
       cell: ({ row }) =>
         row.original.type ? (
@@ -120,7 +122,7 @@ export default function PartnersIndexPage() {
     },
     {
       accessorKey: 'notes',
-      header: 'Notes',
+      header: t('partners.notes'),
       enableSorting: false,
       cell: ({ row }) => (
         <span className="text-sm text-muted-foreground line-clamp-1">
@@ -130,22 +132,27 @@ export default function PartnersIndexPage() {
     },
     {
       accessorKey: 'updatedAt',
-      header: 'Last Updated',
+      header: t('common.updatedAt'),
       enableSorting: true,
-      cell: ({ row }) => dayjs(row.original.updatedAt).format('DD MMM YYYY'),
+      cell: ({ row }) =>
+        format.dateTime(new Date(row.original.updatedAt), {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+        }),
     },
   ];
 
   return (
-    <AppShell title="Partners">
+    <AppShell title={t('partners.title')}>
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-2">
             <div className="relative w-[220px]">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute start-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Partner name..."
-                className="pl-8"
+                placeholder={t('partners.searchPlaceholder')}
+                className="ps-8"
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 onKeyDown={handleSearchKeyDown}
@@ -156,12 +163,12 @@ export default function PartnersIndexPage() {
               onValueChange={handleTypeChange}
             >
               <SelectTrigger className="w-[160px]">
-                <SelectValue placeholder="All types" />
+                <SelectValue placeholder={t('partners.allTypes')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="__all__">All types</SelectItem>
-                {PARTNER_TYPES.map((t) => (
-                  <SelectItem key={t} value={t}>{t}</SelectItem>
+                <SelectItem value="__all__">{t('partners.allTypes')}</SelectItem>
+                {PARTNER_TYPES.map((pt) => (
+                  <SelectItem key={pt} value={pt}>{pt}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -169,8 +176,8 @@ export default function PartnersIndexPage() {
           <div className="flex items-center gap-2">
             {canCreate && (
               <Button onClick={() => router.push('/partners/new')}>
-                <Plus className="h-4 w-4 mr-1" />
-                New partner
+                <Plus className="h-4 w-4 me-1" />
+                {t('partners.newPartner')}
               </Button>
             )}
             {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
@@ -178,8 +185,8 @@ export default function PartnersIndexPage() {
               href="/api/partners/export"
               className={buttonVariants({ variant: 'outline' })}
             >
-              <Download className="h-4 w-4 mr-1" />
-              Export CSV
+              <Download className="h-4 w-4 me-1" />
+              {t('partners.exportCsv')}
             </a>
           </div>
         </div>
@@ -198,7 +205,7 @@ export default function PartnersIndexPage() {
           pageSize={PAGE_SIZE}
           onPageChange={(idx) => setPage(idx + 1)}
           isLoading={loading}
-          emptyMessage="No partners found"
+          emptyMessage={t('partners.noPartners')}
           onRowClick={(row) => router.push(`/partners/${row.id}`)}
         />
       </div>

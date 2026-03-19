@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 import { getAuthOptions } from '@/lib/auth/options';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -41,6 +42,7 @@ type NewPartnerFormValues = z.infer<typeof schema>;
 
 export default function NewPartnerPage() {
   const router = useRouter();
+  const t = useTranslations();
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [apiError, setApiError] = useState<string>('');
 
@@ -82,33 +84,33 @@ export default function NewPartnerPage() {
     setSubmitting(false);
 
     if (!res.ok) {
-      setApiError(data.error || 'Failed to create partner');
+      setApiError(data.error || t('validation.genericError'));
     } else {
-      toast.success('Partner created', { description: `${data.name} was added successfully.` });
+      toast.success(t('partners.partnerCreated'), { description: `${data.name} was added successfully.` });
       router.push(`/partners/${data.id}`);
     }
   }
 
   return (
-    <AppShell title="New Partner">
+    <AppShell title={t('partners.newPartner')}>
       <div className="flex flex-col gap-4 max-w-[720px]">
         {apiError && (
           <Alert variant="destructive">
-            <AlertTitle>Error</AlertTitle>
+            <AlertTitle>{t('common.error')}</AlertTitle>
             <AlertDescription>{apiError}</AlertDescription>
           </Alert>
         )}
 
         <Card>
           <CardContent className="pt-6">
-            <h2 className="text-sm font-semibold mb-4">Partner Details</h2>
+            <h2 className="text-sm font-semibold mb-4">{t('partners.partnerDetails')}</h2>
 
             <form onSubmit={handleSubmit(onSubmit)}>
               <div className="flex flex-col gap-3">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <Label htmlFor="name">
-                      Partner Name <span className="text-destructive">*</span>
+                      {t('partners.partnerName')} <span className="text-destructive">*</span>
                     </Label>
                     <Input
                       id="name"
@@ -121,18 +123,18 @@ export default function NewPartnerPage() {
                     )}
                   </div>
                   <div className="space-y-1">
-                    <Label htmlFor="type">Type</Label>
+                    <Label htmlFor="type">{t('common.type')}</Label>
                     <Select
                       value={typeValue || '__none__'}
                       onValueChange={(v) => setValue('type', v === '__none__' ? '' : v)}
                     >
                       <SelectTrigger id="type">
-                        <SelectValue placeholder="None" />
+                        <SelectValue placeholder={t('common.none')} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="__none__">None</SelectItem>
-                        {PARTNER_TYPES.map((t) => (
-                          <SelectItem key={t} value={t}>{t}</SelectItem>
+                        <SelectItem value="__none__">{t('common.none')}</SelectItem>
+                        {PARTNER_TYPES.map((pt) => (
+                          <SelectItem key={pt} value={pt}>{pt}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -140,7 +142,7 @@ export default function NewPartnerPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <Label htmlFor="website">Website</Label>
+                  <Label htmlFor="website">{t('partners.website')}</Label>
                   <Input id="website" placeholder="https://example.com" {...register('website')} />
                   {errors.website && (
                     <p className="text-sm text-destructive">{errors.website.message}</p>
@@ -148,25 +150,25 @@ export default function NewPartnerPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <Label htmlFor="address">Address</Label>
+                  <Label htmlFor="address">{t('partners.address')}</Label>
                   <Textarea id="address" rows={2} {...register('address')} />
                 </div>
 
                 <div className="space-y-1">
-                  <Label htmlFor="notes">Notes</Label>
+                  <Label htmlFor="notes">{t('partners.notes')}</Label>
                   <Textarea id="notes" rows={3} {...register('notes')} />
                 </div>
 
                 <div className="flex items-center gap-2 mt-1">
                   <Button type="submit" disabled={submitting}>
-                    {submitting ? 'Creating...' : 'Create Partner'}
+                    {submitting ? t('common.creating') : t('partners.createPartner')}
                   </Button>
                   <Button
                     type="button"
                     variant="outline"
                     onClick={() => router.push('/partners')}
                   >
-                    Cancel
+                    {t('common.cancel')}
                   </Button>
                 </div>
               </div>

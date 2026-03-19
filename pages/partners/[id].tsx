@@ -7,10 +7,10 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
+import { useTranslations, useFormatter } from 'next-intl';
 import { getAuthOptions } from '@/lib/auth/options';
 import type { ContactInput } from '@/lib/validation';
 import { ArrowLeft, Edit, Trash, Loader2 } from 'lucide-react';
-import dayjs from 'dayjs';
 import AppShell from '@/components/AppShell';
 import ContactsEditor from '@/components/ContactsEditor';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -75,6 +75,7 @@ interface EditPartnerFormProps {
 }
 
 function EditPartnerForm({ partner, onSave, onClose }: EditPartnerFormProps) {
+  const t = useTranslations();
   const [saving, setSaving] = useState<boolean>(false);
   const [saveError, setSaveError] = useState<string>('');
 
@@ -113,7 +114,7 @@ function EditPartnerForm({ partner, onSave, onClose }: EditPartnerFormProps) {
     const data = await res.json();
     setSaving(false);
     if (!res.ok) {
-      setSaveError(data.error || 'Failed to save');
+      setSaveError(data.error || t('validation.genericError'));
     } else {
       onSave(data);
     }
@@ -125,14 +126,14 @@ function EditPartnerForm({ partner, onSave, onClose }: EditPartnerFormProps) {
         <div className="flex flex-col gap-3">
           {saveError && (
             <Alert variant="destructive">
-              <AlertTitle>Error</AlertTitle>
+              <AlertTitle>{t('common.error')}</AlertTitle>
               <AlertDescription>{saveError}</AlertDescription>
             </Alert>
           )}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1">
               <Label htmlFor="edit-name">
-                Partner Name <span className="text-destructive">*</span>
+                {t('partners.partnerName')} <span className="text-destructive">*</span>
               </Label>
               <Input id="edit-name" {...register('name')} />
               {errors.name && (
@@ -140,44 +141,44 @@ function EditPartnerForm({ partner, onSave, onClose }: EditPartnerFormProps) {
               )}
             </div>
             <div className="space-y-1">
-              <Label htmlFor="edit-type">Type</Label>
+              <Label htmlFor="edit-type">{t('common.type')}</Label>
               <Select
                 value={typeValue || '__none__'}
                 onValueChange={(v) => setValue('type', v === '__none__' ? '' : v)}
               >
                 <SelectTrigger id="edit-type">
-                  <SelectValue placeholder="None" />
+                  <SelectValue placeholder={t('common.none')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="__none__">None</SelectItem>
-                  {PARTNER_TYPES.map((t) => (
-                    <SelectItem key={t} value={t}>{t}</SelectItem>
+                  <SelectItem value="__none__">{t('common.none')}</SelectItem>
+                  {PARTNER_TYPES.map((pt) => (
+                    <SelectItem key={pt} value={pt}>{pt}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
           </div>
           <div className="space-y-1">
-            <Label htmlFor="edit-website">Website</Label>
+            <Label htmlFor="edit-website">{t('partners.website')}</Label>
             <Input id="edit-website" placeholder="https://example.com" {...register('website')} />
             {errors.website && (
               <p className="text-sm text-destructive">{errors.website.message}</p>
             )}
           </div>
           <div className="space-y-1">
-            <Label htmlFor="edit-address">Address</Label>
+            <Label htmlFor="edit-address">{t('partners.address')}</Label>
             <Textarea id="edit-address" rows={2} {...register('address')} />
           </div>
           <div className="space-y-1">
-            <Label htmlFor="edit-notes">Notes</Label>
+            <Label htmlFor="edit-notes">{t('partners.notes')}</Label>
             <Textarea id="edit-notes" rows={3} {...register('notes')} />
           </div>
           <div className="flex justify-end gap-2 mt-1">
             <Button type="button" variant="outline" onClick={onClose}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button type="submit" disabled={saving}>
-              {saving ? 'Saving...' : 'Save Changes'}
+              {saving ? t('common.saving') : t('common.saveChanges')}
             </Button>
           </div>
         </div>
@@ -194,6 +195,7 @@ interface InlineDeleteButtonProps {
 
 /** Two-click inline delete button with 3-second auto-revert */
 function InlineDeleteButton({ onConfirm }: InlineDeleteButtonProps) {
+  const t = useTranslations();
   const [confirming, setConfirming] = useState<boolean>(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -223,10 +225,10 @@ function InlineDeleteButton({ onConfirm }: InlineDeleteButtonProps) {
     return (
       <div className="flex items-center gap-1">
         <Button size="sm" variant="destructive" onClick={handleConfirm}>
-          Confirm?
+          {t('common.confirm')}
         </Button>
         <Button size="sm" variant="outline" onClick={handleCancel}>
-          Cancel
+          {t('common.cancel')}
         </Button>
       </div>
     );
@@ -237,7 +239,7 @@ function InlineDeleteButton({ onConfirm }: InlineDeleteButtonProps) {
       variant="ghost"
       size="icon"
       onClick={startConfirm}
-      title="Delete"
+      title={t('common.delete')}
       className="text-destructive hover:text-destructive"
     >
       <Trash className="h-4 w-4" />
@@ -251,6 +253,8 @@ export default function PartnerDetailPage() {
   const router = useRouter();
   const { id } = router.query;
   const { data: session } = useSession();
+  const t = useTranslations();
+  const format = useFormatter();
 
   const [partner, setPartner] = useState<PartnerShape | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -278,10 +282,10 @@ export default function PartnerDetailPage() {
         setLoading(false);
       })
       .catch(() => {
-        setError('Failed to load partner');
+        setError(t('partners.failedToLoad'));
         setLoading(false);
       });
-  }, [id]);
+  }, [id, t]);
 
   async function handleDeletePartner() {
     try {
@@ -290,10 +294,10 @@ export default function PartnerDetailPage() {
         router.push('/partners');
       } else {
         const data = await res.json().catch(() => ({}));
-        toast.error('Error', { description: data.error || 'Failed to delete partner.' });
+        toast.error(t('common.error'), { description: data.error || t('partners.failedToDelete') });
       }
     } catch {
-      toast.error('Error', { description: 'Network error: failed to delete partner.' });
+      toast.error(t('common.error'), { description: t('partners.failedToDelete') });
     }
   }
 
@@ -309,15 +313,15 @@ export default function PartnerDetailPage() {
     if (res.ok) {
       setPartner((prev) => (prev ? { ...prev, contacts: data.contacts } : prev));
       setContactsValue(data.contacts || []);
-      toast.success('Contacts saved', { description: 'Contacts updated.' });
+      toast.success(t('partners.contactsSaved'), { description: t('partners.contactsUpdated') });
     } else {
-      toast.error('Error', { description: 'Failed to save contacts.' });
+      toast.error(t('common.error'), { description: t('partners.failedToSaveContacts') });
     }
   }
 
   if (loading) {
     return (
-      <AppShell title="Partner">
+      <AppShell title={t('partners.title')}>
         <div className="flex items-center justify-center mt-12">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
@@ -327,10 +331,10 @@ export default function PartnerDetailPage() {
 
   if (error || !partner) {
     return (
-      <AppShell title="Partner">
+      <AppShell title={t('partners.title')}>
         <Alert variant="destructive">
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>{error || 'Partner not found'}</AlertDescription>
+          <AlertTitle>{t('common.error')}</AlertTitle>
+          <AlertDescription>{error || t('partners.notFound')}</AlertDescription>
         </Alert>
       </AppShell>
     );
@@ -351,14 +355,14 @@ export default function PartnerDetailPage() {
               >
                 <ArrowLeft className="h-4 w-4" />
               </Button>
-              <h2 className="text-lg font-semibold">Edit Partner</h2>
+              <h2 className="text-lg font-semibold">{t('partners.editPartner')}</h2>
             </div>
             <EditPartnerForm
               partner={partner}
               onSave={(data) => {
                 setPartner((prev) => (prev ? { ...prev, ...data } : prev));
                 setEditingPartner(false);
-                toast.success('Saved', { description: 'Partner updated.' });
+                toast.success(t('common.success'), { description: t('partners.partnerUpdated') });
               }}
               onClose={() => setEditingPartner(false)}
             />
@@ -391,7 +395,7 @@ export default function PartnerDetailPage() {
                   variant="ghost"
                   size="icon"
                   onClick={() => setEditingPartner(true)}
-                  title="Edit"
+                  title={t('common.edit')}
                 >
                   <Edit className="h-4 w-4" />
                 </Button>
@@ -407,11 +411,11 @@ export default function PartnerDetailPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Card>
                 <CardContent className="pt-6">
-                  <h3 className="text-sm font-semibold mb-4">Details</h3>
+                  <h3 className="text-sm font-semibold mb-4">{t('partners.details')}</h3>
                   <div className="flex flex-col gap-3">
                     <div>
                       <p className="text-xs text-muted-foreground font-semibold uppercase mb-1">
-                        Website
+                        {t('partners.website')}
                       </p>
                       <p className="text-sm">
                         {partner.website ? (
@@ -430,22 +434,34 @@ export default function PartnerDetailPage() {
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground font-semibold uppercase mb-1">
-                        Address
+                        {t('partners.address')}
                       </p>
                       <p className="text-sm">{partner.address || '-'}</p>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <p className="text-xs text-muted-foreground font-semibold uppercase mb-1">
-                          Created
+                          {t('common.createdAt')}
                         </p>
-                        <p className="text-sm">{dayjs(partner.createdAt).format('DD MMM YYYY')}</p>
+                        <p className="text-sm">
+                          {format.dateTime(new Date(partner.createdAt), {
+                            day: 'numeric',
+                            month: 'long',
+                            year: 'numeric',
+                          })}
+                        </p>
                       </div>
                       <div>
                         <p className="text-xs text-muted-foreground font-semibold uppercase mb-1">
-                          Updated
+                          {t('common.updatedAt')}
                         </p>
-                        <p className="text-sm">{dayjs(partner.updatedAt).format('DD MMM YYYY')}</p>
+                        <p className="text-sm">
+                          {format.dateTime(new Date(partner.updatedAt), {
+                            day: 'numeric',
+                            month: 'long',
+                            year: 'numeric',
+                          })}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -454,11 +470,11 @@ export default function PartnerDetailPage() {
 
               <Card>
                 <CardContent className="pt-6">
-                  <h3 className="text-sm font-semibold mb-4">Notes</h3>
+                  <h3 className="text-sm font-semibold mb-4">{t('partners.notes')}</h3>
                   <p
                     className={`text-sm whitespace-pre-wrap ${partner.notes ? '' : 'text-muted-foreground'}`}
                   >
-                    {partner.notes || 'No notes.'}
+                    {partner.notes || t('partners.noNotes')}
                   </p>
                 </CardContent>
               </Card>
@@ -467,7 +483,7 @@ export default function PartnerDetailPage() {
             {/* Contacts */}
             <Card>
               <CardContent className="pt-6">
-                <h3 className="text-sm font-semibold mb-4">Contacts</h3>
+                <h3 className="text-sm font-semibold mb-4">{t('partners.contacts')}</h3>
                 <ContactsEditor
                   contacts={contactsValue}
                   onChange={canEdit ? setContactsValue : undefined}
