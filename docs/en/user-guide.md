@@ -22,7 +22,7 @@ After a brief pause, Fanek redirects you to the Dashboard and your account is fu
 
 ### Setting up your profile
 
-Your profile controls your display name and the language the interface uses. To reach it, click your avatar or initials in the bottom of the sidebar, then select **Profile** from the dropdown menu that appears.
+Your profile controls your display name and the language the interface uses. To reach it, click your avatar or initials at the bottom of the sidebar, then select **Profile** from the dropdown menu that appears.
 
 On the Profile page you can:
 
@@ -107,7 +107,7 @@ The **Export CSV** button at the top right of the customer list downloads all cu
 
 ### Deleting a customer
 
-Only Admins can delete customers. On the customer detail page, Admin users see a trash icon next to the pencil icon. Clicking the trash icon does not immediately delete -- a **Confirm?** button appears in its place. You must click **Confirm?** within 3 seconds to proceed. If you do nothing or click **Cancel**, the delete is aborted. This two-step pattern prevents accidental deletion.
+Only Admins can delete customers. On the customer detail page, Admin users see a trash icon next to the pencil icon. Clicking the trash icon does not immediately delete -- a **Confirm?** button appears in its place. You must click **Confirm?** within 5 seconds to proceed, or click anywhere outside the confirmation area to cancel. If you do nothing, click **Cancel**, or click outside the confirmation area, the delete is aborted. This two-step pattern prevents accidental deletion and provides sufficient time for all users, including those using assistive technologies.
 
 
 ## 4. Services

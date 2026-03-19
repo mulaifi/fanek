@@ -75,7 +75,7 @@ function InlineConfirmButton({
   const startConfirm = useCallback(() => {
     if (disabled) return;
     setConfirming(true);
-    timerRef.current = setTimeout(() => setConfirming(false), 3000);
+    timerRef.current = setTimeout(() => setConfirming(false), 5000);
   }, [disabled]);
 
   const handleConfirm = useCallback(() => {

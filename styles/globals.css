@@ -124,4 +124,16 @@
   }
 }
 
+button:not(:disabled):not([aria-disabled="true"]),
+[role="tab"]:not(:disabled):not([aria-disabled="true"]),
+[role="button"]:not(:disabled):not([aria-disabled="true"]),
+[role="menuitem"]:not(:disabled):not([aria-disabled="true"]),
+[role="option"]:not(:disabled):not([aria-disabled="true"]),
+a[href]:not(:disabled):not([aria-disabled="true"]),
+select:not(:disabled):not([aria-disabled="true"]),
+summary:not(:disabled):not([aria-disabled="true"]),
+label[for]:not(:disabled):not([aria-disabled="true"]) {
+  cursor: pointer;
+}
+
 

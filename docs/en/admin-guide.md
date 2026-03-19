@@ -86,7 +86,7 @@ Navigate to **Admin > Users** to manage all user accounts. Only Admins can acces
 2. Fill in the user's full name, email address, and assign a role (Viewer is the default).
 3. Click **Send Invite**.
 
-Fanek creates the account immediately and displays a temporary password in a banner at the top of the page. Copy this password and share it with the user out-of-band (email, chat, etc.). The banner is dismissed when you click "Dismiss" — it does not persist. There is no email delivery built in.
+Fanek creates the account immediately and displays a temporary password in a banner at the top of the page. **Important:** Copy the password immediately before dismissing the banner, as it cannot be retrieved afterwards. Share the password with the user through a secure channel such as an end-to-end encrypted messaging app or a dedicated password-sharing tool. Avoid sending passwords over unencrypted email or chat. The banner is dismissed when you click "Dismiss" and does not persist. There is no email delivery built in.
 
 The default role for new invitations is Viewer. Change the role in the invite form if you need to grant more access.
 
@@ -100,7 +100,7 @@ The role change takes effect immediately. The user's next action will be governe
 
 ### Resetting a password
 
-If a user is locked out or has forgotten their password, click **Reset Password** in the user's row. Fanek generates a new random temporary password and displays it in a banner. Share it with the user. When they log in with the temporary password, they will be required to set a new one before reaching the dashboard.
+If a user is locked out or has forgotten their password, click **Reset Password** in the user's row. Fanek generates a new random temporary password and displays it in a banner. **Important:** Copy the password immediately before dismissing the banner. Share it with the user through a secure channel (end-to-end encrypted messaging or a password-sharing tool). When they log in with the temporary password, they will be required to set a new one before reaching the dashboard.
 
 ### Revoking sessions
 
@@ -263,9 +263,11 @@ To set a specific password instead of a random one:
 npm run reset-password user@example.com -- --password MyNewPassword123!
 ```
 
+> **Security warning:** Using the `--password` flag has several risks. The password is visible in terminal history and to anyone with access to the admin's screen. It bypasses the `firstLogin` enforcement, meaning the user will not be forced to change the password on next login. This option also makes it easier to set weak or shared passwords. Use it only for emergency recovery situations, and immediately notify the user to change their password after login.
+
 When you provide a specific password, the `firstLogin` flag is not set, and the user is not forced to change it.
 
-The script prints the new password to the terminal. Store it securely or share it with the user immediately.
+The script prints the new password to the terminal. Store it securely or share it with the user through an encrypted channel immediately.
 
 ### List all users
 
