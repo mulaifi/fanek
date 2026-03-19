@@ -108,7 +108,7 @@ Click **Revoke Sessions** to immediately invalidate all active sessions for that
 
 ### Deleting a user
 
-Click **Delete** in the user's row. The button requires a second click to confirm (a "Confirm?" button appears with a 3-second countdown — if you do not confirm within 3 seconds, the action is cancelled). You cannot delete your own account.
+Click **Delete** in the user's row. The button requires a second click to confirm (a "Confirm?" button appears with a 5-second countdown. If you do not confirm within 5 seconds, the action is cancelled). You cannot delete your own account.
 
 Deleted users lose access immediately. Their historical data (customers, services, audit log entries) is retained.
 
@@ -170,7 +170,7 @@ Toggle **Active** off in the service type form and save. Inactive types are remo
 
 ### Deleting a service type
 
-The Delete button is disabled if any services of that type exist. To delete a type, first delete or reassign all services that use it. Deletion is a two-click confirm action with a 3-second countdown.
+The Delete button is disabled if any services of that type exist. To delete a type, first delete or reassign all services that use it. Deletion is a two-click confirm action with a 5-second countdown.
 
 
 ## 5. Settings

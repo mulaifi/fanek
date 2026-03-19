@@ -147,7 +147,7 @@ Each service card in the Services tab has a pencil icon on the right. Click it t
 
 ### Deleting a service
 
-Only Admins can delete services. The trash icon appears next to the pencil icon on each service card for Admin users. Like customer deletion, service deletion requires two clicks: first click the trash icon, then click **Confirm?** within 3 seconds. Click **Cancel** or wait 3 seconds to abort.
+Only Admins can delete services. The trash icon appears next to the pencil icon on each service card for Admin users. Like customer deletion, service deletion requires two clicks: first click the trash icon, then click **Confirm?** within 5 seconds. Click **Cancel** or wait 5 seconds to abort.
 
 
 ## 5. Contacts
