@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useRouter } from 'next/router';
 import { ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Stepper } from '@/components/ui/stepper';
+import { LocaleSwitcher } from '@/components/LocaleSwitcher';
 
 import StepAdmin from '@/components/SetupWizard/StepAdmin';
 import StepOrg from '@/components/SetupWizard/StepOrg';
@@ -12,18 +14,19 @@ import StepTemplate from '@/components/SetupWizard/StepTemplate';
 import StepComplete from '@/components/SetupWizard/StepComplete';
 import { getSettings } from '@/lib/settings';
 
-const STEPS = [
-  { label: 'Admin Account' },
-  { label: 'Organization' },
-  { label: 'Service Template' },
-  { label: 'Complete' },
-];
-
 export default function SetupPage() {
+  const t = useTranslations();
   const router = useRouter();
   const [activeStep, setActiveStep] = useState<number>(0);
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+
+  const STEPS = [
+    { label: t('setup.stepAdmin') },
+    { label: t('setup.stepOrg') },
+    { label: t('setup.stepTemplate') },
+    { label: t('setup.stepComplete') },
+  ];
 
   const [adminData, setAdminData] = useState<{ name: string; email: string; password: string }>({
     name: '',
@@ -39,17 +42,17 @@ export default function SetupPage() {
 
   function validateAdmin(): Record<string, string> {
     const errors: Record<string, string> = {};
-    if (!adminData.name.trim()) errors.name = 'Name is required';
-    if (!adminData.email.trim()) errors.email = 'Email is required';
+    if (!adminData.name.trim()) errors.name = t('setup.nameRequired');
+    if (!adminData.email.trim()) errors.email = t('setup.emailRequired');
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(adminData.email))
-      errors.email = 'Enter a valid email address';
-    if (!adminData.password) errors.password = 'Password is required';
+      errors.email = t('setup.emailInvalid');
+    if (!adminData.password) errors.password = t('setup.passwordRequired');
     return errors;
   }
 
   function validateOrg(): Record<string, string> {
     const errors: Record<string, string> = {};
-    if (!orgData.name.trim()) errors.orgName = 'Organization name is required';
+    if (!orgData.name.trim()) errors.orgName = t('setup.orgNameRequired');
     return errors;
   }
 
@@ -89,7 +92,7 @@ export default function SetupPage() {
         });
         const data = await res.json();
         if (!res.ok) {
-          setError(data.error || 'Setup failed. Please try again.');
+          setError(data.error || t('setup.setupFailed'));
           setSubmitting(false);
           return;
         }
@@ -99,7 +102,7 @@ export default function SetupPage() {
           router.replace('/dashboard');
         }, 2500);
       } catch {
-        setError('Network error. Please check your connection and try again.');
+        setError(t('setup.networkError'));
         setSubmitting(false);
       }
       return;
@@ -120,15 +123,18 @@ export default function SetupPage() {
   const isComplete = activeStep === 3;
 
   return (
-    <div className="min-h-screen flex items-center justify-center py-8 px-4">
+    <div className="relative min-h-screen flex items-center justify-center py-8 px-4">
+      <div className="absolute top-4 end-4">
+        <LocaleSwitcher />
+      </div>
       <div className="w-full max-w-lg">
         <Card>
           <CardContent className="pt-6">
             <div className="flex flex-col items-center gap-2 mb-8">
               <img src="/fanek-logo.svg" alt="Fanek" className="w-16 h-16" />
-              <h2 className="text-xl font-bold text-center">Fanek Setup</h2>
+              <h2 className="text-xl font-bold text-center">{t('setup.title')}</h2>
               <p className="text-sm text-muted-foreground text-center">
-                Configure your Client Information Manager
+                {t('setup.setupDesc')}
               </p>
             </div>
 
@@ -182,24 +188,24 @@ export default function SetupPage() {
                   onClick={handleBack}
                   disabled={activeStep === 0 || submitting}
                 >
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  Back
+                  <ArrowLeft className="me-2 h-4 w-4" />
+                  {t('common.back')}
                 </Button>
                 <Button onClick={handleNext} disabled={submitting}>
                   {submitting ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Setting up...
+                      <Loader2 className="me-2 h-4 w-4 animate-spin" />
+                      {t('setup.settingUp')}
                     </>
                   ) : isLastInputStep ? (
                     <>
-                      Finish Setup
-                      <ArrowRight className="ml-2 h-4 w-4" />
+                      {t('setup.finishSetup')}
+                      <ArrowRight className="ms-2 h-4 w-4" />
                     </>
                   ) : (
                     <>
-                      Next
-                      <ArrowRight className="ml-2 h-4 w-4" />
+                      {t('common.next')}
+                      <ArrowRight className="ms-2 h-4 w-4" />
                     </>
                   )}
                 </Button>

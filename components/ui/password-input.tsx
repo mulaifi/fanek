@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { useTranslations } from 'next-intl';
 import { Eye, EyeOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -11,6 +12,7 @@ export interface PasswordInputProps extends Omit<React.ComponentProps<'input'>, 
 
 const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputProps>(
   ({ className, label, error, id, ...props }, ref) => {
+    const t = useTranslations();
     const [visible, setVisible] = React.useState(false);
     const generatedId = React.useId();
     const inputId = id || generatedId;
@@ -26,7 +28,7 @@ const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputProps>(
           <Input
             id={inputId}
             type={visible ? 'text' : 'password'}
-            className={cn('pr-10', error && 'border-destructive', className)}
+            className={cn('pe-10', error && 'border-destructive', className)}
             ref={ref}
             {...props}
           />
@@ -34,10 +36,10 @@ const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputProps>(
             type="button"
             variant="ghost"
             size="icon"
-            className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+            className="absolute end-0 top-0 h-full px-3 hover:bg-transparent"
             onClick={() => setVisible(!visible)}
             tabIndex={-1}
-            aria-label={visible ? 'Hide password' : 'Show password'}
+            aria-label={visible ? t('common.hidePassword') : t('common.showPassword')}
           >
             {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </Button>

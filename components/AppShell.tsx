@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/router';
 import { useDebounce } from 'use-debounce';
+import { useTranslations, useLocale } from 'next-intl';
 import {
   LayoutDashboard,
   Users,
@@ -13,8 +14,8 @@ import {
   Search,
   LogOut,
   User,
-  Pin,
-  PinOff,
+  PanelLeftClose,
+  PanelLeftOpen,
   type LucideIcon,
 } from 'lucide-react';
 import {
@@ -44,6 +45,8 @@ import {
   CommandEmpty,
 } from '@/components/ui/command';
 import { ColorSchemeToggle } from './ColorSchemeToggle';
+import { LocaleSwitcher } from '@/components/LocaleSwitcher';
+import { getDirection, type Locale } from '@/lib/i18n';
 import BottomTabs from './BottomTabs';
 
 const RAIL_WIDTH = 56;
@@ -68,19 +71,6 @@ interface SpotlightAction {
   onClick: () => void;
 }
 
-const mainNavItems: NavItemDef[] = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/customers', label: 'Customers', icon: Users },
-  { href: '/partners', label: 'Partners', icon: Handshake },
-];
-
-const adminNavItems: NavItemDef[] = [
-  { href: '/admin/users', label: 'Users', icon: UserPlus },
-  { href: '/admin/service-catalog', label: 'Service Catalog', icon: LayoutGrid },
-  { href: '/admin/settings', label: 'Settings', icon: Settings },
-  { href: '/admin/audit-log', label: 'Audit Log', icon: History },
-];
-
 function useIsDesktop(): boolean {
   // Default to true to match SSR output; updated after mount to avoid hydration mismatch
   const [isDesktop, setIsDesktop] = useState(true);
@@ -103,9 +93,10 @@ function useIsDesktop(): boolean {
 
 interface NavItemProps extends NavItemDef {
   expanded: boolean;
+  dir: 'ltr' | 'rtl';
 }
 
-function NavItem({ href, label, icon: Icon, expanded }: NavItemProps) {
+function NavItem({ href, label, icon: Icon, expanded, dir }: NavItemProps) {
   const router = useRouter();
   const active = router.pathname === href || router.pathname.startsWith(href + '/');
 
@@ -113,7 +104,7 @@ function NavItem({ href, label, icon: Icon, expanded }: NavItemProps) {
     <button
       onClick={() => router.push(href)}
       className={[
-        'flex items-center gap-3 w-full px-3 py-2.5 rounded-md transition-colors text-left overflow-hidden',
+        'flex items-center gap-3 w-full px-3 py-2.5 rounded-md transition-colors text-start overflow-hidden',
         active
           ? 'bg-primary/10 text-primary font-semibold'
           : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
@@ -133,28 +124,29 @@ function NavItem({ href, label, icon: Icon, expanded }: NavItemProps) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>{button}</TooltipTrigger>
-      <TooltipContent side="right">{label}</TooltipContent>
+      <TooltipContent side={dir === 'rtl' ? 'left' : 'right'}>{label}</TooltipContent>
     </Tooltip>
   );
 }
 
 export default function AppShell({ children, title }: AppShellProps) {
+  const t = useTranslations();
+  const locale = useLocale();
+  const dir = getDirection(locale as Locale);
   const router = useRouter();
   const { data: session, status } = useSession();
   const isDesktop = useIsDesktop();
 
-  const [hovered, setHovered] = useState(false);
-  const [pinned, setPinned] = useState(false);
+  const [expanded, setExpanded] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    const stored = localStorage.getItem('sidebar-expanded');
+    return stored === null ? true : stored === 'true';
+  });
 
-  useEffect(() => {
-    const stored = localStorage.getItem('sidebar-pinned');
-    if (stored === 'true') setPinned(true);
-  }, []);
-
-  const togglePin = () => {
-    setPinned((prev) => {
+  const toggleExpanded = () => {
+    setExpanded((prev) => {
       const next = !prev;
-      localStorage.setItem('sidebar-pinned', String(next));
+      localStorage.setItem('sidebar-expanded', String(next));
       return next;
     });
   };
@@ -165,8 +157,20 @@ export default function AppShell({ children, title }: AppShellProps) {
   const [spotlightActions, setSpotlightActions] = useState<SpotlightAction[]>([]);
 
   const isAdmin = session?.user?.role === 'ADMIN';
-  const expanded = pinned || hovered;
   const sidebarWidth = expanded ? EXPANDED_WIDTH : RAIL_WIDTH;
+
+  const mainNavItems: NavItemDef[] = [
+    { href: '/dashboard', label: t('nav.dashboard'), icon: LayoutDashboard },
+    { href: '/customers', label: t('nav.customers'), icon: Users },
+    { href: '/partners', label: t('nav.partners'), icon: Handshake },
+  ];
+
+  const adminNavItems: NavItemDef[] = [
+    { href: '/admin/users', label: t('nav.users'), icon: UserPlus },
+    { href: '/admin/service-catalog', label: t('nav.serviceCatalog'), icon: LayoutGrid },
+    { href: '/admin/settings', label: t('nav.settings'), icon: Settings },
+    { href: '/admin/audit-log', label: t('nav.auditLog'), icon: History },
+  ];
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -282,7 +286,7 @@ export default function AppShell({ children, title }: AppShellProps) {
           showCloseButton={false}
         >
           <CommandInput
-            placeholder="Search customers, partners, services..."
+            placeholder={t('nav.search')}
             value={spotlightQuery}
             onValueChange={setSpotlightQuery}
           />
@@ -314,24 +318,22 @@ export default function AppShell({ children, title }: AppShellProps) {
         {/* Desktop sidebar */}
         {isDesktop && (
           <div
-            onMouseEnter={() => !pinned && setHovered(true)}
-            onMouseLeave={() => !pinned && setHovered(false)}
             style={{
               width: sidebarWidth,
               transition: 'width 200ms ease',
             }}
-            className="fixed top-0 left-0 bottom-0 z-[100] flex flex-col overflow-hidden bg-sidebar border-r border-sidebar-border"
+            className="fixed top-0 start-0 bottom-0 z-[100] flex flex-col overflow-hidden bg-sidebar border-e border-sidebar-border"
           >
             {/* Logo */}
-            <div className="h-[52px] flex items-center px-3 gap-3 shrink-0">
+            <div className="flex items-center px-3 gap-3 shrink-0" style={{ height: expanded ? 80 : 52 }}>
               <img
                 src="/fanek-logo.svg"
-                alt="Fanek"
-                style={{ width: 64, height: 64, flexShrink: 0 }}
+                alt={t('nav.appName')}
+                style={{ width: expanded ? 64 : 32, height: expanded ? 64 : 32, flexShrink: 0, transition: 'width 200ms ease, height 200ms ease' }}
               />
               {expanded && (
-                <span className="text-sm font-bold text-sidebar-foreground whitespace-nowrap">
-                  Fanek
+                <span className="text-lg font-bold text-sidebar-foreground whitespace-nowrap">
+                  {t('nav.appName')}
                 </span>
               )}
             </div>
@@ -343,6 +345,7 @@ export default function AppShell({ children, title }: AppShellProps) {
                   key={item.href}
                   {...item}
                   expanded={expanded}
+                  dir={dir}
                 />
               ))}
 
@@ -351,7 +354,7 @@ export default function AppShell({ children, title }: AppShellProps) {
                   <Separator className="my-2" />
                   {expanded && (
                     <span className="block text-[10px] font-semibold uppercase tracking-widest text-muted-foreground px-3.5 py-1 whitespace-nowrap">
-                      Administration
+                      {t('nav.administration')}
                     </span>
                   )}
                   {adminNavItems.map((item) => (
@@ -359,33 +362,15 @@ export default function AppShell({ children, title }: AppShellProps) {
                       key={item.href}
                       {...item}
                       expanded={expanded}
+                      dir={dir}
                     />
                   ))}
                 </>
               )}
             </div>
 
-            {/* Bottom: pin toggle + avatar */}
+            {/* Bottom: toggle + avatar */}
             <div className="p-2 shrink-0">
-              {expanded && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      onClick={togglePin}
-                      className="flex items-center gap-3 w-full px-3 py-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-sidebar-accent transition-colors"
-                    >
-                      {pinned ? <PinOff size={18} /> : <Pin size={18} />}
-                      <span className="text-xs whitespace-nowrap">
-                        {pinned ? 'Unpin' : 'Pin sidebar'}
-                      </span>
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="right">
-                    {pinned ? 'Unpin sidebar' : 'Pin sidebar'}
-                  </TooltipContent>
-                </Tooltip>
-              )}
-
               <DropdownMenu>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -405,15 +390,15 @@ export default function AppShell({ children, title }: AppShellProps) {
                     </DropdownMenuTrigger>
                   </TooltipTrigger>
                   {!expanded && (
-                    <TooltipContent side="right">
+                    <TooltipContent side={dir === 'rtl' ? 'left' : 'right'}>
                       {session?.user?.name ?? 'Account'}
                     </TooltipContent>
                   )}
                 </Tooltip>
-                <DropdownMenuContent side="right" align="end" sideOffset={8}>
+                <DropdownMenuContent side={dir === 'rtl' ? 'left' : 'right'} align="end" sideOffset={8}>
                   <DropdownMenuItem onClick={() => router.push('/profile')}>
                     <User size={16} />
-                    Profile
+                    {t('nav.profile')}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
@@ -421,10 +406,33 @@ export default function AppShell({ children, title }: AppShellProps) {
                     onClick={() => signOut({ callbackUrl: '/login' })}
                   >
                     <LogOut size={16} />
-                    Sign out
+                    {t('nav.signOut')}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={toggleExpanded}
+                    className="flex items-center justify-center gap-3 w-full px-3 py-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-sidebar-accent transition-colors"
+                  >
+                    {expanded ? (
+                      <>
+                        <PanelLeftClose size={18} className="shrink-0" />
+                        <span className="text-xs whitespace-nowrap overflow-hidden text-ellipsis">{t('nav.collapseSidebar')}</span>
+                      </>
+                    ) : (
+                      <PanelLeftOpen size={18} className="shrink-0" />
+                    )}
+                  </button>
+                </TooltipTrigger>
+                {!expanded && (
+                  <TooltipContent side={dir === 'rtl' ? 'left' : 'right'}>
+                    {t('nav.expandSidebar')}
+                  </TooltipContent>
+                )}
+              </Tooltip>
             </div>
           </div>
         )}
@@ -432,10 +440,10 @@ export default function AppShell({ children, title }: AppShellProps) {
         {/* Top bar */}
         <div
           style={{
-            left: isDesktop ? (pinned ? EXPANDED_WIDTH : RAIL_WIDTH) : 0,
-            transition: isDesktop ? 'left 200ms ease' : undefined,
+            insetInlineStart: isDesktop ? (expanded ? EXPANDED_WIDTH : RAIL_WIDTH) : 0,
+            transition: isDesktop ? 'inset-inline-start 200ms ease' : undefined,
           }}
-          className="fixed top-0 right-0 h-[52px] z-[99] flex items-center gap-3 px-4 bg-background border-b border-border"
+          className="fixed top-0 end-0 h-[52px] z-[99] flex items-center gap-3 px-4 bg-background border-b border-border"
         >
           {/* Page title */}
           <span className="flex-1 text-[18px] font-semibold text-foreground">
@@ -448,17 +456,18 @@ export default function AppShell({ children, title }: AppShellProps) {
             className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-muted border border-border text-muted-foreground min-w-[180px] hover:bg-accent hover:text-accent-foreground transition-colors"
           >
             <Search size={16} />
-            <span className="text-sm">Search...</span>
+            <span className="text-sm">{t('nav.search')}</span>
           </button>
 
+          <LocaleSwitcher />
           <ColorSchemeToggle />
         </div>
 
         {/* Content area */}
         <main
           style={{
-            marginLeft: isDesktop ? (pinned ? EXPANDED_WIDTH : RAIL_WIDTH) : 0,
-            transition: isDesktop ? 'margin-left 200ms ease' : undefined,
+            marginInlineStart: isDesktop ? (expanded ? EXPANDED_WIDTH : RAIL_WIDTH) : 0,
+            transition: isDesktop ? 'margin-inline-start 200ms ease' : undefined,
             paddingBottom: isDesktop ? 24 : 72,
           }}
           className="flex-1 mt-[52px] min-w-0 p-4 md:p-6"

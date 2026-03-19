@@ -7,6 +7,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 import { getAuthOptions } from '@/lib/auth/options';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -15,8 +16,16 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PasswordInput } from '@/components/ui/password-input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import AppShell from '@/components/AppShell';
+import { getClientLocale, setLocaleCookie, type Locale } from '@/lib/i18n';
 
 function getPasswordStrength(password: string): number {
   let strength = 0;
@@ -25,14 +34,6 @@ function getPasswordStrength(password: string): number {
   if (/[A-Z]/.test(password)) strength += 25;
   if (/[^A-Za-z0-9]/.test(password)) strength += 25;
   return strength;
-}
-
-function getStrengthLabel(strength: number): string {
-  if (strength < 25) return 'Too short';
-  if (strength < 50) return 'Weak';
-  if (strength < 75) return 'Fair';
-  if (strength < 100) return 'Good';
-  return 'Strong';
 }
 
 function getStrengthBarColor(strength: number): string {
@@ -47,18 +48,19 @@ function getStrengthTextColor(strength: number): string {
   return 'text-green-600';
 }
 
-const nameSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-});
-type NameFormValues = z.infer<typeof nameSchema>;
-
 interface NameFormProps {
   user?: { name?: string | null };
   onUpdate: (updates: { name: string }) => Promise<void>;
 }
 
 function NameForm({ user, onUpdate }: NameFormProps) {
+  const t = useTranslations();
   const [saving, setSaving] = useState<boolean>(false);
+
+  const nameSchema = z.object({
+    name: z.string().min(1, t('profile.nameRequired')),
+  });
+  type NameFormValues = z.infer<typeof nameSchema>;
 
   const {
     register,
@@ -80,10 +82,10 @@ function NameForm({ user, onUpdate }: NameFormProps) {
     const data = await res.json();
     setSaving(false);
     if (!res.ok) {
-      setError('name', { message: data.error || 'Failed to update name' });
+      setError('name', { message: data.error || t('profile.failedUpdateName') });
     } else {
       await onUpdate({ name: data.name });
-      toast.success('Name updated', { description: 'Display name saved.' });
+      toast.success(t('profile.nameUpdated'), { description: t('profile.nameUpdatedDesc') });
     }
   }
 
@@ -91,7 +93,7 @@ function NameForm({ user, onUpdate }: NameFormProps) {
     <form onSubmit={handleSubmit(onSubmit)}>
       <div className="flex flex-col gap-3">
         <div className="space-y-2">
-          <Label htmlFor="display-name">Full Name</Label>
+          <Label htmlFor="display-name">{t('profile.fullName')}</Label>
           <Input id="display-name" {...register('name')} />
           {errors.name && (
             <p className="text-sm text-destructive">{errors.name.message}</p>
@@ -99,7 +101,7 @@ function NameForm({ user, onUpdate }: NameFormProps) {
         </div>
         <div className="flex">
           <Button type="submit" disabled={saving}>
-            {saving ? 'Saving...' : 'Save Name'}
+            {saving ? t('common.saving') : t('profile.saveName')}
           </Button>
         </div>
       </div>
@@ -107,30 +109,31 @@ function NameForm({ user, onUpdate }: NameFormProps) {
   );
 }
 
-const passwordSchema = z
-  .object({
-    currentPassword: z.string().min(1, 'Current password is required'),
-    newPassword: z
-      .string()
-      .min(1, 'New password is required')
-      .min(8, 'Password must be at least 8 characters'),
-    confirmPassword: z.string().min(1, 'Please confirm your new password'),
-  })
-  .refine((data) => data.newPassword === data.confirmPassword, {
-    message: 'Passwords do not match',
-    path: ['confirmPassword'],
-  });
-type PasswordFormValues = z.infer<typeof passwordSchema>;
-
 interface PasswordFormProps {
   onSuccess?: (data: { firstLogin?: boolean }) => void;
   successMessage?: string;
 }
 
 function PasswordForm({ onSuccess, successMessage }: PasswordFormProps) {
+  const t = useTranslations();
   const [saving, setSaving] = useState<boolean>(false);
   const [apiError, setApiError] = useState<string>('');
   const [success, setSuccess] = useState<boolean>(false);
+
+  const passwordSchema = z
+    .object({
+      currentPassword: z.string().min(1, t('profile.currentPasswordRequired')),
+      newPassword: z
+        .string()
+        .min(1, t('profile.newPasswordRequired'))
+        .min(8, t('profile.passwordMinLength')),
+      confirmPassword: z.string().min(1, t('profile.confirmPasswordRequired')),
+    })
+    .refine((data) => data.newPassword === data.confirmPassword, {
+      message: t('profile.passwordsMismatch'),
+      path: ['confirmPassword'],
+    });
+  type PasswordFormValues = z.infer<typeof passwordSchema>;
 
   const {
     register,
@@ -150,6 +153,14 @@ function PasswordForm({ onSuccess, successMessage }: PasswordFormProps) {
   const newPasswordValue = watch('newPassword');
   const strength = getPasswordStrength(newPasswordValue || '');
 
+  function getStrengthLabel(s: number): string {
+    if (s < 25) return t('profile.strengthTooShort');
+    if (s < 50) return t('profile.strengthWeak');
+    if (s < 75) return t('profile.strengthFair');
+    if (s < 100) return t('profile.strengthGood');
+    return t('profile.strengthStrong');
+  }
+
   async function onSubmit(values: PasswordFormValues) {
     setApiError('');
     setSuccess(false);
@@ -165,7 +176,7 @@ function PasswordForm({ onSuccess, successMessage }: PasswordFormProps) {
     const data = await res.json();
     setSaving(false);
     if (!res.ok) {
-      setApiError(data.error || 'Failed to change password');
+      setApiError(data.error || t('profile.failedChangePassword'));
     } else {
       setSuccess(true);
       reset();
@@ -178,27 +189,27 @@ function PasswordForm({ onSuccess, successMessage }: PasswordFormProps) {
       <div className="flex flex-col gap-3">
         {success && (
           <Alert className="border-green-200 bg-green-50 dark:bg-green-950/20">
-            <AlertTitle>Success</AlertTitle>
+            <AlertTitle>{t('common.success')}</AlertTitle>
             <AlertDescription>
-              {successMessage || 'Password changed successfully.'}
+              {successMessage || t('profile.passwordChanged')}
             </AlertDescription>
           </Alert>
         )}
         {apiError && (
           <Alert variant="destructive">
-            <AlertTitle>Error</AlertTitle>
+            <AlertTitle>{t('common.error')}</AlertTitle>
             <AlertDescription>{apiError}</AlertDescription>
           </Alert>
         )}
         <PasswordInput
-          label="Current Password"
+          label={t('profile.currentPassword')}
           required
           error={errors.currentPassword?.message}
           {...register('currentPassword')}
         />
         <div>
           <PasswordInput
-            label="New Password"
+            label={t('profile.newPassword')}
             required
             error={errors.newPassword?.message}
             {...register('newPassword')}
@@ -218,14 +229,14 @@ function PasswordForm({ onSuccess, successMessage }: PasswordFormProps) {
           )}
         </div>
         <PasswordInput
-          label="Confirm New Password"
+          label={t('profile.confirmNewPassword')}
           required
           error={errors.confirmPassword?.message}
           {...register('confirmPassword')}
         />
         <div className="flex">
           <Button type="submit" disabled={saving}>
-            {saving ? 'Saving...' : 'Change Password'}
+            {saving ? t('common.saving') : t('profile.changePassword')}
           </Button>
         </div>
       </div>
@@ -233,8 +244,49 @@ function PasswordForm({ onSuccess, successMessage }: PasswordFormProps) {
   );
 }
 
+function LanguageSelector() {
+  const t = useTranslations();
+  const [currentLocale, setCurrentLocale] = useState<Locale>(getClientLocale());
+
+  async function handleLocaleChange(newLocale: string) {
+    const locale = newLocale as Locale;
+    try {
+      const res = await fetch('/api/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ locale }),
+      });
+      if (!res.ok) {
+        toast.error(t('profile.failedUpdateLocale'));
+        return;
+      }
+      setLocaleCookie(locale);
+      setCurrentLocale(locale);
+      window.location.reload();
+    } catch {
+      toast.error(t('profile.failedUpdateLocale'));
+    }
+  }
+
+  return (
+    <div className="space-y-2">
+      <Label>{t('profile.language')}</Label>
+      <Select value={currentLocale} onValueChange={handleLocaleChange}>
+        <SelectTrigger className="w-48">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="en">{t('profile.langEnglish')}</SelectItem>
+          <SelectItem value="ar">{t('profile.langArabic')}</SelectItem>
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
+
 export default function ProfilePage() {
   const router = useRouter();
+  const t = useTranslations();
   const { data: session, update } = useSession();
   const user = session?.user;
   const isFirstLogin = user?.firstLogin;
@@ -249,28 +301,26 @@ export default function ProfilePage() {
     <div className="flex flex-col gap-4 max-w-[600px]">
       {isFirstLogin && (
         <Alert className="border-blue-200 bg-blue-50 dark:bg-blue-950/20">
-          <AlertTitle>Welcome</AlertTitle>
-          <AlertDescription>
-            Please change your temporary password to continue.
-          </AlertDescription>
+          <AlertTitle>{t('profile.firstLoginWelcome')}</AlertTitle>
+          <AlertDescription>{t('profile.firstLoginDesc')}</AlertDescription>
         </Alert>
       )}
 
       {!isFirstLogin && (
         <Card>
           <CardContent className="pt-6">
-            <h3 className="text-sm font-semibold mb-2">Account Information</h3>
+            <h3 className="text-sm font-semibold mb-2">{t('profile.accountInfo')}</h3>
             <Separator className="mb-4" />
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-xs text-muted-foreground font-semibold uppercase mb-1">
-                  Email
+                  {t('common.email')}
                 </p>
                 <p className="text-sm">{user?.email}</p>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground font-semibold uppercase mb-1">
-                  Role
+                  {t('common.role')}
                 </p>
                 <Badge
                   className={`border-0 ${roleColors[user?.role ?? ''] || 'bg-gray-100 text-gray-600'}`}
@@ -286,7 +336,7 @@ export default function ProfilePage() {
       {!isFirstLogin && (
         <Card>
           <CardContent className="pt-6">
-            <h3 className="text-sm font-semibold mb-2">Display Name</h3>
+            <h3 className="text-sm font-semibold mb-2">{t('profile.displayName')}</h3>
             <Separator className="mb-4" />
             <NameForm
               user={user}
@@ -298,15 +348,25 @@ export default function ProfilePage() {
         </Card>
       )}
 
+      {!isFirstLogin && (
+        <Card>
+          <CardContent className="pt-6">
+            <h3 className="text-sm font-semibold mb-2">{t('profile.language')}</h3>
+            <Separator className="mb-4" />
+            <LanguageSelector />
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardContent className="pt-6">
-          <h3 className="text-sm font-semibold mb-2">Change Password</h3>
+          <h3 className="text-sm font-semibold mb-2">{t('profile.changePassword')}</h3>
           <Separator className="mb-4" />
           <PasswordForm
             successMessage={
               isFirstLogin
-                ? 'Password changed successfully. Redirecting to dashboard...'
-                : 'Password changed successfully.'
+                ? t('profile.passwordChangedRedirecting')
+                : t('profile.passwordChanged')
             }
             onSuccess={(data) => {
               if (data.firstLogin === false) {
@@ -326,14 +386,14 @@ export default function ProfilePage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-6">
         <div className="w-full max-w-lg">
-          <h1 className="text-xl font-bold mb-4">Set Your Password</h1>
+          <h1 className="text-xl font-bold mb-4">{t('profile.firstLoginTitle')}</h1>
           {content}
         </div>
       </div>
     );
   }
 
-  return <AppShell title="My Profile">{content}</AppShell>;
+  return <AppShell title={t('profile.title')}>{content}</AppShell>;
 }
 
 export async function getServerSideProps(context: GetServerSidePropsContext) {

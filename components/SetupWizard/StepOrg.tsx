@@ -1,4 +1,5 @@
 import { useRef } from 'react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -19,13 +20,14 @@ interface StepOrgProps {
 }
 
 export default function StepOrg({ data, onChange, errors }: StepOrgProps) {
+  const t = useTranslations();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   function handleLogoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > MAX_LOGO_SIZE) {
-      alert('Logo must be smaller than 256 KB.');
+      alert(t('setup.logoSizeError'));
       return;
     }
     const reader = new FileReader();
@@ -41,7 +43,7 @@ export default function StepOrg({ data, onChange, errors }: StepOrgProps) {
     <div className="space-y-4">
       <div className="space-y-2">
         <Label htmlFor="org-name">
-          Organization Name <span className="text-destructive">*</span>
+          {t('setup.orgName')} <span className="text-destructive">*</span>
         </Label>
         <Input
           id="org-name"
@@ -55,12 +57,12 @@ export default function StepOrg({ data, onChange, errors }: StepOrgProps) {
 
       <div>
         <p className="text-sm text-muted-foreground mb-2">
-          Organization Logo (optional, max 256 KB)
+          {t('setup.orgLogoOptional')}
         </p>
         <div className="flex items-center gap-4">
           <Avatar className="h-[72px] w-[72px] rounded-sm">
             {data.logo ? (
-              <AvatarImage src={data.logo} alt="Organization logo preview" />
+              <AvatarImage src={data.logo} alt={data.name ? `${data.name} logo` : t('setup.orgLogo')} />
             ) : (
               <AvatarFallback className="rounded-sm">
                 <Upload className="h-7 w-7 text-muted-foreground" />
@@ -73,8 +75,8 @@ export default function StepOrg({ data, onChange, errors }: StepOrgProps) {
               size="sm"
               onClick={() => fileInputRef.current?.click()}
             >
-              <Upload className="h-3.5 w-3.5 mr-1.5" />
-              {data.logo ? 'Change Logo' : 'Upload Logo'}
+              <Upload className="h-3.5 w-3.5 me-1.5" />
+              {data.logo ? t('setup.changeLogo') : t('setup.uploadLogo')}
             </Button>
             {data.logo && (
               <Button
@@ -83,8 +85,8 @@ export default function StepOrg({ data, onChange, errors }: StepOrgProps) {
                 className="text-destructive hover:text-destructive"
                 onClick={() => onChange({ ...data, logo: null })}
               >
-                <X className="h-3.5 w-3.5 mr-1.5" />
-                Remove
+                <X className="h-3.5 w-3.5 me-1.5" />
+                {t('setup.removeLogo')}
               </Button>
             )}
           </div>

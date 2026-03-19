@@ -1,3 +1,4 @@
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -42,6 +43,7 @@ function newField(): ServiceTypeFieldInput {
 let globalNextId = 0;
 
 export default function ServiceTypeEditor({ fieldSchema = [], onChange }: ServiceTypeEditorProps) {
+  const t = useTranslations();
   const [fieldKeys, setFieldKeys] = useState<string[]>(() =>
     fieldSchema.map(() => `field-${globalNextId++}`)
   );
@@ -106,12 +108,12 @@ export default function ServiceTypeEditor({ fieldSchema = [], onChange }: Servic
   return (
     <div>
       <p className="text-sm text-muted-foreground mb-4">
-        Define the fields for this service type. Field names must be unique and use only letters, numbers, and underscores.
+        {t('admin.serviceCatalog.fieldSchemaHint')}
       </p>
 
       {fieldSchema.length === 0 && (
         <p className="text-sm text-muted-foreground mb-4">
-          No fields defined. Add a field to get started.
+          {t('admin.serviceCatalog.noFieldsDefined')}
         </p>
       )}
 
@@ -119,7 +121,7 @@ export default function ServiceTypeEditor({ fieldSchema = [], onChange }: Servic
         <Card key={currentKeys[index]} className="mb-4">
           <CardContent className="pt-4">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-sm text-muted-foreground">Field {index + 1}</span>
+              <span className="text-sm text-muted-foreground">{t('admin.serviceCatalog.fieldN', { n: index + 1 })}</span>
               <TooltipProvider>
                 <div className="flex items-center gap-1">
                   <Tooltip>
@@ -134,7 +136,7 @@ export default function ServiceTypeEditor({ fieldSchema = [], onChange }: Servic
                         <ArrowUp className="h-3.5 w-3.5" />
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent>Move up</TooltipContent>
+                    <TooltipContent>{t('common.moveUp')}</TooltipContent>
                   </Tooltip>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -148,7 +150,7 @@ export default function ServiceTypeEditor({ fieldSchema = [], onChange }: Servic
                         <ArrowDown className="h-3.5 w-3.5" />
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent>Move down</TooltipContent>
+                    <TooltipContent>{t('common.moveDown')}</TooltipContent>
                   </Tooltip>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -161,7 +163,7 @@ export default function ServiceTypeEditor({ fieldSchema = [], onChange }: Servic
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent>Remove field</TooltipContent>
+                    <TooltipContent>{t('admin.serviceCatalog.removeField')}</TooltipContent>
                   </Tooltip>
                 </div>
               </TooltipProvider>
@@ -169,7 +171,7 @@ export default function ServiceTypeEditor({ fieldSchema = [], onChange }: Servic
 
             <div className="grid grid-cols-3 gap-3 items-end">
               <div className="space-y-1">
-                <Label>Field Name</Label>
+                <Label>{t('admin.serviceCatalog.fieldName')}</Label>
                 <Input
                   value={field.name}
                   onChange={(e) =>
@@ -180,10 +182,10 @@ export default function ServiceTypeEditor({ fieldSchema = [], onChange }: Servic
                   }
                   placeholder="e.g. contract_value"
                 />
-                <p className="text-xs text-muted-foreground">Unique identifier, no spaces</p>
+                <p className="text-xs text-muted-foreground">{t('admin.serviceCatalog.fieldNameHint')}</p>
               </div>
               <div className="space-y-1">
-                <Label>Display Label</Label>
+                <Label>{t('admin.serviceCatalog.displayLabel')}</Label>
                 <Input
                   value={field.label}
                   onChange={(e) => updateField(index, { ...field, label: e.currentTarget.value })}
@@ -191,7 +193,7 @@ export default function ServiceTypeEditor({ fieldSchema = [], onChange }: Servic
                 />
               </div>
               <div className="space-y-1">
-                <Label>Type</Label>
+                <Label>{t('admin.serviceCatalog.fieldType')}</Label>
                 <Select
                   value={field.type}
                   onValueChange={(val) =>
@@ -225,20 +227,20 @@ export default function ServiceTypeEditor({ fieldSchema = [], onChange }: Servic
                 }
               />
               <Label htmlFor={`field-required-${index}`} className="text-xs">
-                Req.
+                {t('admin.serviceCatalog.fieldRequired')}
               </Label>
             </div>
 
             {field.type === 'select' && (
               <div className="mt-3 space-y-2">
                 <div className="space-y-1">
-                  <Label>Options (comma-separated)</Label>
+                  <Label>{t('admin.serviceCatalog.fieldOptions')}</Label>
                   <Input
                     value={(field.options || []).join(', ')}
                     onChange={(e) => handleOptionsChange(index, e.currentTarget.value)}
                     placeholder="Option A, Option B, Option C"
                   />
-                  <p className="text-xs text-muted-foreground">Enter options separated by commas</p>
+                  <p className="text-xs text-muted-foreground">{t('admin.serviceCatalog.fieldOptionsHint')}</p>
                 </div>
                 <div className="flex flex-wrap gap-1">
                   {(field.options || []).map((opt) => (
@@ -254,8 +256,8 @@ export default function ServiceTypeEditor({ fieldSchema = [], onChange }: Servic
       ))}
 
       <Button variant="outline" size="sm" onClick={addField}>
-        <Plus className="h-3.5 w-3.5 mr-1.5" />
-        Add Field
+        <Plus className="h-3.5 w-3.5 me-1.5" />
+        {t('admin.serviceCatalog.addField')}
       </Button>
     </div>
   );

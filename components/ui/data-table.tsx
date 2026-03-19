@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { useTranslations } from 'next-intl';
 import {
   ColumnDef,
   SortingState,
@@ -66,6 +67,7 @@ export function DataTable<TData, TValue>({
   getRowCanExpand,
   renderSubComponent,
 }: DataTableProps<TData, TValue>) {
+  const t = useTranslations();
   const [expanded, setExpanded] = React.useState<ExpandedState>({});
 
   // Only one row expanded at a time: when expanded changes, enforce single-row constraint
@@ -220,7 +222,7 @@ export function DataTable<TData, TValue>({
       {/* Pagination controls */}
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <span>Rows per page</span>
+          <span>{t('common.rowsPerPage')}</span>
           <Select
             value={String(pageSize)}
             onValueChange={(v) => onPageSizeChange?.(Number(v))}
@@ -240,7 +242,7 @@ export function DataTable<TData, TValue>({
 
         <div className="flex items-center gap-2">
           <span className="text-sm text-muted-foreground">
-            Page {currentPage} of {totalPages}
+            {t('common.pageOf', { current: currentPage, total: totalPages })}
           </span>
           <Button
             variant="outline"
@@ -248,7 +250,7 @@ export function DataTable<TData, TValue>({
             onClick={() => onPageChange?.(pageIndex - 1)}
             disabled={!canGoPrev || isLoading}
           >
-            Previous
+            {t('common.previous')}
           </Button>
           <Button
             variant="outline"
@@ -256,7 +258,7 @@ export function DataTable<TData, TValue>({
             onClick={() => onPageChange?.(pageIndex + 1)}
             disabled={!canGoNext || isLoading}
           >
-            Next
+            {t('common.next')}
           </Button>
         </div>
       </div>

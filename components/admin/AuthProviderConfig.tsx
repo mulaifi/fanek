@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -28,6 +29,7 @@ interface AuthProviderConfigProps {
 }
 
 export default function AuthProviderConfig({ settings, onSave }: AuthProviderConfigProps) {
+  const t = useTranslations();
   const [googleEnabled, setGoogleEnabled] = useState(settings?.googleOAuthEnabled || false);
   const [googleClientId, setGoogleClientId] = useState(settings?.authProviders?.google?.clientId || '');
   const [googleClientSecret, setGoogleClientSecret] = useState('');
@@ -74,7 +76,7 @@ export default function AuthProviderConfig({ settings, onSave }: AuthProviderCon
     setSaving(false);
 
     if (!res.ok) {
-      setError(data.error || 'Failed to save');
+      setError(data.error || t('common.failedToSave'));
     } else {
       setSuccess(true);
       setGoogleClientSecret('');
@@ -92,14 +94,14 @@ export default function AuthProviderConfig({ settings, onSave }: AuthProviderCon
       )}
       {success && (
         <Alert className="mb-4 border-green-200 bg-green-50 text-green-800">
-          <AlertDescription>Authentication settings saved.</AlertDescription>
+          <AlertDescription>{t('admin.settings.authSettingsSaved')}</AlertDescription>
         </Alert>
       )}
 
       <Card className="mb-6">
         <CardContent className="pt-4">
           <div className="flex items-center justify-between mb-4">
-            <span className="font-semibold">Google OAuth</span>
+            <span className="font-semibold">{t('admin.settings.googleOAuth')}</span>
             <div className="flex items-center gap-2">
               <Switch
                 id="google-oauth-switch"
@@ -107,14 +109,14 @@ export default function AuthProviderConfig({ settings, onSave }: AuthProviderCon
                 onCheckedChange={setGoogleEnabled}
               />
               <Label htmlFor="google-oauth-switch" className="text-sm text-muted-foreground">
-                {googleEnabled ? 'Enabled' : 'Disabled'}
+                {googleEnabled ? t('admin.settings.enabled') : t('admin.settings.disabled')}
               </Label>
             </div>
           </div>
           <Separator className="mb-4" />
           <div className="space-y-3">
             <div className="space-y-1">
-              <Label htmlFor="google-client-id">Client ID</Label>
+              <Label htmlFor="google-client-id">{t('admin.settings.clientId')}</Label>
               <Input
                 id="google-client-id"
                 value={googleClientId}
@@ -123,12 +125,12 @@ export default function AuthProviderConfig({ settings, onSave }: AuthProviderCon
               />
             </div>
             <PasswordInput
-              label="Client Secret"
+              label={t('admin.settings.clientSecret')}
               value={googleClientSecret}
               onChange={(e) => setGoogleClientSecret((e.target as HTMLInputElement).value)}
               disabled={!googleEnabled}
             />
-            <p className="text-xs text-muted-foreground">Leave blank to keep the existing secret</p>
+            <p className="text-xs text-muted-foreground">{t('admin.settings.leaveBlankSecret')}</p>
           </div>
         </CardContent>
       </Card>
@@ -136,7 +138,7 @@ export default function AuthProviderConfig({ settings, onSave }: AuthProviderCon
       <Card className="mb-6">
         <CardContent className="pt-4">
           <div className="flex items-center justify-between mb-4">
-            <span className="font-semibold">Microsoft OAuth</span>
+            <span className="font-semibold">{t('admin.settings.microsoftOAuth')}</span>
             <div className="flex items-center gap-2">
               <Switch
                 id="ms-oauth-switch"
@@ -144,14 +146,14 @@ export default function AuthProviderConfig({ settings, onSave }: AuthProviderCon
                 onCheckedChange={setMsEnabled}
               />
               <Label htmlFor="ms-oauth-switch" className="text-sm text-muted-foreground">
-                {msEnabled ? 'Enabled' : 'Disabled'}
+                {msEnabled ? t('admin.settings.enabled') : t('admin.settings.disabled')}
               </Label>
             </div>
           </div>
           <Separator className="mb-4" />
           <div className="space-y-3">
             <div className="space-y-1">
-              <Label htmlFor="ms-client-id">Client ID</Label>
+              <Label htmlFor="ms-client-id">{t('admin.settings.clientId')}</Label>
               <Input
                 id="ms-client-id"
                 value={msClientId}
@@ -160,7 +162,7 @@ export default function AuthProviderConfig({ settings, onSave }: AuthProviderCon
               />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="ms-tenant-id">Tenant ID</Label>
+              <Label htmlFor="ms-tenant-id">{t('admin.settings.tenantId')}</Label>
               <Input
                 id="ms-tenant-id"
                 value={msTenantId}
@@ -169,18 +171,18 @@ export default function AuthProviderConfig({ settings, onSave }: AuthProviderCon
               />
             </div>
             <PasswordInput
-              label="Client Secret"
+              label={t('admin.settings.clientSecret')}
               value={msClientSecret}
               onChange={(e) => setMsClientSecret((e.target as HTMLInputElement).value)}
               disabled={!msEnabled}
             />
-            <p className="text-xs text-muted-foreground">Leave blank to keep the existing secret</p>
+            <p className="text-xs text-muted-foreground">{t('admin.settings.leaveBlankSecret')}</p>
           </div>
         </CardContent>
       </Card>
 
       <Button onClick={handleSave} disabled={saving}>
-        {saving ? 'Saving...' : 'Save Authentication Settings'}
+        {saving ? t('common.saving') : t('admin.settings.saveAuthSettings')}
       </Button>
     </div>
   );

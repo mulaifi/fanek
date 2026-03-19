@@ -38,6 +38,7 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse): Promise
       authProviders,
       sessionMaxAge,
       sessionIdleTimeout,
+      defaultLocale,
     } = req.body as {
       orgName?: unknown;
       orgLogo?: unknown;
@@ -45,6 +46,7 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse): Promise
       authProviders?: AuthProvidersInput;
       sessionMaxAge?: unknown;
       sessionIdleTimeout?: unknown;
+      defaultLocale?: unknown;
     };
 
     const updateData: Record<string, unknown> = {};
@@ -137,6 +139,14 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse): Promise
         return;
       }
       updateData.sessionIdleTimeout = sessionIdleTimeout;
+    }
+
+    if (defaultLocale !== undefined) {
+      if (typeof defaultLocale !== 'string' || !['en', 'ar'].includes(defaultLocale)) {
+        res.status(400).json({ error: 'defaultLocale must be "en" or "ar"' });
+        return;
+      }
+      updateData.defaultLocale = defaultLocale;
     }
 
     if (Object.keys(updateData).length === 0) {

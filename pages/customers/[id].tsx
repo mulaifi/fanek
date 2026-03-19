@@ -7,11 +7,11 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
+import { useTranslations, useFormatter } from 'next-intl';
 import { getAuthOptions } from '@/lib/auth/options';
 import type { ContactInput } from '@/lib/validation';
 import type { ServiceTypeFieldInput } from '@/lib/validation';
 import { ArrowLeft, Edit, Trash, Plus, Loader2 } from 'lucide-react';
-import dayjs from 'dayjs';
 import AppShell from '@/components/AppShell';
 import ContactsEditor from '@/components/ContactsEditor';
 import DynamicForm from '@/components/DynamicForm';
@@ -88,6 +88,7 @@ interface EditCustomerFormProps {
 }
 
 function EditCustomerForm({ customer, statuses, onSave, onClose }: EditCustomerFormProps) {
+  const t = useTranslations();
   const [saving, setSaving] = useState<boolean>(false);
   const [saveError, setSaveError] = useState<string>('');
 
@@ -127,7 +128,7 @@ function EditCustomerForm({ customer, statuses, onSave, onClose }: EditCustomerF
     const data = await res.json();
     setSaving(false);
     if (!res.ok) {
-      setSaveError(data.error || 'Failed to save');
+      setSaveError(data.error || t('customers.failedToSave'));
     } else {
       onSave(data);
     }
@@ -139,14 +140,14 @@ function EditCustomerForm({ customer, statuses, onSave, onClose }: EditCustomerF
         <div className="flex flex-col gap-3">
           {saveError && (
             <Alert variant="destructive">
-              <AlertTitle>Error</AlertTitle>
+              <AlertTitle>{t('common.error')}</AlertTitle>
               <AlertDescription>{saveError}</AlertDescription>
             </Alert>
           )}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1">
               <Label htmlFor="edit-name">
-                Customer Name <span className="text-destructive">*</span>
+                {t('customers.customerName')} <span className="text-destructive">*</span>
               </Label>
               <Input id="edit-name" {...register('name')} />
               {errors.name && (
@@ -154,18 +155,18 @@ function EditCustomerForm({ customer, statuses, onSave, onClose }: EditCustomerF
               )}
             </div>
             <div className="space-y-1">
-              <Label htmlFor="edit-clientCode">Client Code</Label>
+              <Label htmlFor="edit-clientCode">{t('customers.clientCode')}</Label>
               <Input id="edit-clientCode" {...register('clientCode')} />
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1">
               <Label htmlFor="edit-status">
-                Status <span className="text-destructive">*</span>
+                {t('common.status')} <span className="text-destructive">*</span>
               </Label>
               <Select value={statusValue} onValueChange={(v) => setValue('status', v)}>
                 <SelectTrigger id="edit-status">
-                  <SelectValue placeholder="Select status" />
+                  <SelectValue placeholder={t('customers.selectStatus')} />
                 </SelectTrigger>
                 <SelectContent>
                   {statuses.map((s) => (
@@ -178,27 +179,27 @@ function EditCustomerForm({ customer, statuses, onSave, onClose }: EditCustomerF
               )}
             </div>
             <div className="space-y-1">
-              <Label htmlFor="edit-vertical">Vertical</Label>
+              <Label htmlFor="edit-vertical">{t('customers.vertical')}</Label>
               <Input id="edit-vertical" {...register('vertical')} />
             </div>
           </div>
           <div className="space-y-1">
-            <Label htmlFor="edit-website">Website</Label>
+            <Label htmlFor="edit-website">{t('customers.website')}</Label>
             <Input id="edit-website" placeholder="https://example.com" {...register('website')} />
             {errors.website && (
               <p className="text-sm text-destructive">{errors.website.message}</p>
             )}
           </div>
           <div className="space-y-1">
-            <Label htmlFor="edit-address">Address</Label>
+            <Label htmlFor="edit-address">{t('customers.address')}</Label>
             <Textarea id="edit-address" rows={2} {...register('address')} />
           </div>
           <div className="flex justify-end gap-2 mt-1">
             <Button type="button" variant="outline" onClick={onClose}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button type="submit" disabled={saving}>
-              {saving ? 'Saving...' : 'Save Changes'}
+              {saving ? t('common.saving') : t('customers.saveChanges')}
             </Button>
           </div>
         </div>
@@ -217,6 +218,7 @@ interface AddServiceFormProps {
 }
 
 function AddServiceForm({ customerId, serviceTypes, onAdd, onClose }: AddServiceFormProps) {
+  const t = useTranslations();
   const [selectedTypeId, setSelectedTypeId] = useState<string>('');
   const [serviceFields, setServiceFields] = useState<Record<string, unknown>>({});
   const [serviceErrors, setServiceErrors] = useState<Record<string, string>>({});
@@ -228,7 +230,7 @@ function AddServiceForm({ customerId, serviceTypes, onAdd, onClose }: AddService
   async function handleAdd() {
     setAddError('');
     if (!selectedTypeId) {
-      setServiceErrors({ type: 'Please select a service type' });
+      setServiceErrors({ type: t('services.selectServiceType') });
       return;
     }
     const errs: Record<string, string> = {};
@@ -251,7 +253,7 @@ function AddServiceForm({ customerId, serviceTypes, onAdd, onClose }: AddService
     const data = await res.json();
     setAdding(false);
     if (!res.ok) {
-      setAddError(data.error || 'Failed to add service');
+      setAddError(data.error || t('services.failedToAdd'));
     } else {
       onAdd({ ...data, serviceType: selectedType });
     }
@@ -260,16 +262,16 @@ function AddServiceForm({ customerId, serviceTypes, onAdd, onClose }: AddService
   return (
     <div className="rounded-md border-2 border-primary/40 p-4 mb-4">
       <div className="flex flex-col gap-3">
-        <p className="text-sm font-semibold">Add New Service</p>
+        <p className="text-sm font-semibold">{t('customers.addService')}</p>
         {addError && (
           <Alert variant="destructive">
-            <AlertTitle>Error</AlertTitle>
+            <AlertTitle>{t('common.error')}</AlertTitle>
             <AlertDescription>{addError}</AlertDescription>
           </Alert>
         )}
         <div className="space-y-1">
           <Label htmlFor="service-type">
-            Service Type <span className="text-destructive">*</span>
+            {t('services.serviceType')} <span className="text-destructive">*</span>
           </Label>
           <Select
             value={selectedTypeId}
@@ -280,11 +282,11 @@ function AddServiceForm({ customerId, serviceTypes, onAdd, onClose }: AddService
             }}
           >
             <SelectTrigger id="service-type">
-              <SelectValue placeholder="Select a service type" />
+              <SelectValue placeholder={t('services.selectServiceType')} />
             </SelectTrigger>
             <SelectContent>
-              {serviceTypes.map((t) => (
-                <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+              {serviceTypes.map((st) => (
+                <SelectItem key={st.id} value={st.id}>{st.name}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -302,10 +304,10 @@ function AddServiceForm({ customerId, serviceTypes, onAdd, onClose }: AddService
         )}
         <div className="flex justify-end gap-2 mt-1">
           <Button type="button" variant="outline" onClick={onClose}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button type="button" disabled={adding} onClick={handleAdd}>
-            {adding ? 'Adding...' : 'Add Service'}
+            {adding ? t('common.saving') : t('customers.addService')}
           </Button>
         </div>
       </div>
@@ -322,6 +324,7 @@ interface EditServiceFormProps {
 }
 
 function EditServiceForm({ service, onSave, onClose }: EditServiceFormProps) {
+  const t = useTranslations();
   const [serviceFields, setServiceFields] = useState<Record<string, unknown>>(service.fieldValues || {});
   const [serviceErrors, setServiceErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState<boolean>(false);
@@ -351,7 +354,7 @@ function EditServiceForm({ service, onSave, onClose }: EditServiceFormProps) {
     const data = await res.json();
     setSaving(false);
     if (!res.ok) {
-      setSaveError(data.error || 'Failed to update service');
+      setSaveError(data.error || t('services.failedToUpdate'));
     } else {
       onSave({ ...data, serviceType: service.serviceType });
     }
@@ -360,10 +363,12 @@ function EditServiceForm({ service, onSave, onClose }: EditServiceFormProps) {
   return (
     <div className="rounded-md border-2 border-primary/40 p-4">
       <div className="flex flex-col gap-3">
-        <p className="text-sm font-semibold">Edit {service.serviceType?.name || 'Service'}</p>
+        <p className="text-sm font-semibold">
+          {t('customers.editService')}: {service.serviceType?.name || t('services.serviceType')}
+        </p>
         {saveError && (
           <Alert variant="destructive">
-            <AlertTitle>Error</AlertTitle>
+            <AlertTitle>{t('common.error')}</AlertTitle>
             <AlertDescription>{saveError}</AlertDescription>
           </Alert>
         )}
@@ -375,10 +380,10 @@ function EditServiceForm({ service, onSave, onClose }: EditServiceFormProps) {
         />
         <div className="flex justify-end gap-2 mt-1">
           <Button type="button" variant="outline" onClick={onClose}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button type="button" disabled={saving} onClick={handleSave}>
-            {saving ? 'Saving...' : 'Save Changes'}
+            {saving ? t('common.saving') : t('customers.saveChanges')}
           </Button>
         </div>
       </div>
@@ -394,7 +399,8 @@ interface InlineDeleteButtonProps {
 }
 
 /** Two-click inline delete button with 3-second auto-revert */
-function InlineDeleteButton({ onConfirm, label = 'Delete' }: InlineDeleteButtonProps) {
+function InlineDeleteButton({ onConfirm, label }: InlineDeleteButtonProps) {
+  const t = useTranslations();
   const [confirming, setConfirming] = useState<boolean>(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -424,17 +430,17 @@ function InlineDeleteButton({ onConfirm, label = 'Delete' }: InlineDeleteButtonP
     return (
       <div className="flex items-center gap-1">
         <Button size="sm" variant="destructive" onClick={handleConfirm}>
-          Confirm?
+          {t('common.confirm')}?
         </Button>
         <Button size="sm" variant="outline" onClick={handleCancel}>
-          Cancel
+          {t('common.cancel')}
         </Button>
       </div>
     );
   }
 
   return (
-    <Button variant="ghost" size="icon" onClick={startConfirm} title={label} className="text-destructive hover:text-destructive">
+    <Button variant="ghost" size="icon" onClick={startConfirm} title={label ?? t('common.delete')} className="text-destructive hover:text-destructive">
       <Trash className="h-4 w-4" />
     </Button>
   );
@@ -448,6 +454,7 @@ interface InlineDeleteServiceButtonProps {
 
 /** Small inline delete for service rows */
 function InlineDeleteServiceButton({ onConfirm }: InlineDeleteServiceButtonProps) {
+  const t = useTranslations();
   const [confirming, setConfirming] = useState<boolean>(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -477,17 +484,17 @@ function InlineDeleteServiceButton({ onConfirm }: InlineDeleteServiceButtonProps
     return (
       <div className="flex items-center gap-1">
         <Button size="sm" variant="destructive" onClick={handleConfirm}>
-          Confirm?
+          {t('common.confirm')}?
         </Button>
         <Button size="sm" variant="outline" onClick={handleCancel}>
-          Cancel
+          {t('common.cancel')}
         </Button>
       </div>
     );
   }
 
   return (
-    <Button variant="ghost" size="icon" onClick={startConfirm} title="Remove service" className="text-destructive hover:text-destructive">
+    <Button variant="ghost" size="icon" onClick={startConfirm} title={t('customers.deleteService')} className="text-destructive hover:text-destructive">
       <Trash className="h-4 w-4" />
     </Button>
   );
@@ -499,6 +506,8 @@ export default function CustomerDetailPage() {
   const router = useRouter();
   const { id } = router.query;
   const { data: session } = useSession();
+  const t = useTranslations();
+  const format = useFormatter();
 
   const [customer, setCustomer] = useState<CustomerShape | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -539,10 +548,10 @@ export default function CustomerDetailPage() {
         setLoading(false);
       })
       .catch(() => {
-        setError('Failed to load customer');
+        setError(t('customers.failedToLoad'));
         setLoading(false);
       });
-  }, [id]);
+  }, [id, t]);
 
   async function handleDeleteCustomer() {
     try {
@@ -551,10 +560,10 @@ export default function CustomerDetailPage() {
         router.push('/customers');
       } else {
         const data = await res.json().catch(() => ({}));
-        toast.error('Error', { description: data.error || 'Failed to delete customer.' });
+        toast.error(t('common.error'), { description: data.error || t('customers.failedToDelete') });
       }
     } catch {
-      toast.error('Error', { description: 'Network error: failed to delete customer.' });
+      toast.error(t('common.error'), { description: t('customers.failedToDelete') });
     }
   }
 
@@ -569,10 +578,10 @@ export default function CustomerDetailPage() {
         );
       } else {
         const data = await res.json().catch(() => ({}));
-        toast.error('Error', { description: data.error || 'Failed to remove service.' });
+        toast.error(t('common.error'), { description: data.error || t('services.failedToRemove') });
       }
     } catch {
-      toast.error('Error', { description: 'Network error: failed to remove service.' });
+      toast.error(t('common.error'), { description: t('services.failedToRemove') });
     }
   }
 
@@ -588,9 +597,9 @@ export default function CustomerDetailPage() {
     if (res.ok) {
       setCustomer((prev) => (prev ? { ...prev, contacts: data.contacts } : prev));
       setContactsValue(data.contacts || []);
-      toast.success('Contacts saved', { description: 'Contacts updated.' });
+      toast.success(t('customers.contacts'), { description: t('customers.contactsSaved') });
     } else {
-      toast.error('Error', { description: 'Failed to save contacts.' });
+      toast.error(t('common.error'), { description: t('customers.failedToSaveContacts') });
     }
   }
 
@@ -605,15 +614,15 @@ export default function CustomerDetailPage() {
     setNotesSaving(false);
     if (res.ok) {
       setCustomer((prev) => (prev ? { ...prev, notes: data.notes } : prev));
-      toast.success('Notes saved', { description: 'Notes updated.' });
+      toast.success(t('customers.notes'), { description: t('customers.notesSaved') });
     } else {
-      toast.error('Error', { description: 'Failed to save notes.' });
+      toast.error(t('common.error'), { description: t('customers.failedToSaveNotes') });
     }
   }
 
   if (loading) {
     return (
-      <AppShell title="Customer">
+      <AppShell title={t('customers.title')}>
         <div className="flex items-center justify-center mt-12">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
@@ -623,10 +632,10 @@ export default function CustomerDetailPage() {
 
   if (error || !customer) {
     return (
-      <AppShell title="Customer">
+      <AppShell title={t('customers.title')}>
         <Alert variant="destructive">
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>{error || 'Customer not found'}</AlertDescription>
+          <AlertTitle>{t('common.error')}</AlertTitle>
+          <AlertDescription>{error || t('customers.notFound')}</AlertDescription>
         </Alert>
       </AppShell>
     );
@@ -634,7 +643,7 @@ export default function CustomerDetailPage() {
 
   const servicesByType = (customer.services || []).reduce<Record<string, ServiceShape[]>>(
     (acc, svc) => {
-      const typeName = svc.serviceType?.name || 'Unknown';
+      const typeName = svc.serviceType?.name || t('customers.unknown');
       if (!acc[typeName]) acc[typeName] = [];
       acc[typeName].push(svc);
       return acc;
@@ -657,7 +666,7 @@ export default function CustomerDetailPage() {
               >
                 <ArrowLeft className="h-4 w-4" />
               </Button>
-              <h2 className="text-lg font-semibold">Edit Customer</h2>
+              <h2 className="text-lg font-semibold">{t('customers.editCustomer')}</h2>
             </div>
             <EditCustomerForm
               customer={customer}
@@ -665,7 +674,7 @@ export default function CustomerDetailPage() {
               onSave={(data) => {
                 setCustomer((prev) => (prev ? { ...prev, ...data } : prev));
                 setEditingCustomer(false);
-                toast.success('Saved', { description: 'Customer updated.' });
+                toast.success(t('common.success'), { description: t('customers.customerUpdated') });
               }}
               onClose={() => setEditingCustomer(false)}
             />
@@ -701,11 +710,11 @@ export default function CustomerDetailPage() {
                   variant="ghost"
                   size="icon"
                   onClick={() => setEditingCustomer(true)}
-                  title="Edit"
+                  title={t('common.edit')}
                 >
                   <Edit className="h-4 w-4" />
                 </Button>
-                {isAdmin && <InlineDeleteButton onConfirm={handleDeleteCustomer} />}
+                {isAdmin && <InlineDeleteButton onConfirm={handleDeleteCustomer} label={t('customers.deleteCustomer')} />}
               </div>
             )}
           </div>
@@ -715,12 +724,12 @@ export default function CustomerDetailPage() {
         {!editingCustomer && (
           <Tabs defaultValue="info">
             <TabsList>
-              <TabsTrigger value="info">Info</TabsTrigger>
+              <TabsTrigger value="info">{t('customers.info')}</TabsTrigger>
               <TabsTrigger value="services">
-                Services ({customer.services?.length || 0})
+                {t('customers.services')} ({customer.services?.length || 0})
               </TabsTrigger>
-              <TabsTrigger value="contacts">Contacts</TabsTrigger>
-              <TabsTrigger value="notes">Notes</TabsTrigger>
+              <TabsTrigger value="contacts">{t('customers.contacts')}</TabsTrigger>
+              <TabsTrigger value="notes">{t('customers.notes')}</TabsTrigger>
             </TabsList>
 
             {/* Info tab */}
@@ -730,13 +739,13 @@ export default function CustomerDetailPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <p className="text-xs text-muted-foreground font-semibold uppercase mb-1">
-                        Vertical
+                        {t('customers.vertical')}
                       </p>
                       <p className="text-sm">{customer.vertical || '-'}</p>
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground font-semibold uppercase mb-1">
-                        Website
+                        {t('customers.website')}
                       </p>
                       <p className="text-sm">
                         {customer.website ? (
@@ -755,21 +764,33 @@ export default function CustomerDetailPage() {
                     </div>
                     <div className="sm:col-span-2">
                       <p className="text-xs text-muted-foreground font-semibold uppercase mb-1">
-                        Address
+                        {t('customers.address')}
                       </p>
                       <p className="text-sm">{customer.address || '-'}</p>
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground font-semibold uppercase mb-1">
-                        Created
+                        {t('common.createdAt')}
                       </p>
-                      <p className="text-sm">{dayjs(customer.createdAt).format('DD MMM YYYY')}</p>
+                      <p className="text-sm">
+                        {format.dateTime(new Date(customer.createdAt), {
+                          day: 'numeric',
+                          month: 'long',
+                          year: 'numeric',
+                        })}
+                      </p>
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground font-semibold uppercase mb-1">
-                        Last Updated
+                        {t('customers.lastUpdated')}
                       </p>
-                      <p className="text-sm">{dayjs(customer.updatedAt).format('DD MMM YYYY')}</p>
+                      <p className="text-sm">
+                        {format.dateTime(new Date(customer.updatedAt), {
+                          day: 'numeric',
+                          month: 'long',
+                          year: 'numeric',
+                        })}
+                      </p>
                     </div>
                   </div>
                 </CardContent>
@@ -782,8 +803,8 @@ export default function CustomerDetailPage() {
                 {canEdit && !addingService && (
                   <div className="flex justify-end">
                     <Button onClick={() => setAddingService(true)}>
-                      <Plus className="h-4 w-4 mr-1" />
-                      Add Service
+                      <Plus className="h-4 w-4 me-1" />
+                      {t('customers.addService')}
                     </Button>
                   </div>
                 )}
@@ -798,13 +819,13 @@ export default function CustomerDetailPage() {
                           : prev
                       );
                       setAddingService(false);
-                      toast.success('Service added', { description: 'Service was added.' });
+                      toast.success(t('customers.addService'), { description: t('services.serviceCreated') });
                     }}
                     onClose={() => setAddingService(false)}
                   />
                 )}
                 {Object.keys(servicesByType).length === 0 && (
-                  <p className="text-sm text-muted-foreground">No services yet.</p>
+                  <p className="text-sm text-muted-foreground">{t('customers.noServices')}</p>
                 )}
                 {Object.entries(servicesByType).map(([typeName, services]) => (
                   <div key={typeName}>
@@ -828,7 +849,7 @@ export default function CustomerDetailPage() {
                                       : prev
                                   );
                                   setEditingServiceId(null);
-                                  toast.success('Updated', { description: 'Service updated.' });
+                                  toast.success(t('common.success'), { description: t('services.serviceUpdated') });
                                 }}
                                 onClose={() => setEditingServiceId(null)}
                               />
@@ -841,11 +862,15 @@ export default function CustomerDetailPage() {
                                   />
                                   {!svc.serviceType?.fieldSchema?.length && (
                                     <p className="text-sm text-muted-foreground">
-                                      No fields defined
+                                      {t('customers.noFieldsDefined')}
                                     </p>
                                   )}
                                   <p className="text-xs text-muted-foreground mt-2">
-                                    Added {dayjs(svc.createdAt).format('DD MMM YYYY')}
+                                    {t('customers.added')} {format.dateTime(new Date(svc.createdAt), {
+                                      day: 'numeric',
+                                      month: 'long',
+                                      year: 'numeric',
+                                    })}
                                   </p>
                                 </div>
                                 {canEdit && (
@@ -854,7 +879,7 @@ export default function CustomerDetailPage() {
                                       variant="ghost"
                                       size="icon"
                                       onClick={() => setEditingServiceId(svc.id)}
-                                      title="Edit service"
+                                      title={t('customers.editService')}
                                     >
                                       <Edit className="h-4 w-4" />
                                     </Button>
@@ -886,7 +911,7 @@ export default function CustomerDetailPage() {
               />
               {!canEdit && (
                 <p className="text-sm text-muted-foreground mt-2">
-                  You do not have permission to edit contacts.
+                  {t('customers.noEditPermission')}
                 </p>
               )}
             </TabsContent>
@@ -903,7 +928,7 @@ export default function CustomerDetailPage() {
                 {canEdit && (
                   <div className="flex">
                     <Button disabled={notesSaving} onClick={handleSaveNotes}>
-                      {notesSaving ? 'Saving...' : 'Save Notes'}
+                      {notesSaving ? t('common.saving') : t('customers.saveNotes')}
                     </Button>
                   </div>
                 )}

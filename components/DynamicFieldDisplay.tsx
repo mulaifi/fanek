@@ -1,3 +1,4 @@
+import { useTranslations } from 'next-intl';
 import { Badge } from '@/components/ui/badge';
 import { Check, X } from 'lucide-react';
 import type { ServiceTypeFieldInput } from '@/lib/validation';
@@ -8,6 +9,8 @@ interface FieldValueProps {
 }
 
 function FieldValue({ field, value }: FieldValueProps) {
+  const t = useTranslations();
+
   if (value === null || value === undefined || value === '') {
     return (
       <span className="text-sm text-muted-foreground">-</span>
@@ -19,12 +22,12 @@ function FieldValue({ field, value }: FieldValueProps) {
       return value ? (
         <Badge variant="secondary" className="gap-1 text-green-700 bg-green-100">
           <Check className="h-3 w-3" />
-          Yes
+          {t('common.yes')}
         </Badge>
       ) : (
         <Badge variant="secondary" className="gap-1 text-muted-foreground">
           <X className="h-3 w-3" />
-          No
+          {t('common.no')}
         </Badge>
       );
 

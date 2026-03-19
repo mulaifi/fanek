@@ -14,14 +14,29 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse): Promise
     return;
   }
 
-  const { currentPassword, newPassword, name } = req.body as {
+  const { currentPassword, newPassword, name, locale } = req.body as {
     currentPassword?: string;
     newPassword?: string;
     name?: string;
+    locale?: string;
   };
 
   const userId = req.session.user.id;
   const result: Record<string, unknown> = { success: true };
+
+  // Handle locale update
+  const VALID_LOCALES = ['en', 'ar'];
+  if (locale !== undefined) {
+    if (!VALID_LOCALES.includes(locale)) {
+      res.status(400).json({ error: 'Invalid locale' });
+      return;
+    }
+    await prisma.user.update({
+      where: { id: userId },
+      data: { locale },
+    });
+    result.locale = locale;
+  }
 
   // Handle name update
   if (name !== undefined) {

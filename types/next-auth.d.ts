@@ -6,6 +6,7 @@ declare module 'next-auth' {
       id: string;
       role: 'ADMIN' | 'EDITOR' | 'VIEWER';
       firstLogin?: boolean;
+      locale: string | null;
     } & DefaultSession['user'];
   }
 }
@@ -15,5 +16,6 @@ declare module 'next-auth/jwt' {
     id: string;
     role: 'ADMIN' | 'EDITOR' | 'VIEWER';
     firstLogin?: boolean;
+    locale: string | null;
   }
 }

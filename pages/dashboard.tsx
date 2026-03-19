@@ -13,7 +13,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import type { ColumnDef } from '@tanstack/react-table';
-import dayjs from 'dayjs';
+import { useTranslations, useFormatter } from 'next-intl';
 import { getAuthOptions } from '@/lib/auth/options';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -70,6 +70,8 @@ type RecentCustomer = DashboardStats['recentCustomers'][number];
 
 export default function DashboardPage() {
   const router = useRouter();
+  const t = useTranslations();
+  const format = useFormatter();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
@@ -91,17 +93,17 @@ export default function DashboardPage() {
   const recentCustomerColumns: ColumnDef<RecentCustomer>[] = [
     {
       accessorKey: 'name',
-      header: 'Name',
+      header: t('dashboard.colName'),
       enableSorting: true,
     },
     {
       accessorKey: 'clientCode',
-      header: 'Client Code',
+      header: t('dashboard.colClientCode'),
       cell: ({ row }) => row.original.clientCode || '-',
     },
     {
       accessorKey: 'status',
-      header: 'Status',
+      header: t('dashboard.colStatus'),
       cell: ({ row }) => (
         <Badge className={cn('border-0', statusColors[row.original.status] || '')}>
           {row.original.status}
@@ -110,13 +112,18 @@ export default function DashboardPage() {
     },
     {
       accessorKey: 'updatedAt',
-      header: 'Last Updated',
-      cell: ({ row }) => dayjs(row.original.updatedAt).format('DD MMM YYYY'),
+      header: t('dashboard.colLastUpdated'),
+      cell: ({ row }) =>
+        format.dateTime(new Date(row.original.updatedAt), {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+        }),
     },
   ];
 
   return (
-    <AppShell title="Dashboard">
+    <AppShell title={t('dashboard.title')}>
       {loading ? (
         <div className="flex items-center justify-center mt-8">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
@@ -125,19 +132,19 @@ export default function DashboardPage() {
         <div className="flex flex-col gap-8">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <StatCard
-              label="Total Customers"
+              label={t('dashboard.totalCustomers')}
               value={stats?.totalCustomers}
               icon={Users}
               iconClassName="text-primary"
             />
             <StatCard
-              label="Total Services"
+              label={t('dashboard.totalServices')}
               value={stats?.totalServices}
               icon={Layers}
               iconClassName="text-violet-500"
             />
             <StatCard
-              label="Total Partners"
+              label={t('dashboard.totalPartners')}
               value={stats?.totalPartners}
               icon={HeartHandshake}
               iconClassName="text-green-600"
@@ -147,9 +154,9 @@ export default function DashboardPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Card>
               <CardContent className="pt-6">
-                <p className="font-semibold mb-4">Customers by Status</p>
+                <p className="font-semibold mb-4">{t('dashboard.customersByStatus')}</p>
                 {!stats?.customersByStatus?.length ? (
-                  <p className="text-muted-foreground text-sm">No data available</p>
+                  <p className="text-muted-foreground text-sm">{t('dashboard.noData')}</p>
                 ) : (
                   <div className="flex flex-col gap-2">
                     {stats.customersByStatus.map((s) => (
@@ -167,9 +174,9 @@ export default function DashboardPage() {
 
             <Card>
               <CardContent className="pt-6">
-                <p className="font-semibold mb-4">Services by Type</p>
+                <p className="font-semibold mb-4">{t('dashboard.servicesByType')}</p>
                 {!servicesByTypeData.length ? (
-                  <p className="text-muted-foreground text-sm">No data available</p>
+                  <p className="text-muted-foreground text-sm">{t('dashboard.noData')}</p>
                 ) : (
                   <ResponsiveContainer width="100%" height={300}>
                     <BarChart data={servicesByTypeData}>
@@ -187,11 +194,11 @@ export default function DashboardPage() {
 
           <Card>
             <CardContent className="pt-6">
-              <p className="font-semibold mb-4">Recently Updated Customers</p>
+              <p className="font-semibold mb-4">{t('dashboard.recentCustomers')}</p>
               <DataTable
                 columns={recentCustomerColumns}
                 data={stats?.recentCustomers || []}
-                emptyMessage="No customers yet"
+                emptyMessage={t('dashboard.noCustomers')}
                 onRowClick={(row) => router.push(`/customers/${row.id}`)}
               />
             </CardContent>

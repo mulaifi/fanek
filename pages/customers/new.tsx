@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 import { getAuthOptions } from '@/lib/auth/options';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -42,6 +43,7 @@ type NewCustomerFormValues = z.infer<typeof schema>;
 
 export default function NewCustomerPage() {
   const router = useRouter();
+  const t = useTranslations();
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [apiError, setApiError] = useState<string>('');
   const [statuses, setStatuses] = useState<readonly string[]>(DEFAULT_CUSTOMER_STATUSES);
@@ -95,33 +97,35 @@ export default function NewCustomerPage() {
     setSubmitting(false);
 
     if (!res.ok) {
-      setApiError(data.error || 'Failed to create customer');
+      setApiError(data.error || t('customers.failedToCreate'));
     } else {
-      toast.success('Customer created', { description: `${data.name} was added successfully.` });
+      toast.success(t('customers.newCustomer'), {
+        description: t('customers.customerCreated'),
+      });
       router.push(`/customers/${data.id}`);
     }
   }
 
   return (
-    <AppShell title="New Customer">
+    <AppShell title={t('customers.newCustomer')}>
       <div className="flex flex-col gap-4 max-w-[720px]">
         {apiError && (
           <Alert variant="destructive">
-            <AlertTitle>Error</AlertTitle>
+            <AlertTitle>{t('common.error')}</AlertTitle>
             <AlertDescription>{apiError}</AlertDescription>
           </Alert>
         )}
 
         <Card>
           <CardContent className="pt-6">
-            <h2 className="text-sm font-semibold mb-4">Customer Details</h2>
+            <h2 className="text-sm font-semibold mb-4">{t('customers.customerDetails')}</h2>
 
             <form onSubmit={handleSubmit(onSubmit)}>
               <div className="flex flex-col gap-3">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <Label htmlFor="name">
-                      Customer Name <span className="text-destructive">*</span>
+                      {t('customers.customerName')} <span className="text-destructive">*</span>
                     </Label>
                     <Input
                       id="name"
@@ -134,7 +138,7 @@ export default function NewCustomerPage() {
                     )}
                   </div>
                   <div className="space-y-1">
-                    <Label htmlFor="clientCode">Client Code</Label>
+                    <Label htmlFor="clientCode">{t('customers.clientCode')}</Label>
                     <Input id="clientCode" placeholder="e.g. ACME-001" {...register('clientCode')} />
                   </div>
                 </div>
@@ -142,14 +146,14 @@ export default function NewCustomerPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <Label htmlFor="status">
-                      Status <span className="text-destructive">*</span>
+                      {t('common.status')} <span className="text-destructive">*</span>
                     </Label>
                     <Select
                       value={statusValue}
                       onValueChange={(v) => setValue('status', v)}
                     >
                       <SelectTrigger id="status">
-                        <SelectValue placeholder="Select status" />
+                        <SelectValue placeholder={t('customers.selectStatus')} />
                       </SelectTrigger>
                       <SelectContent>
                         {statuses.map((s) => (
@@ -162,13 +166,13 @@ export default function NewCustomerPage() {
                     )}
                   </div>
                   <div className="space-y-1">
-                    <Label htmlFor="vertical">Vertical</Label>
+                    <Label htmlFor="vertical">{t('customers.vertical')}</Label>
                     <Input id="vertical" placeholder="Technology" {...register('vertical')} />
                   </div>
                 </div>
 
                 <div className="space-y-1">
-                  <Label htmlFor="website">Website</Label>
+                  <Label htmlFor="website">{t('customers.website')}</Label>
                   <Input id="website" placeholder="https://example.com" {...register('website')} />
                   {errors.website && (
                     <p className="text-sm text-destructive">{errors.website.message}</p>
@@ -176,25 +180,25 @@ export default function NewCustomerPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <Label htmlFor="address">Address</Label>
+                  <Label htmlFor="address">{t('customers.address')}</Label>
                   <Textarea id="address" rows={2} {...register('address')} />
                 </div>
 
                 <div className="space-y-1">
-                  <Label htmlFor="notes">Notes</Label>
+                  <Label htmlFor="notes">{t('customers.notes')}</Label>
                   <Textarea id="notes" rows={3} {...register('notes')} />
                 </div>
 
                 <div className="flex items-center gap-2 mt-1">
                   <Button type="submit" disabled={submitting}>
-                    {submitting ? 'Creating...' : 'Create Customer'}
+                    {submitting ? t('common.saving') : t('customers.createCustomer')}
                   </Button>
                   <Button
                     type="button"
                     variant="outline"
                     onClick={() => router.push('/customers')}
                   >
-                    Cancel
+                    {t('common.cancel')}
                   </Button>
                 </div>
               </div>

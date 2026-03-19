@@ -15,6 +15,7 @@ model Settings {
   customerStatuses Json     @default("[\"Evaluation\", \"Implementation\", \"Active\", \"Suspended\", \"Closed\"]")
   sessionMaxAge    Int      @default(2592000)
   sessionIdleTimeout Int    @default(86400)
+  defaultLocale    String   @default("en")
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 }
@@ -28,6 +29,7 @@ model User {
   role          Role      @default(VIEWER)
   firstLogin    Boolean   @default(true)
   lastActiveAt  DateTime?
+  locale        String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   auditLogs     AuditLog[]
