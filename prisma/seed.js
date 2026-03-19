@@ -2,7 +2,7 @@ const templates = {
   cloud: [
     {
       name: 'Virtual Data Center',
-      icon: 'Storage',
+      icon: 'Server',
       description: 'Hosted virtual compute environment with configurable vCPU, RAM, and storage.',
       fieldSchema: [
         { name: 'location', label: 'Location', type: 'text', required: true },
@@ -22,7 +22,7 @@ const templates = {
     },
     {
       name: 'Disaster Recovery',
-      icon: 'CloudSync',
+      icon: 'RefreshCw',
       description: 'Off-site replication and failover environment for business continuity.',
       fieldSchema: [
         { name: 'sourceLocation', label: 'Source Location', type: 'text', required: true },
@@ -41,7 +41,7 @@ const templates = {
     },
     {
       name: 'Backup',
-      icon: 'Backup',
+      icon: 'Archive',
       description: 'Scheduled cloud backup service with configurable retention policies.',
       fieldSchema: [
         { name: 'storageGb', label: 'Storage (GB)', type: 'number', required: true },
@@ -82,7 +82,7 @@ const templates = {
     },
     {
       name: 'Hardware',
-      icon: 'Memory',
+      icon: 'HardDrive',
       description: 'Physical or virtual hardware assets under management.',
       fieldSchema: [
         {
@@ -122,7 +122,7 @@ const templates = {
     },
     {
       name: 'Data Circuit',
-      icon: 'SettingsEthernet',
+      icon: 'Network',
       description: 'Point-to-point or multipoint data circuits for site connectivity.',
       fieldSchema: [
         {
@@ -141,7 +141,7 @@ const templates = {
     },
     {
       name: 'Internet Service',
-      icon: 'Language',
+      icon: 'Globe',
       description: 'Broadband or dedicated internet access services.',
       fieldSchema: [
         {
@@ -183,7 +183,7 @@ const templates = {
     },
     {
       name: 'SLA',
-      icon: 'VerifiedUser',
+      icon: 'ShieldCheck',
       description: 'Service level agreement terms attached to a customer account.',
       fieldSchema: [
         {
@@ -216,7 +216,7 @@ const templates = {
   msp: [
     {
       name: 'Managed Server',
-      icon: 'DnsRounded',
+      icon: 'Server',
       description: 'Fully managed physical or virtual server under MSP care.',
       fieldSchema: [
         {
@@ -236,7 +236,7 @@ const templates = {
     },
     {
       name: 'Endpoint Management',
-      icon: 'Devices',
+      icon: 'Monitor',
       description: 'Managed endpoint service covering desktops, laptops, and mobile devices.',
       fieldSchema: [
         { name: 'deviceCount', label: 'Device Count', type: 'number', required: true },
@@ -253,7 +253,7 @@ const templates = {
     },
     {
       name: 'Security Service',
-      icon: 'Security',
+      icon: 'Shield',
       description: 'Managed security offerings including SOC, EDR, and vulnerability management.',
       fieldSchema: [
         {
@@ -269,7 +269,7 @@ const templates = {
     },
     {
       name: 'Backup',
-      icon: 'Backup',
+      icon: 'Archive',
       description: 'Managed backup solution for servers, endpoints, and cloud workloads.',
       fieldSchema: [
         { name: 'storageGb', label: 'Storage (GB)', type: 'number', required: true },

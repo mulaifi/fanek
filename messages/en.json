@@ -314,6 +314,7 @@
       "typeName": "Type Name",
       "icon": "Icon",
       "iconEmoji": "Icon (emoji)",
+      "selectIcon": "Select icon",
       "fieldSchema": "Field Schema",
       "addField": "Add Field",
       "fieldName": "Field Name",
