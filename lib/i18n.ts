@@ -37,3 +37,9 @@ export function isValidLocale(value: unknown): value is Locale {
 export function getDirection(locale: Locale): 'ltr' | 'rtl' {
   return locale === 'ar' ? 'rtl' : 'ltr';
 }
+
+export function getFontFamily(locale: Locale): string {
+  return getDirection(locale) === 'rtl'
+    ? "'Tajawal', 'Tajawal Fallback', -apple-system, BlinkMacSystemFont, sans-serif"
+    : "'Inter', 'Inter Fallback', -apple-system, BlinkMacSystemFont, sans-serif";
+}

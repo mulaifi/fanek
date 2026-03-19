@@ -27,7 +27,8 @@ export function LocaleSwitcher() {
       }
     }
 
-    // Reload to apply new locale (dir attribute, fonts, translations)
+    // Full reload required: _document.tsx sets <html lang/dir> and --app-font on SSR,
+    // which cannot be updated via client-side router navigation alone.
     window.location.reload();
   };
 

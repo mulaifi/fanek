@@ -6,6 +6,7 @@ import { getSettings, invalidateSettingsCache } from '@/lib/settings';
 import { encrypt } from '@/lib/encryption';
 import { logAudit } from '@/lib/audit';
 import logger from '@/lib/logger';
+import { isValidLocale } from '@/lib/i18n';
 
 type OAuthProviderConfig = Record<string, string | undefined>;
 type AuthProvidersInput = {
@@ -153,7 +154,7 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse): Promise
     }
 
     if (defaultLocale !== undefined) {
-      if (typeof defaultLocale !== 'string' || !['en', 'ar'].includes(defaultLocale)) {
+      if (!isValidLocale(defaultLocale)) {
         res.status(400).json({ error: 'defaultLocale must be "en" or "ar"' });
         return;
       }

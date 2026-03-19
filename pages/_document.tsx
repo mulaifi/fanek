@@ -1,6 +1,6 @@
 import { Html, Head, Main, NextScript } from 'next/document';
 import type { DocumentContext, DocumentInitialProps } from 'next/document';
-import { getLocaleFromCookies, getDirection } from '@/lib/i18n';
+import { getLocaleFromCookies, getDirection, getFontFamily } from '@/lib/i18n';
 
 interface DocumentProps extends DocumentInitialProps {
   locale: string;
@@ -8,9 +8,7 @@ interface DocumentProps extends DocumentInitialProps {
 
 export default function Document({ locale }: DocumentProps) {
   const dir = getDirection(locale as 'en' | 'ar');
-  const appFont = dir === 'rtl'
-    ? "'Tajawal', 'Tajawal Fallback', -apple-system, BlinkMacSystemFont, sans-serif"
-    : "'Inter', 'Inter Fallback', -apple-system, BlinkMacSystemFont, sans-serif";
+  const appFont = getFontFamily(locale as 'en' | 'ar');
   return (
     <Html lang={locale} dir={dir} style={{ ['--app-font' as string]: appFont }} suppressHydrationWarning>
       <Head>

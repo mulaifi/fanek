@@ -17,29 +17,66 @@
 
 ## 1. التثبيت
 
-راجع ملف [README](../../README.md) للاطلاع على المرجع الكامل لمتغيرات البيئة. فيما يلي ملخص لطريقتي النشر الشائعتين.
-
 ### Docker Compose (الطريقة الموصى بها)
 
-1. استنسخ المستودع: `git clone https://github.com/your-org/fanek.git`
-2. انسخ ملف البيئة النموذجي: `cp .env.example .env`
-3. افتح `.env` واضبط على الأقل:
-   - `DATABASE_URL` -- سلسلة اتصال PostgreSQL 16 أو أحدث
-   - `NEXTAUTH_SECRET` -- سلسلة عشوائية طويلة (نفّذ `openssl rand -base64 32` لتوليد واحدة)
-   - `NEXTAUTH_URL` -- الرابط العام للنشر (مثلاً `https://fanek.example.com`)
-4. شغّل المكدّس: `docker compose up -d`
+أبسط طريقة لتشغيل فنك. يتولى Docker إعداد قاعدة البيانات والمفاتيح السرية ومخطط قاعدة البيانات تلقائياً.
 
-سيكون فنك متاحاً على المنفذ 3000 بشكل افتراضي.
+1. استنسخ المستودع:
+   ```bash
+   git clone https://github.com/mulaifi/fanek.git
+   cd fanek
+   ```
+2. شغّل المكدّس:
+   ```bash
+   docker compose up -d
+   ```
+3. افتح http://localhost:3000 واتبع معالج الإعداد.
+
+هذا كل شيء. تقوم نقطة دخول Docker تلقائياً بما يلي:
+- توليد `NEXTAUTH_SECRET` آمن عند التشغيل الأول (يُحفظ عبر عمليات إعادة التشغيل)
+- انتظار جاهزية PostgreSQL
+- تطبيق ترحيلات قاعدة البيانات
+
+التخصيص: لتجاوز الإعدادات الافتراضية، أنشئ ملف `.env` في جذر المشروع قبل التشغيل. يلتقطه Docker Compose تلقائياً. راجع ملف README للاطلاع على جميع متغيرات البيئة.
+
+ملاحظات الإنتاج:
+- اضبط `NEXTAUTH_URL` على نطاقك الفعلي (مثلاً `https://fanek.example.com`) في ملف `.env`
+- يُنصح باستخدام نسخة PostgreSQL خارجية مع نسخ احتياطية مناسبة
+- غيّر بيانات اعتماد قاعدة البيانات الافتراضية في `docker-compose.yml` أو عبر ملف `.env`
 
 ### التثبيت اليدوي
 
 المتطلبات: Node.js 20 أو أحدث، PostgreSQL 16 أو أحدث.
 
-1. استنسخ المستودع وثبّت التبعيات: `npm install`
-2. انسخ وعدّل ملف البيئة: `cp .env.example .env`
-3. أنشئ مخطط قاعدة البيانات: `npx prisma db push`
-4. شغّل خادم التطوير: `npm run dev`
-   - للإنتاج، ابنِ أولاً: `npm run build && npm start`
+1. استنسخ المستودع وثبّت التبعيات:
+   ```bash
+   git clone https://github.com/mulaifi/fanek.git
+   cd fanek
+   npm install
+   ```
+2. أنشئ قاعدة البيانات:
+   ```bash
+   createdb fanek
+   ```
+3. هيّئ متغيرات البيئة:
+   ```bash
+   cp .env.example .env
+   ```
+   افتح `.env` واضبط:
+   - `DATABASE_URL` -- سلسلة اتصال PostgreSQL
+   - `NEXTAUTH_SECRET` -- ولّد بالأمر `openssl rand -hex 32`
+   - `NEXTAUTH_URL` -- الرابط الذي سيُوصل منه إلى فنك
+4. طبّق مخطط قاعدة البيانات:
+   ```bash
+   npx prisma migrate deploy
+   ```
+5. شغّل الخادم:
+   ```bash
+   npm run build && npm start
+   ```
+   للتطوير: `npm run dev`
+
+افتح http://localhost:3000 واتبع معالج الإعداد.
 
 
 ## 2. معالج الإعداد

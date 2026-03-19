@@ -17,29 +17,66 @@ This guide covers everything you need to deploy, configure, and manage a Fanek i
 
 ## 1. Installation
 
-See the [README](../../README.md) for full environment variable reference. The two common deployment paths are summarized below.
-
 ### Docker Compose (recommended)
 
-1. Clone the repository: `git clone https://github.com/your-org/fanek.git`
-2. Copy the example env file: `cp .env.example .env`
-3. Open `.env` and set at minimum:
-   - `DATABASE_URL` — your PostgreSQL 16+ connection string
-   - `NEXTAUTH_SECRET` — a long random string (run `openssl rand -base64 32` to generate one)
-   - `NEXTAUTH_URL` — the public URL of your deployment (e.g. `https://fanek.example.com`)
-4. Start the stack: `docker compose up -d`
+The simplest way to run Fanek. Docker handles the database, secrets, and schema automatically.
 
-Fanek will be available on port 3000 by default.
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/mulaifi/fanek.git
+   cd fanek
+   ```
+2. Start the stack:
+   ```bash
+   docker compose up -d
+   ```
+3. Open `http://localhost:3000` and follow the setup wizard.
+
+That's it. The Docker entrypoint automatically:
+- Generates a secure `NEXTAUTH_SECRET` on first start (persisted across restarts)
+- Waits for PostgreSQL to be ready
+- Applies database migrations
+
+**Customization:** To override defaults, create a `.env` file in the project root before starting. Docker Compose picks it up automatically. See the [README](../../README.md) for all environment variables.
+
+**Production notes:**
+- Set `NEXTAUTH_URL` to your actual domain (e.g. `https://fanek.example.com`) in `.env`
+- Consider using an external PostgreSQL instance with proper backups
+- Change the default database credentials in `docker-compose.yml` or via `.env`
 
 ### Manual installation
 
 Requirements: Node.js 20 or later, PostgreSQL 16 or later.
 
-1. Clone the repository and install dependencies: `npm install`
-2. Copy and edit the env file: `cp .env.example .env`
-3. Push the database schema: `npx prisma db push`
-4. Start the development server: `npm run dev`
-   - For production, build first: `npm run build && npm start`
+1. Clone and install dependencies:
+   ```bash
+   git clone https://github.com/mulaifi/fanek.git
+   cd fanek
+   npm install
+   ```
+2. Create the database:
+   ```bash
+   createdb fanek
+   ```
+3. Configure environment:
+   ```bash
+   cp .env.example .env
+   ```
+   Edit `.env` and set:
+   - `DATABASE_URL` -- your PostgreSQL connection string
+   - `NEXTAUTH_SECRET` -- generate with `openssl rand -hex 32`
+   - `NEXTAUTH_URL` -- the URL where Fanek will be accessed
+4. Apply the database schema:
+   ```bash
+   npx prisma migrate deploy
+   ```
+5. Start the server:
+   ```bash
+   npm run build && npm start
+   ```
+   For development: `npm run dev`
+
+Open `http://localhost:3000` and follow the setup wizard.
 
 
 ## 2. Setup Wizard
