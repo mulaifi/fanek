@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <strong>Open-source client information manager for service providers</strong>
+  <strong>Know which client has which service, at a glance.</strong>
 </p>
 
 <p align="center">
@@ -15,22 +15,17 @@
 </p>
 
 <p align="center">
-  Track your clients, their services, and contacts in one place.<br />
-  A living inventory of <em>"who has what"</em> for IT, cloud, telecom, and MSP service providers.
+  Fanek is an open-source record book for service providers.<br />
+  Add your clients, define the services you offer, and track who subscribes to what.
 </p>
 
-## What Fanek Is
+## Why Fanek?
 
-- A structured registry of customers and the services they subscribe to
-- A dynamic service catalog where admins define service types with custom field schemas
-- A role-based system (Admin, Editor, Viewer) for team access control
-- An auditable record of changes to customer and service data
+If you run an IT, cloud, telecom, or managed services company, you have clients and each client subscribes to some combination of your services. Your provisioning team sets up those services. Your support team needs to look them up ten times a day. Your operations team updates them as things change.
 
-## What Fanek Is Not
+Everyone needs one place to answer: "What does this client have?" Not a spreadsheet that goes stale. Not a full CRM with sales pipelines you will never use. Just a clean, searchable record of your clients and their services.
 
-- Not a CRM (no sales pipeline, no leads, no marketing)
-- Not a helpdesk (no tickets, no SLAs)
-- Not a billing system (no invoices, no payments)
+That is what Fanek does. Nothing more, nothing less.
 
 ## Key Features
 
