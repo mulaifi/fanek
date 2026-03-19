@@ -73,6 +73,7 @@ Requires Node.js 20+ and PostgreSQL 16+. See the [Admin Guide](docs/en/admin-gui
 **English:**
 - [Admin Guide](docs/en/admin-guide.md) -- Installation, setup, user management, service catalog configuration
 - [User Guide](docs/en/user-guide.md) -- Day-to-day usage: customers, services, partners, search
+- [Production Deployment Guide](docs/en/production-guide.md) -- Reverse proxy, SSL, firewall, backups, and maintenance
 
 **العربية:**
 - [دليل المسؤول](docs/ar/admin-guide.md) -- التثبيت، الإعداد، إدارة المستخدمين، تهيئة كتالوج الخدمات
