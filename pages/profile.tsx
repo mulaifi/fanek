@@ -250,14 +250,22 @@ function LanguageSelector() {
 
   async function handleLocaleChange(newLocale: string) {
     const locale = newLocale as Locale;
-    await fetch('/api/profile', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ locale }),
-    });
-    setLocaleCookie(locale);
-    setCurrentLocale(locale);
-    window.location.reload();
+    try {
+      const res = await fetch('/api/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ locale }),
+      });
+      if (!res.ok) {
+        toast.error(t('profile.failedUpdateLocale'));
+        return;
+      }
+      setLocaleCookie(locale);
+      setCurrentLocale(locale);
+      window.location.reload();
+    } catch {
+      toast.error(t('profile.failedUpdateLocale'));
+    }
   }
 
   return (

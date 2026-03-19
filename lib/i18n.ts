@@ -9,7 +9,7 @@ export const LOCALE_COOKIE = 'NEXT_LOCALE';
  */
 export function getLocaleFromCookies(cookieHeader?: string): Locale {
   if (!cookieHeader) return DEFAULT_LOCALE;
-  const match = cookieHeader.match(new RegExp(`${LOCALE_COOKIE}=(\\w+)`));
+  const match = cookieHeader.match(new RegExp(`${LOCALE_COOKIE}=([A-Za-z0-9_-]+)`));
   const value = match?.[1];
   return isValidLocale(value) ? value : DEFAULT_LOCALE;
 }
@@ -26,6 +26,7 @@ export function getClientLocale(): Locale {
  * Set locale cookie (client-side). Max-age 1 year.
  */
 export function setLocaleCookie(locale: Locale): void {
+  if (typeof document === 'undefined') return;
   document.cookie = `${LOCALE_COOKIE}=${locale};path=/;max-age=${60 * 60 * 24 * 365};SameSite=Lax`;
 }
 

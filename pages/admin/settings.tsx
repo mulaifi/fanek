@@ -226,7 +226,7 @@ export default function AdminSettingsPage() {
             <div>
               <Button type="submit" disabled={orgSaving}>
                 {orgSaving && <Loader2 className="h-4 w-4 animate-spin me-2" />}
-                {t('admin.settings.orgSettings')}
+                {t('common.save')}
               </Button>
             </div>
           </form>

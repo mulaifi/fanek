@@ -47,6 +47,7 @@ export async function getAuthOptions(): Promise<NextAuthOptions> {
           email: user.email,
           role: user.role,
           firstLogin: user.firstLogin,
+          locale: user.locale ?? null,
         } as unknown as User;
       },
     }),

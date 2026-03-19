@@ -7,8 +7,12 @@ interface DocumentProps extends DocumentInitialProps {
 }
 
 export default function Document({ locale }: DocumentProps) {
+  const dir = getDirection(locale as 'en' | 'ar');
+  const appFont = dir === 'rtl'
+    ? "'Tajawal', 'Tajawal Fallback', -apple-system, BlinkMacSystemFont, sans-serif"
+    : "'Inter', 'Inter Fallback', -apple-system, BlinkMacSystemFont, sans-serif";
   return (
-    <Html lang={locale} dir={getDirection(locale as 'en' | 'ar')} suppressHydrationWarning>
+    <Html lang={locale} dir={dir} style={{ ['--app-font' as string]: appFont }} suppressHydrationWarning>
       <Head>
         <link rel="icon" href="/favicon.ico" sizes="32x32" />
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />

@@ -20,7 +20,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const cookieHeader = req.headers.cookie ?? '';
   const hasCookie = cookieHeader.includes(`${LOCALE_COOKIE}=`);
   if (hasCookie) {
-    const match = cookieHeader.match(new RegExp(`${LOCALE_COOKIE}=(\\w+)`));
+    const match = cookieHeader.match(new RegExp(`${LOCALE_COOKIE}=([A-Za-z0-9_-]+)`));
     const cookieValue = match?.[1];
     if (cookieValue && isValidLocale(cookieValue)) {
       return res.json({ locale: cookieValue });

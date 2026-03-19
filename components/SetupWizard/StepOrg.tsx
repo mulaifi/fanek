@@ -62,7 +62,7 @@ export default function StepOrg({ data, onChange, errors }: StepOrgProps) {
         <div className="flex items-center gap-4">
           <Avatar className="h-[72px] w-[72px] rounded-sm">
             {data.logo ? (
-              <AvatarImage src={data.logo} alt={t('setup.orgName')} />
+              <AvatarImage src={data.logo} alt={data.name ? `${data.name} logo` : t('setup.orgLogo')} />
             ) : (
               <AvatarFallback className="rounded-sm">
                 <Upload className="h-7 w-7 text-muted-foreground" />

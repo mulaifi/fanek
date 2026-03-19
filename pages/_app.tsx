@@ -6,8 +6,8 @@ import { Toaster } from 'sonner';
 import { SessionProvider } from 'next-auth/react';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { NextIntlClientProvider } from 'next-intl';
-import { inter, tajawal } from '@/lib/fonts';
-import { getClientLocale, type Locale } from '@/lib/i18n';
+import '@/lib/fonts'; // Side-effect: registers Inter + Tajawal @font-face
+import { getClientLocale, getDirection, type Locale } from '@/lib/i18n';
 import type { AppProps } from 'next/app';
 import type { Session } from 'next-auth';
 
@@ -34,21 +34,25 @@ export default function App({ Component, pageProps: { session, ...pageProps } }:
     return () => window.removeEventListener('locale-changed', handleLocaleChange);
   }, []);
 
-  // Always apply both font variables so the CSS [dir="rtl"] override can switch
-  const fontClass = `${inter.variable} ${tajawal.variable}`;
+  // Set font CSS variable based on locale direction
+  useEffect(() => {
+    const dir = getDirection(locale);
+    const font = dir === 'rtl'
+      ? "'Tajawal', 'Tajawal Fallback', -apple-system, BlinkMacSystemFont, sans-serif"
+      : "'Inter', 'Inter Fallback', -apple-system, BlinkMacSystemFont, sans-serif";
+    document.documentElement.style.setProperty('--app-font', font);
+  }, [locale]);
 
   return (
-    <div className={fontClass}>
-      <SessionProvider session={session}>
-        <NextIntlClientProvider locale={locale} messages={messages[locale]} timeZone="Asia/Kuwait">
-          <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
-            <TooltipProvider>
-              <Toaster position="top-right" richColors />
-              <Component {...pageProps} />
-            </TooltipProvider>
-          </ThemeProvider>
-        </NextIntlClientProvider>
-      </SessionProvider>
-    </div>
+    <SessionProvider session={session}>
+      <NextIntlClientProvider locale={locale} messages={messages[locale]} timeZone="Asia/Kuwait">
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
+          <TooltipProvider>
+            <Toaster position="top-right" richColors />
+            <Component {...pageProps} />
+          </TooltipProvider>
+        </ThemeProvider>
+      </NextIntlClientProvider>
+    </SessionProvider>
   );
 }

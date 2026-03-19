@@ -14,12 +14,14 @@ export function LocaleSwitcher() {
     // Update user profile if logged in
     if (session?.user) {
       try {
-        await fetch('/api/profile', {
+        const res = await fetch('/api/profile', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ locale: newLocale }),
         });
-        await update({ locale: newLocale });
+        if (res.ok) {
+          await update({ locale: newLocale });
+        }
       } catch {
         // Cookie is already set, page will reload anyway
       }

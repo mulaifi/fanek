@@ -46,6 +46,7 @@
     "failedToSave": "Failed to save"
   },
   "nav": {
+    "appName": "Fanek",
     "dashboard": "Dashboard",
     "customers": "Customers",
     "partners": "Partners",
@@ -57,7 +58,9 @@
     "auditLog": "Audit Log",
     "search": "Search customers, partners...",
     "signOut": "Sign out",
-    "profile": "Profile"
+    "profile": "Profile",
+    "collapseSidebar": "Collapse sidebar",
+    "expandSidebar": "Expand sidebar"
   },
   "auth": {
     "signIn": "Sign in",
@@ -228,6 +231,7 @@
     "noPartners": "No partners found",
     "noNotes": "No notes.",
     "partnerCreated": "Partner created",
+    "partnerCreatedDescription": "{name} was added successfully.",
     "partnerUpdated": "Partner updated successfully",
     "partnerDeleted": "Partner deleted successfully",
     "contactsSaved": "Contacts saved",
@@ -452,7 +456,8 @@
     "confirmPasswordRequired": "Please confirm your new password",
     "passwordMinLength": "Password must be at least 8 characters",
     "failedUpdateName": "Failed to update name",
-    "failedChangePassword": "Failed to change password"
+    "failedChangePassword": "Failed to change password",
+    "failedUpdateLocale": "Failed to update language preference"
   },
   "validation": {
     "required": "This field is required",

@@ -46,6 +46,7 @@
     "failedToSave": "فشل الحفظ"
   },
   "nav": {
+    "appName": "فنك",
     "dashboard": "لوحة المعلومات",
     "customers": "العملاء",
     "partners": "الشركاء",
@@ -57,7 +58,9 @@
     "auditLog": "سجل المراجعة",
     "search": "البحث عن عملاء، شركاء...",
     "signOut": "تسجيل الخروج",
-    "profile": "الملف الشخصي"
+    "profile": "الملف الشخصي",
+    "collapseSidebar": "طي الشريط الجانبي",
+    "expandSidebar": "توسيع الشريط الجانبي"
   },
   "auth": {
     "signIn": "تسجيل الدخول",
@@ -228,6 +231,7 @@
     "noPartners": "لا يوجد شركاء",
     "noNotes": "لا توجد ملاحظات.",
     "partnerCreated": "تم إنشاء الشريك",
+    "partnerCreatedDescription": "تمت إضافة {name} بنجاح.",
     "partnerUpdated": "تم تحديث الشريك بنجاح",
     "partnerDeleted": "تم حذف الشريك بنجاح",
     "contactsSaved": "تم حفظ جهات الاتصال",
@@ -452,7 +456,8 @@
     "confirmPasswordRequired": "يرجى تأكيد كلمة المرور الجديدة",
     "passwordMinLength": "يجب أن تكون كلمة المرور 8 أحرف على الأقل",
     "failedUpdateName": "فشل تحديث الاسم",
-    "failedChangePassword": "فشل تغيير كلمة المرور"
+    "failedChangePassword": "فشل تغيير كلمة المرور",
+    "failedUpdateLocale": "فشل تحديث تفضيل اللغة"
   },
   "validation": {
     "required": "هذا الحقل مطلوب",

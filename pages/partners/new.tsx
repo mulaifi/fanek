@@ -86,7 +86,7 @@ export default function NewPartnerPage() {
     if (!res.ok) {
       setApiError(data.error || t('validation.genericError'));
     } else {
-      toast.success(t('partners.partnerCreated'), { description: `${data.name} was added successfully.` });
+      toast.success(t('partners.partnerCreated'), { description: t('partners.partnerCreatedDescription', { name: data.name }) });
       router.push(`/partners/${data.id}`);
     }
   }

@@ -14,8 +14,8 @@ import {
   Search,
   LogOut,
   User,
-  Pin,
-  PinOff,
+  PanelLeftClose,
+  PanelLeftOpen,
   type LucideIcon,
 } from 'lucide-react';
 import {
@@ -137,18 +137,16 @@ export default function AppShell({ children, title }: AppShellProps) {
   const { data: session, status } = useSession();
   const isDesktop = useIsDesktop();
 
-  const [hovered, setHovered] = useState(false);
-  const [pinned, setPinned] = useState(false);
+  const [expanded, setExpanded] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    const stored = localStorage.getItem('sidebar-expanded');
+    return stored === null ? true : stored === 'true';
+  });
 
-  useEffect(() => {
-    const stored = localStorage.getItem('sidebar-pinned');
-    if (stored === 'true') setPinned(true);
-  }, []);
-
-  const togglePin = () => {
-    setPinned((prev) => {
+  const toggleExpanded = () => {
+    setExpanded((prev) => {
       const next = !prev;
-      localStorage.setItem('sidebar-pinned', String(next));
+      localStorage.setItem('sidebar-expanded', String(next));
       return next;
     });
   };
@@ -159,7 +157,6 @@ export default function AppShell({ children, title }: AppShellProps) {
   const [spotlightActions, setSpotlightActions] = useState<SpotlightAction[]>([]);
 
   const isAdmin = session?.user?.role === 'ADMIN';
-  const expanded = pinned || hovered;
   const sidebarWidth = expanded ? EXPANDED_WIDTH : RAIL_WIDTH;
 
   const mainNavItems: NavItemDef[] = [
@@ -321,8 +318,6 @@ export default function AppShell({ children, title }: AppShellProps) {
         {/* Desktop sidebar */}
         {isDesktop && (
           <div
-            onMouseEnter={() => !pinned && setHovered(true)}
-            onMouseLeave={() => !pinned && setHovered(false)}
             style={{
               width: sidebarWidth,
               transition: 'width 200ms ease',
@@ -330,15 +325,15 @@ export default function AppShell({ children, title }: AppShellProps) {
             className="fixed top-0 start-0 bottom-0 z-[100] flex flex-col overflow-hidden bg-sidebar border-e border-sidebar-border"
           >
             {/* Logo */}
-            <div className="h-[52px] flex items-center px-3 gap-3 shrink-0">
+            <div className="flex items-center px-3 gap-3 shrink-0" style={{ height: expanded ? 80 : 52 }}>
               <img
                 src="/fanek-logo.svg"
-                alt="Fanek"
-                style={{ width: 64, height: 64, flexShrink: 0 }}
+                alt={t('nav.appName')}
+                style={{ width: expanded ? 64 : 32, height: expanded ? 64 : 32, flexShrink: 0, transition: 'width 200ms ease, height 200ms ease' }}
               />
               {expanded && (
-                <span className="text-sm font-bold text-sidebar-foreground whitespace-nowrap">
-                  Fanek
+                <span className="text-lg font-bold text-sidebar-foreground whitespace-nowrap">
+                  {t('nav.appName')}
                 </span>
               )}
             </div>
@@ -374,32 +369,8 @@ export default function AppShell({ children, title }: AppShellProps) {
               )}
             </div>
 
-            {/* Bottom: pin toggle + avatar */}
+            {/* Bottom: toggle + avatar */}
             <div className="p-2 shrink-0">
-              {expanded && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      onClick={togglePin}
-                      className="flex items-center gap-3 w-full px-3 py-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-sidebar-accent transition-colors"
-                    >
-                      {pinned ? <PinOff size={18} /> : <Pin size={18} />}
-                      <span className="text-xs whitespace-nowrap">
-                        {pinned ? 'Unpin' : 'Pin sidebar'}
-                      </span>
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side={dir === 'rtl' ? 'left' : 'right'}>
-                    {pinned ? 'Unpin sidebar' : 'Pin sidebar'}
-                  </TooltipContent>
-                </Tooltip>
-              )}
-
-              <div className="flex items-center gap-1 px-3 py-1">
-                <LocaleSwitcher />
-                {expanded && <ColorSchemeToggle />}
-              </div>
-
               <DropdownMenu>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -439,6 +410,29 @@ export default function AppShell({ children, title }: AppShellProps) {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={toggleExpanded}
+                    className="flex items-center justify-center gap-3 w-full px-3 py-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-sidebar-accent transition-colors"
+                  >
+                    {expanded ? (
+                      <>
+                        <PanelLeftClose size={18} className="shrink-0" />
+                        <span className="text-xs whitespace-nowrap overflow-hidden text-ellipsis">{t('nav.collapseSidebar')}</span>
+                      </>
+                    ) : (
+                      <PanelLeftOpen size={18} className="shrink-0" />
+                    )}
+                  </button>
+                </TooltipTrigger>
+                {!expanded && (
+                  <TooltipContent side={dir === 'rtl' ? 'left' : 'right'}>
+                    {t('nav.expandSidebar')}
+                  </TooltipContent>
+                )}
+              </Tooltip>
             </div>
           </div>
         )}
@@ -446,7 +440,7 @@ export default function AppShell({ children, title }: AppShellProps) {
         {/* Top bar */}
         <div
           style={{
-            insetInlineStart: isDesktop ? (pinned ? EXPANDED_WIDTH : RAIL_WIDTH) : 0,
+            insetInlineStart: isDesktop ? (expanded ? EXPANDED_WIDTH : RAIL_WIDTH) : 0,
             transition: isDesktop ? 'inset-inline-start 200ms ease' : undefined,
           }}
           className="fixed top-0 end-0 h-[52px] z-[99] flex items-center gap-3 px-4 bg-background border-b border-border"
@@ -465,13 +459,14 @@ export default function AppShell({ children, title }: AppShellProps) {
             <span className="text-sm">{t('nav.search')}</span>
           </button>
 
+          <LocaleSwitcher />
           <ColorSchemeToggle />
         </div>
 
         {/* Content area */}
         <main
           style={{
-            marginInlineStart: isDesktop ? (pinned ? EXPANDED_WIDTH : RAIL_WIDTH) : 0,
+            marginInlineStart: isDesktop ? (expanded ? EXPANDED_WIDTH : RAIL_WIDTH) : 0,
             transition: isDesktop ? 'margin-inline-start 200ms ease' : undefined,
             paddingBottom: isDesktop ? 24 : 72,
           }}

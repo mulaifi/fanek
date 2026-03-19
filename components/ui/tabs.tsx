@@ -9,13 +9,26 @@ import { cn } from "@/lib/utils"
 function Tabs({
   className,
   orientation = "horizontal",
+  dir,
   ...props
 }: React.ComponentProps<typeof TabsPrimitive.Root>) {
+  const [resolvedDir, setResolvedDir] = React.useState<'ltr' | 'rtl' | undefined>(dir as 'ltr' | 'rtl' | undefined);
+
+  React.useEffect(() => {
+    if (!dir) {
+      const docDir = document.documentElement.dir;
+      if (docDir === 'ltr' || docDir === 'rtl') {
+        setResolvedDir(docDir);
+      }
+    }
+  }, [dir]);
+
   return (
     <TabsPrimitive.Root
       data-slot="tabs"
       data-orientation={orientation}
       orientation={orientation}
+      dir={resolvedDir || undefined}
       className={cn(
         "group/tabs flex gap-2 data-[orientation=horizontal]:flex-col",
         className
