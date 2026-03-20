@@ -27,6 +27,16 @@ Everyone needs one place to answer: "What does this client have?" Not a spreadsh
 
 That is what Fanek does. Nothing more, nothing less.
 
+## Screenshots
+
+| Dashboard | Customer Detail |
+|:---------:|:---------------:|
+| ![Dashboard](public/screenshots/dashboard.png) | ![Customer Detail](public/screenshots/customer-detail.png) |
+
+| Customers List | Service Catalog |
+|:--------------:|:---------------:|
+| ![Customers](public/screenshots/customers.png) | ![Service Catalog](public/screenshots/service-catalog.png) |
+
 ## Key Features
 
 | Feature | Description |
