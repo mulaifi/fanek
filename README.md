@@ -138,13 +138,9 @@ npm run reset-password admin@example.com -- --password MyNewPass123!
 npm run list-users
 ```
 
-## Screenshots
-
-*Coming soon*
-
 ## Contributing
 
-Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, project structure, and the PR workflow.
+See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 Please read our [Code of Conduct](CODE_OF_CONDUCT.md) before contributing.
 
