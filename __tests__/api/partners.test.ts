@@ -141,10 +141,10 @@ describe('POST /api/partners', () => {
     expect(response.error).toBe('Validation failed');
   });
 
-  test('rejects missing type with 400', async () => {
+  test('accepts missing type (type is optional)', async () => {
     const { req, res } = mockReqRes({ method: 'POST', body: { name: 'Acme Partners' } });
     await indexHandler(req, res);
-    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.status).toHaveBeenCalledWith(201);
   });
 
   test('rejects VIEWER role with 403', async () => {

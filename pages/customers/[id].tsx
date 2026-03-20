@@ -115,10 +115,10 @@ function EditCustomerForm({ customer, statuses, onSave, onClose }: EditCustomerF
   async function onSubmit(values: EditCustomerFormValues) {
     setSaveError('');
     setSaving(true);
-    const payload: Record<string, string | null> = {};
+    const payload: Record<string, string> = {};
     (Object.keys(values) as (keyof EditCustomerFormValues)[]).forEach((k) => {
       const v = values[k];
-      payload[k] = v && v.trim?.() !== '' ? (v as string) : null;
+      if (v && v.trim?.() !== '') payload[k] = v as string;
     });
     const res = await fetch(`/api/customers/${customer.id}`, {
       method: 'PUT',
@@ -128,7 +128,8 @@ function EditCustomerForm({ customer, statuses, onSave, onClose }: EditCustomerF
     const data = await res.json();
     setSaving(false);
     if (!res.ok) {
-      setSaveError(data.error || t('customers.failedToSave'));
+      const { formatApiError } = await import('@/lib/validation');
+      setSaveError(formatApiError(data, t('customers.failedToSave')));
     } else {
       onSave(data);
     }
@@ -253,7 +254,8 @@ function AddServiceForm({ customerId, serviceTypes, onAdd, onClose }: AddService
     const data = await res.json();
     setAdding(false);
     if (!res.ok) {
-      setAddError(data.error || t('services.failedToAdd'));
+      const { formatApiError } = await import('@/lib/validation');
+      setAddError(formatApiError(data, t('services.failedToAdd')));
     } else {
       onAdd({ ...data, serviceType: selectedType });
     }
@@ -354,7 +356,8 @@ function EditServiceForm({ service, onSave, onClose }: EditServiceFormProps) {
     const data = await res.json();
     setSaving(false);
     if (!res.ok) {
-      setSaveError(data.error || t('services.failedToUpdate'));
+      const { formatApiError } = await import('@/lib/validation');
+      setSaveError(formatApiError(data, t('services.failedToUpdate')));
     } else {
       onSave({ ...data, serviceType: service.serviceType });
     }

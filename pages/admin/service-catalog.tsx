@@ -348,7 +348,8 @@ function ServiceTypeForm({ initial, editingType, onClose, onSuccess }: ServiceTy
     setSaving(false);
 
     if (!res.ok) {
-      setSaveError(data.error || t('admin.serviceCatalog.failedSave'));
+      const { formatApiError } = await import('@/lib/validation');
+      setSaveError(formatApiError(data, t('admin.serviceCatalog.failedSave')));
     } else {
       onSuccess();
     }

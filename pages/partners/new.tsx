@@ -84,7 +84,8 @@ export default function NewPartnerPage() {
     setSubmitting(false);
 
     if (!res.ok) {
-      setApiError(data.error || t('validation.genericError'));
+      const { formatApiError } = await import('@/lib/validation');
+      setApiError(formatApiError(data, t('validation.genericError')));
     } else {
       toast.success(t('partners.partnerCreated'), { description: t('partners.partnerCreatedDescription', { name: data.name }) });
       router.push(`/partners/${data.id}`);

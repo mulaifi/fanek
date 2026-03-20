@@ -101,10 +101,10 @@ function EditPartnerForm({ partner, onSave, onClose }: EditPartnerFormProps) {
   async function onSubmit(values: EditPartnerFormValues) {
     setSaveError('');
     setSaving(true);
-    const payload: Record<string, string | null> = {};
+    const payload: Record<string, string> = {};
     (Object.keys(values) as (keyof EditPartnerFormValues)[]).forEach((k) => {
       const v = values[k];
-      payload[k] = v && v.trim?.() !== '' ? (v as string) : null;
+      if (v && v.trim?.() !== '') payload[k] = v as string;
     });
     const res = await fetch(`/api/partners/${partner.id}`, {
       method: 'PUT',
@@ -114,7 +114,8 @@ function EditPartnerForm({ partner, onSave, onClose }: EditPartnerFormProps) {
     const data = await res.json();
     setSaving(false);
     if (!res.ok) {
-      setSaveError(data.error || t('validation.genericError'));
+      const { formatApiError } = await import('@/lib/validation');
+      setSaveError(formatApiError(data, t('validation.genericError')));
     } else {
       onSave(data);
     }

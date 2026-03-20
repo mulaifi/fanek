@@ -3,6 +3,7 @@ import '@/styles/globals.css';
 import { useEffect, useState } from 'react';
 import { ThemeProvider } from 'next-themes';
 import { Toaster } from 'sonner';
+import { useTheme } from 'next-themes';
 import { SessionProvider } from 'next-auth/react';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { NextIntlClientProvider } from 'next-intl';
@@ -15,6 +16,11 @@ import enMessages from '@/messages/en.json';
 import arMessages from '@/messages/ar.json';
 
 const messages: Record<string, typeof enMessages> = { en: enMessages, ar: arMessages };
+
+function ThemedToaster() {
+  const { resolvedTheme } = useTheme();
+  return <Toaster position="top-right" richColors theme={resolvedTheme === 'dark' ? 'dark' : 'light'} />;
+}
 
 type AppPropsWithSession = AppProps & {
   pageProps: { session?: Session } & Record<string, unknown>;
@@ -37,7 +43,7 @@ export default function App({ Component, pageProps: { session, ...pageProps } }:
       <NextIntlClientProvider locale={locale} messages={messages[locale]} timeZone="Asia/Kuwait">
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
           <TooltipProvider>
-            <Toaster position="top-right" richColors />
+            <ThemedToaster />
             <Component {...pageProps} />
           </TooltipProvider>
         </ThemeProvider>

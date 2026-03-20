@@ -26,25 +26,31 @@ export const contactSchema = z.object({
   tags: z.array(z.string()).optional(),
 });
 
+/** Preprocess: convert empty strings and null to undefined so optional validators pass cleanly */
+function emptyToUndef(val: unknown): unknown {
+  if (val === '' || val === null) return undefined;
+  return val;
+}
+
 export const customerSchema = z.object({
   name: z.string().min(1).max(200),
-  clientCode: z.string().min(1).max(50).optional().nullable(),
-  status: z.string().optional(),
-  vertical: z.string().optional(),
-  website: z.string().url().optional().nullable(),
-  contractNumber: z.string().optional(),
-  contractStart: z.string().datetime().optional().nullable(),
-  contractEnd: z.string().datetime().optional().nullable(),
-  notes: z.string().optional(),
+  clientCode: z.preprocess(emptyToUndef, z.string().min(1).max(50).optional()),
+  status: z.preprocess(emptyToUndef, z.string().optional()),
+  vertical: z.preprocess(emptyToUndef, z.string().optional()),
+  website: z.preprocess(emptyToUndef, z.string().url().optional()),
+  contractNumber: z.preprocess(emptyToUndef, z.string().optional()),
+  contractStart: z.preprocess(emptyToUndef, z.string().datetime().optional()),
+  contractEnd: z.preprocess(emptyToUndef, z.string().datetime().optional()),
+  notes: z.preprocess(emptyToUndef, z.string().optional()),
   contacts: z.array(contactSchema).optional(),
-  address: z.string().optional().nullable(),
+  address: z.preprocess(emptyToUndef, z.string().optional()),
 });
 
 export const partnerSchema = z.object({
   name: z.string().min(1).max(200),
-  type: z.string().min(1),
+  type: z.preprocess(emptyToUndef, z.string().optional()),
   contacts: z.array(contactSchema).optional(),
-  notes: z.string().optional(),
+  notes: z.preprocess(emptyToUndef, z.string().optional()),
 });
 
 export const serviceSchema = z.object({
@@ -62,6 +68,22 @@ export type ContactInput = z.infer<typeof contactSchema>;
 export type CustomerInput = z.infer<typeof customerSchema>;
 export type PartnerInput = z.infer<typeof partnerSchema>;
 export type ServiceInput = z.infer<typeof serviceSchema>;
+
+/**
+ * Extract a user-friendly error message from an API error response.
+ * If the response includes field-level validation details, formats them as a readable list.
+ * Otherwise falls back to the generic error message.
+ */
+export function formatApiError(data: { error?: string; details?: { fieldErrors?: Record<string, string[]> } }, fallback: string): string {
+  if (data.details?.fieldErrors) {
+    const fieldErrors = data.details.fieldErrors;
+    const messages = Object.entries(fieldErrors)
+      .filter(([, errors]) => errors.length > 0)
+      .map(([field, errors]) => `${field}: ${errors[0]}`);
+    if (messages.length > 0) return messages.join(', ');
+  }
+  return data.error || fallback;
+}
 
 /** CUID format: starts with 'c' followed by lowercase alphanumeric characters */
 const CUID_REGEX = /^c[a-z0-9]{20,}$/;

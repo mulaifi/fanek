@@ -54,7 +54,7 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse): Promise
       return res.status(400).json({ error: 'Validation failed', details: parsed.error.flatten() });
     }
     try {
-      const partner = await prisma.partner.create({ data: parsed.data });
+      const partner = await prisma.partner.create({ data: { ...parsed.data, type: parsed.data.type || '' } });
       await logAudit({
         userId: req.session.user.id,
         action: 'CREATE',

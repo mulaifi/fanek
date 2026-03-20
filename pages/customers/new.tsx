@@ -97,7 +97,8 @@ export default function NewCustomerPage() {
     setSubmitting(false);
 
     if (!res.ok) {
-      setApiError(data.error || t('customers.failedToCreate'));
+      const { formatApiError } = await import('@/lib/validation');
+      setApiError(formatApiError(data, t('customers.failedToCreate')));
     } else {
       toast.success(t('customers.newCustomer'), {
         description: t('customers.customerCreated'),
