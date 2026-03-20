@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="public/Fanek_logo_dark.svg" alt="Fanek" width="200" />
+  <img src="public/Fanek_logo_light.svg" alt="Fanek" width="200" />
 </p>
 
 <p align="center">
