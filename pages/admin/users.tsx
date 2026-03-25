@@ -484,7 +484,7 @@ function InviteUserForm({ onClose, onSuccess }: InviteUserFormProps) {
       data = await res.json();
     } catch {
       setInviting(false);
-      setErrors({ _form: 'A network error occurred. Please try again.' });
+      setErrors({ _form: t('common.networkError') });
       return;
     }
     setInviting(false);

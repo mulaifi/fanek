@@ -95,7 +95,7 @@ export default function AdminSettingsPage() {
       data = await res.json();
     } catch {
       setOrgSaving(false);
-      setOrgError('A network error occurred. Please try again.');
+      setOrgError(t('common.networkError'));
       return;
     }
     setOrgSaving(false);

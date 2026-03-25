@@ -63,7 +63,7 @@ export default function CustomersIndexPage() {
         if (data.customerStatuses?.length) setStatuses(data.customerStatuses);
       })
       .catch(() => {
-        toast.error('Failed to load settings');
+        toast.error(t('common.networkError'));
       });
   }, []);
 
@@ -92,7 +92,7 @@ export default function CustomersIndexPage() {
       })
       .catch(() => {
         setLoading(false);
-        toast.error('Failed to load customers');
+        toast.error(t('common.networkError'));
       });
   }, [page, sorting, statusFilter, search]);
 

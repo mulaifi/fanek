@@ -103,7 +103,7 @@ export default function NewCustomerPage() {
       data = await res.json();
     } catch {
       setSubmitting(false);
-      setApiError('A network error occurred. Please try again.');
+      setApiError(t('common.networkError'));
       return;
     }
     setSubmitting(false);

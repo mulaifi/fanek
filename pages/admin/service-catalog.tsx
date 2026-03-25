@@ -360,7 +360,7 @@ function ServiceTypeForm({ initial, editingType, onClose, onSuccess }: ServiceTy
       data = await res.json();
     } catch {
       setSaving(false);
-      setSaveError('A network error occurred. Please try again.');
+      setSaveError(t('common.networkError'));
       return;
     }
     setSaving(false);

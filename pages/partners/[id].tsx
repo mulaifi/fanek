@@ -118,7 +118,7 @@ function EditPartnerForm({ partner, onSave, onClose }: EditPartnerFormProps) {
       data = await res.json();
     } catch {
       setSaving(false);
-      setSaveError('A network error occurred. Please try again.');
+      setSaveError(t('common.networkError'));
       return;
     }
     setSaving(false);

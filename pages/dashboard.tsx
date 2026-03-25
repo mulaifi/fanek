@@ -88,7 +88,7 @@ export default function DashboardPage() {
       })
       .catch(() => {
         setLoading(false);
-        toast.error('Failed to load dashboard data');
+        toast.error(t('common.networkError'));
       });
   }, []);
 

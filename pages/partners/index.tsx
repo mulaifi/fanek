@@ -83,7 +83,7 @@ export default function PartnersIndexPage() {
       })
       .catch(() => {
         setLoading(false);
-        toast.error('Failed to load partners');
+        toast.error(t('common.networkError'));
       });
   }, [page, sorting, typeFilter, search]);
 

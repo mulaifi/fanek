@@ -79,7 +79,7 @@ export default function AuthProviderConfig({ settings, onSave }: AuthProviderCon
       data = await res.json();
     } catch {
       setSaving(false);
-      setError('A network error occurred. Please try again.');
+      setError(t('common.networkError'));
       return;
     }
     setSaving(false);

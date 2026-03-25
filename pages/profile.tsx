@@ -86,7 +86,7 @@ function NameForm({ user, onUpdate }: NameFormProps) {
       data = await res.json();
     } catch {
       setSaving(false);
-      setError('name', { message: 'A network error occurred. Please try again.' });
+      setError('name', { message: t('common.networkError') });
       return;
     }
     setSaving(false);
@@ -189,7 +189,7 @@ function PasswordForm({ onSuccess, successMessage }: PasswordFormProps) {
       data = await res.json();
     } catch {
       setSaving(false);
-      setApiError('A network error occurred. Please try again.');
+      setApiError(t('common.networkError'));
       return;
     }
     setSaving(false);

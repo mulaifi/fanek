@@ -132,7 +132,7 @@ function EditCustomerForm({ customer, statuses, onSave, onClose }: EditCustomerF
       data = await res.json();
     } catch {
       setSaving(false);
-      setSaveError('A network error occurred. Please try again.');
+      setSaveError(t('common.networkError'));
       return;
     }
     setSaving(false);
@@ -267,7 +267,7 @@ function AddServiceForm({ customerId, serviceTypes, onAdd, onClose }: AddService
       data = await res.json();
     } catch {
       setAdding(false);
-      setAddError('A network error occurred. Please try again.');
+      setAddError(t('common.networkError'));
       return;
     }
     setAdding(false);
@@ -378,7 +378,7 @@ function EditServiceForm({ service, onSave, onClose }: EditServiceFormProps) {
       data = await res.json();
     } catch {
       setSaving(false);
-      setSaveError('A network error occurred. Please try again.');
+      setSaveError(t('common.networkError'));
       return;
     }
     setSaving(false);

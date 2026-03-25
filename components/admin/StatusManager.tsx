@@ -77,7 +77,7 @@ export default function StatusManager({ statuses = [], statusUsage = {}, onSave 
       data = await res.json();
     } catch {
       setSaving(false);
-      setError('A network error occurred. Please try again.');
+      setError(t('common.networkError'));
       return;
     }
     setSaving(false);
