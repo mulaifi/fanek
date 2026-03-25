@@ -83,12 +83,21 @@ export default function AdminSettingsPage() {
       return;
     }
     setOrgSaving(true);
-    const res = await fetch('/api/admin/settings', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ orgName: orgName.trim(), orgLogo, defaultLocale }),
-    });
-    const data = await res.json();
+    let res: Response;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let data: any;
+    try {
+      res = await fetch('/api/admin/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orgName: orgName.trim(), orgLogo, defaultLocale }),
+      });
+      data = await res.json();
+    } catch {
+      setOrgSaving(false);
+      setOrgError('A network error occurred. Please try again.');
+      return;
+    }
     setOrgSaving(false);
     if (!res.ok) {
       setOrgError(data.error || t('admin.settings.failedSave'));
@@ -99,14 +108,19 @@ export default function AdminSettingsPage() {
   }
 
   async function handleExport() {
-    const res = await fetch('/api/admin/export');
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'fanek-export.json';
-    a.click();
-    URL.revokeObjectURL(url);
+    try {
+      const res = await fetch('/api/admin/export');
+      if (!res.ok) throw new Error('Export failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'fanek-export.json';
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error(t('admin.settings.failedLoad'));
+    }
   }
 
   if (loading) {

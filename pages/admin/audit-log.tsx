@@ -66,14 +66,19 @@ export default function AuditLogPage() {
   const loadPage = useCallback(async (cursor: string | null) => {
     setLoading(true);
     setError('');
-    const res = await fetch(buildUrl(cursor));
-    const data = await res.json();
-    setLoading(false);
-    if (res.ok) {
-      setLogs(data.data || []);
-      setNextCursor(data.nextCursor || null);
-    } else {
-      setError(data.error || t('admin.auditLog.failedLoad'));
+    try {
+      const res = await fetch(buildUrl(cursor));
+      const data = await res.json();
+      setLoading(false);
+      if (res.ok) {
+        setLogs(data.data || []);
+        setNextCursor(data.nextCursor || null);
+      } else {
+        setError(data.error || t('admin.auditLog.failedLoad'));
+      }
+    } catch {
+      setLoading(false);
+      setError(t('admin.auditLog.failedLoad'));
     }
   // eslint-disable-next-line @eslint-react/exhaustive-deps
   }, [filterAction, filterResource, filterFrom, filterTo, t]);

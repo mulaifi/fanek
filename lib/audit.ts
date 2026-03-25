@@ -6,7 +6,7 @@ interface AuditLogParams {
   userId: string;
   action: string;
   resource: string;
-  resourceId: string;
+  resourceId?: string;
   details?: Record<string, unknown>;
 }
 

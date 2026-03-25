@@ -7,6 +7,7 @@ import type { ColumnDef, SortingState } from '@tanstack/react-table';
 import { getAuthOptions } from '@/lib/auth/options';
 import { Search, Plus, Download } from 'lucide-react';
 import { useTranslations, useFormatter } from 'next-intl';
+import { toast } from 'sonner';
 import AppShell from '@/components/AppShell';
 import { DataTable } from '@/components/ui/data-table';
 import { Badge } from '@/components/ui/badge';
@@ -71,13 +72,19 @@ export default function PartnersIndexPage() {
     if (search) params.set('search', search);
 
     fetch(`/api/partners?${params}`)
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error('Failed to load');
+        return r.json();
+      })
       .then((data) => {
         setRecords(data.data || []);
         setTotalRecords(data.total || 0);
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch(() => {
+        setLoading(false);
+        toast.error('Failed to load partners');
+      });
   }, [page, sorting, typeFilter, search]);
 
   useEffect(() => {

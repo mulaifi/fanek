@@ -126,11 +126,16 @@ export default function ServiceCatalogPage() {
 
   const loadServiceTypes = useCallback(async () => {
     setLoading(true);
-    const res = await fetch('/api/service-types');
-    const data = await res.json();
-    setLoading(false);
-    if (res.ok) setServiceTypes(data.data || []);
-    else setError(data.error || t('admin.serviceCatalog.failedLoadServiceTypes'));
+    try {
+      const res = await fetch('/api/service-types');
+      const data = await res.json();
+      setLoading(false);
+      if (res.ok) setServiceTypes(data.data || []);
+      else setError(data.error || t('admin.serviceCatalog.failedLoadServiceTypes'));
+    } catch {
+      setLoading(false);
+      setError(t('admin.serviceCatalog.failedLoadServiceTypes'));
+    }
   }, [t]);
 
   useEffect(() => {
@@ -138,13 +143,17 @@ export default function ServiceCatalogPage() {
   }, [loadServiceTypes]);
 
   async function handleDelete(st: ServiceTypeRow) {
-    const res = await fetch(`/api/service-types/${st.id}`, { method: 'DELETE' });
-    if (res.ok) {
-      setServiceTypes((prev) => prev.filter((s) => s.id !== st.id));
-      toast.success(t('admin.serviceCatalog.typeDeleted'));
-    } else {
-      const data = await res.json();
-      toast.error(data.error || t('admin.serviceCatalog.failedDeleteServiceType'));
+    try {
+      const res = await fetch(`/api/service-types/${st.id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setServiceTypes((prev) => prev.filter((s) => s.id !== st.id));
+        toast.success(t('admin.serviceCatalog.typeDeleted'));
+      } else {
+        const data = await res.json();
+        toast.error(data.error || t('admin.serviceCatalog.failedDeleteServiceType'));
+      }
+    } catch {
+      toast.error(t('admin.serviceCatalog.failedDeleteServiceType'));
     }
   }
 
@@ -339,12 +348,21 @@ function ServiceTypeForm({ initial, editingType, onClose, onSuccess }: ServiceTy
     const url = editingType ? `/api/service-types/${editingType.id}` : '/api/service-types';
     const method = editingType ? 'PUT' : 'POST';
 
-    const res = await fetch(url, {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
-    });
-    const data = await res.json();
+    let res: Response;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let data: any;
+    try {
+      res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+      data = await res.json();
+    } catch {
+      setSaving(false);
+      setSaveError('A network error occurred. Please try again.');
+      return;
+    }
     setSaving(false);
 
     if (!res.ok) {

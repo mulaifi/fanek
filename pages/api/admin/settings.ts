@@ -1,6 +1,6 @@
 import type { NextApiResponse } from 'next';
 import type { AuthenticatedRequest } from '@/types';
-import { withAdmin } from '@/lib/auth/guard';
+import { withAdmin, methodNotAllowed } from '@/lib/auth/guard';
 import prisma from '@/lib/prisma';
 import { getSettings, invalidateSettingsCache } from '@/lib/settings';
 import { encrypt } from '@/lib/encryption';
@@ -75,6 +75,10 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse): Promise
     }
 
     if (orgLogo !== undefined) {
+      if (orgLogo !== null && typeof orgLogo !== 'string') {
+        res.status(400).json({ error: 'orgLogo must be a string or null' });
+        return;
+      }
       updateData.orgLogo = orgLogo;
     }
 
@@ -190,7 +194,7 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse): Promise
     return;
   }
 
-  res.status(405).json({ error: 'Method not allowed' });
+  methodNotAllowed(res, ['GET', 'PUT']);
 }
 
 export default withAdmin(handler);

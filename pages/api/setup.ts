@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import prisma from '@/lib/prisma';
 import { hashPassword, checkStrength } from '@/lib/password';
 import { getSettings, invalidateSettingsCache } from '@/lib/settings';
+import { methodNotAllowed } from '@/lib/auth/guard';
 import logger from '@/lib/logger';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -9,7 +10,7 @@ const { templates } = require('../../prisma/seed') as { templates: Record<string
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse): Promise<void> {
   if (req.method !== 'POST') {
-    res.status(405).json({ error: 'Method not allowed' });
+    methodNotAllowed(res, ['POST']);
     return;
   }
   if (!process.env.NEXTAUTH_SECRET) {

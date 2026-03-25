@@ -1,6 +1,6 @@
 import type { NextApiResponse } from 'next';
 import type { AuthenticatedRequest } from '@/types';
-import { withAuth } from '@/lib/auth/guard';
+import { withAuth, methodNotAllowed } from '@/lib/auth/guard';
 import prisma from '@/lib/prisma';
 import { verifyPassword, hashPassword, checkStrength } from '@/lib/password';
 import { createRateLimiter } from '@/lib/rateLimit';
@@ -11,7 +11,7 @@ const passwordChangeLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max:
 
 async function handler(req: AuthenticatedRequest, res: NextApiResponse): Promise<void> {
   if (req.method !== 'PUT') {
-    res.status(405).json({ error: 'Method not allowed' });
+    methodNotAllowed(res, ['PUT']);
     return;
   }
 
@@ -69,41 +69,36 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse): Promise
     }
   }
 
-  // ---- All validations passed, now apply changes ----
+  // ---- All validations passed, now apply changes atomically ----
 
-  // Handle locale update
+  const updateData: Record<string, unknown> = {};
+
   if (locale !== undefined) {
-    await prisma.user.update({
-      where: { id: userId },
-      data: { locale },
-    });
+    updateData.locale = locale;
     result.locale = locale;
   }
 
-  // Handle name update
   if (name !== undefined) {
-    const updated = await prisma.user.update({
-      where: { id: userId },
-      data: { name: name.trim() },
-      select: { name: true },
-    });
-    result.name = updated.name;
+    updateData.name = name.trim();
+    result.name = name.trim();
   }
 
-  // Handle password change
   if (currentPassword && newPassword) {
     const newHash = await hashPassword(newPassword);
-    await prisma.user.update({
-      where: { id: userId },
-      data: { passwordHash: newHash, firstLogin: false },
-    });
+    updateData.passwordHash = newHash;
+    updateData.firstLogin = false;
     result.firstLogin = false;
   }
 
-  if (Object.keys(result).length === 1) {
+  if (Object.keys(updateData).length === 0) {
     res.status(400).json({ error: 'No update fields provided' });
     return;
   }
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: updateData,
+  });
 
   res.json(result);
 }

@@ -23,6 +23,7 @@ jest.mock('@/lib/prisma', () => ({
 }));
 
 jest.mock('@/lib/auth/guard', () => ({
+  methodNotAllowed: (res: { setHeader: (k: string, v: string) => void; status: (n: number) => { json: (b: unknown) => void } }, allowed: string[]) => { res.setHeader('Allow', allowed.join(', ')); res.status(405).json({ error: 'Method not allowed' }); },
   withAuth: (h: (req: unknown, res: unknown) => unknown) => (req: Record<string, unknown>, res: unknown) => {
     req.session = { user: { id: 'u1', role: 'ADMIN' } };
     return h(req, res);
@@ -41,6 +42,7 @@ jest.mock('@/lib/logger', () => ({
 function mockReqRes({ method = 'GET' } = {}) {
   const req = { method };
   const res = {
+    setHeader: jest.fn().mockReturnThis(),
     status: jest.fn().mockReturnThis(),
     json: jest.fn().mockReturnThis(),
   };

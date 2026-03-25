@@ -75,12 +75,21 @@ export default function NewPartnerPage() {
       if (v && v.trim?.() !== '') payload[k] = v as string;
     });
 
-    const res = await fetch('/api/partners', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    const data = await res.json();
+    let res: Response;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let data: any;
+    try {
+      res = await fetch('/api/partners', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      data = await res.json();
+    } catch {
+      setSubmitting(false);
+      setApiError('A network error occurred. Please try again.');
+      return;
+    }
     setSubmitting(false);
 
     if (!res.ok) {

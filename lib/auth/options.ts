@@ -75,7 +75,7 @@ export async function getAuthOptions(): Promise<NextAuthOptions> {
     providers,
     session: {
       strategy: 'jwt' as const,
-      maxAge: settings?.sessionMaxAge || 2592000,
+      maxAge: settings?.sessionMaxAge ?? 2592000,
     },
     pages: {
       signIn: '/login',

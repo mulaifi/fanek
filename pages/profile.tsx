@@ -74,12 +74,21 @@ function NameForm({ user, onUpdate }: NameFormProps) {
 
   async function onSubmit(values: NameFormValues) {
     setSaving(true);
-    const res = await fetch('/api/profile', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: values.name.trim() }),
-    });
-    const data = await res.json();
+    let res: Response;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let data: any;
+    try {
+      res = await fetch('/api/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: values.name.trim() }),
+      });
+      data = await res.json();
+    } catch {
+      setSaving(false);
+      setError('name', { message: 'A network error occurred. Please try again.' });
+      return;
+    }
     setSaving(false);
     if (!res.ok) {
       setError('name', { message: data.error || t('profile.failedUpdateName') });
@@ -165,15 +174,24 @@ function PasswordForm({ onSuccess, successMessage }: PasswordFormProps) {
     setApiError('');
     setSuccess(false);
     setSaving(true);
-    const res = await fetch('/api/profile', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        currentPassword: values.currentPassword,
-        newPassword: values.newPassword,
-      }),
-    });
-    const data = await res.json();
+    let res: Response;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let data: any;
+    try {
+      res = await fetch('/api/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          currentPassword: values.currentPassword,
+          newPassword: values.newPassword,
+        }),
+      });
+      data = await res.json();
+    } catch {
+      setSaving(false);
+      setApiError('A network error occurred. Please try again.');
+      return;
+    }
     setSaving(false);
     if (!res.ok) {
       setApiError(data.error || t('profile.failedChangePassword'));

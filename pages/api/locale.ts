@@ -2,11 +2,12 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { getServerSession } from 'next-auth/next';
 import { getAuthOptions } from '@/lib/auth/options';
 import { isValidLocale, DEFAULT_LOCALE, LOCALE_COOKIE } from '@/lib/i18n';
+import { methodNotAllowed } from '@/lib/auth/guard';
 import { getSettings } from '@/lib/settings';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return methodNotAllowed(res, ['GET']);
   }
 
   // 1. Check user profile setting

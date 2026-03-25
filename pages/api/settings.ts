@@ -1,9 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getSettings } from '@/lib/settings';
+import { methodNotAllowed } from '@/lib/auth/guard';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse): Promise<void> {
   if (req.method !== 'GET') {
-    res.status(405).json({ error: 'Method not allowed' });
+    methodNotAllowed(res, ['GET']);
     return;
   }
 

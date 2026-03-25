@@ -65,12 +65,21 @@ export default function StatusManager({ statuses = [], statusUsage = {}, onSave 
       return;
     }
     setSaving(true);
-    const res = await fetch('/api/admin/settings', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ customerStatuses: items }),
-    });
-    const data = await res.json();
+    let res: Response;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let data: any;
+    try {
+      res = await fetch('/api/admin/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ customerStatuses: items }),
+      });
+      data = await res.json();
+    } catch {
+      setSaving(false);
+      setError('A network error occurred. Please try again.');
+      return;
+    }
     setSaving(false);
     if (!res.ok) {
       setError(data.error || t('admin.settings.failedToSaveStatuses'));
