@@ -19,6 +19,7 @@ jest.mock('@/lib/prisma', () => ({
 }));
 
 jest.mock('@/lib/auth/guard', () => ({
+  methodNotAllowed: (res: { setHeader: (k: string, v: string) => void; status: (n: number) => { json: (b: unknown) => void } }, allowed: string[]) => { res.setHeader('Allow', allowed.join(', ')); res.status(405).json({ error: 'Method not allowed' }); },
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   withAuth: (handler: any) => (req: any, res: any) => {
     req.session = { user: { id: 'u1', role: req._testRole || 'ADMIN' } };

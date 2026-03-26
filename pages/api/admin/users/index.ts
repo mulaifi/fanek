@@ -1,6 +1,6 @@
 import type { NextApiResponse } from 'next';
 import type { AuthenticatedRequest } from '@/types';
-import { withAdmin } from '@/lib/auth/guard';
+import { withAdmin, methodNotAllowed } from '@/lib/auth/guard';
 import prisma from '@/lib/prisma';
 import { generateTempPassword, hashPassword } from '@/lib/password';
 import { logAudit } from '@/lib/audit';
@@ -81,7 +81,7 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse): Promise
     }
   }
 
-  res.status(405).json({ error: 'Method not allowed' });
+  methodNotAllowed(res, ['GET', 'POST']);
 }
 
 export default withAdmin(handler);

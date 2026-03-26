@@ -1,11 +1,11 @@
 import type { NextApiResponse } from 'next';
 import type { AuthenticatedRequest } from '@/types';
-import { withAuth } from '@/lib/auth/guard';
+import { withAuth, methodNotAllowed } from '@/lib/auth/guard';
 import prisma from '@/lib/prisma';
 
 async function handler(req: AuthenticatedRequest, res: NextApiResponse): Promise<void> {
   if (req.method !== 'GET') {
-    res.status(405).json({ error: 'Method not allowed' });
+    methodNotAllowed(res, ['GET']);
     return;
   }
 

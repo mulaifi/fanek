@@ -21,6 +21,7 @@ import { DataTable } from '@/components/ui/data-table';
 import AppShell from '@/components/AppShell';
 import { statusColors } from '@/lib/theme';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface StatCardProps {
   label: string;
@@ -77,12 +78,18 @@ export default function DashboardPage() {
 
   useEffect(() => {
     fetch('/api/dashboard/stats')
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error('Failed to load');
+        return r.json();
+      })
       .then((data) => {
         setStats(data);
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch(() => {
+        setLoading(false);
+        toast.error(t('common.networkError'));
+      });
   }, []);
 
   const servicesByTypeData = (stats?.servicesByType || []).map((s) => ({

@@ -137,13 +137,18 @@ export default function AdminUsersPage() {
 
   const loadUsers = useCallback(async () => {
     setLoading(true);
-    const res = await fetch('/api/admin/users');
-    const data = await res.json();
-    setLoading(false);
-    if (res.ok) {
-      setUsers(data.data || []);
-    } else {
-      setError(data.error || t('admin.users.failedLoadUsers'));
+    try {
+      const res = await fetch('/api/admin/users');
+      const data = await res.json();
+      setLoading(false);
+      if (res.ok) {
+        setUsers(data.data || []);
+      } else {
+        setError(data.error || t('admin.users.failedLoadUsers'));
+      }
+    } catch {
+      setLoading(false);
+      setError(t('admin.users.failedLoadUsers'));
     }
   }, [t]);
 
@@ -164,12 +169,16 @@ export default function AdminUsersPage() {
   }
 
   async function handleResetPassword(user: UserRow) {
-    const res = await fetch(`/api/admin/users/${user.id}/reset-password`, { method: 'POST' });
-    const data = await res.json();
-    if (res.ok) {
-      setResetPasswordResult({ userId: user.id, userName: user.name, tempPassword: data.tempPassword });
-    } else {
-      toast.error(data.error || t('admin.users.failedResetPassword'));
+    try {
+      const res = await fetch(`/api/admin/users/${user.id}/reset-password`, { method: 'POST' });
+      const data = await res.json();
+      if (res.ok) {
+        setResetPasswordResult({ userId: user.id, userName: user.name, tempPassword: data.tempPassword });
+      } else {
+        toast.error(data.error || t('admin.users.failedResetPassword'));
+      }
+    } catch {
+      toast.error(t('admin.users.failedResetPassword'));
     }
   }
 
@@ -192,13 +201,17 @@ export default function AdminUsersPage() {
       toast.error(t('admin.users.cannotDeleteSelf'));
       return;
     }
-    const res = await fetch(`/api/admin/users/${user.id}`, { method: 'DELETE' });
-    if (res.ok) {
-      setUsers((prev) => prev.filter((u) => u.id !== user.id));
-      toast.success(t('admin.users.userDeleted'));
-    } else {
-      const data = await res.json();
-      toast.error(data.error || t('admin.users.failedDeleteUser'));
+    try {
+      const res = await fetch(`/api/admin/users/${user.id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setUsers((prev) => prev.filter((u) => u.id !== user.id));
+        toast.success(t('admin.users.userDeleted'));
+      } else {
+        const data = await res.json();
+        toast.error(data.error || t('admin.users.failedDeleteUser'));
+      }
+    } catch {
+      toast.error(t('admin.users.failedDeleteUser'));
     }
   }
 
@@ -459,12 +472,21 @@ function InviteUserForm({ onClose, onSuccess }: InviteUserFormProps) {
       return;
     }
     setInviting(true);
-    const res = await fetch('/api/admin/users', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
-    });
-    const data = await res.json();
+    let res: Response;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let data: any;
+    try {
+      res = await fetch('/api/admin/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+      data = await res.json();
+    } catch {
+      setInviting(false);
+      setErrors({ _form: t('common.networkError') });
+      return;
+    }
     setInviting(false);
     if (!res.ok) {
       setErrors({ _form: data.error || t('admin.users.failedCreateUser') });

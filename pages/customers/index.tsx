@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/select';
 import { statusColors } from '@/lib/theme';
 import { DEFAULT_CUSTOMER_STATUSES } from '@/lib/constants';
+import { toast } from 'sonner';
 
 const PAGE_SIZE = 25;
 
@@ -54,11 +55,16 @@ export default function CustomersIndexPage() {
 
   useEffect(() => {
     fetch('/api/settings')
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error('Failed to load');
+        return r.json();
+      })
       .then((data) => {
         if (data.customerStatuses?.length) setStatuses(data.customerStatuses);
       })
-      .catch(() => {});
+      .catch(() => {
+        toast.error(t('common.networkError'));
+      });
   }, []);
 
   const fetchData = useCallback(() => {
@@ -75,13 +81,19 @@ export default function CustomersIndexPage() {
     if (search) params.set('search', search);
 
     fetch(`/api/customers?${params}`)
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error('Failed to load');
+        return r.json();
+      })
       .then((data) => {
         setRecords(data.data || []);
         setTotalRecords(data.total || 0);
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch(() => {
+        setLoading(false);
+        toast.error(t('common.networkError'));
+      });
   }, [page, sorting, statusFilter, search]);
 
   useEffect(() => {

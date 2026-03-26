@@ -106,12 +106,21 @@ function EditPartnerForm({ partner, onSave, onClose }: EditPartnerFormProps) {
       const v = values[k];
       if (v && v.trim?.() !== '') payload[k] = v as string;
     });
-    const res = await fetch(`/api/partners/${partner.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    const data = await res.json();
+    let res: Response;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let data: any;
+    try {
+      res = await fetch(`/api/partners/${partner.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      data = await res.json();
+    } catch {
+      setSaving(false);
+      setSaveError(t('common.networkError'));
+      return;
+    }
     setSaving(false);
     if (!res.ok) {
       const { formatApiError } = await import('@/lib/validation');
@@ -304,18 +313,23 @@ export default function PartnerDetailPage() {
 
   async function handleSaveContacts() {
     setContactsSaving(true);
-    const res = await fetch(`/api/partners/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contacts: contactsValue }),
-    });
-    const data = await res.json();
-    setContactsSaving(false);
-    if (res.ok) {
-      setPartner((prev) => (prev ? { ...prev, contacts: data.contacts } : prev));
-      setContactsValue(data.contacts || []);
-      toast.success(t('partners.contactsSaved'), { description: t('partners.contactsUpdated') });
-    } else {
+    try {
+      const res = await fetch(`/api/partners/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contacts: contactsValue }),
+      });
+      const data = await res.json();
+      setContactsSaving(false);
+      if (res.ok) {
+        setPartner((prev) => (prev ? { ...prev, contacts: data.contacts } : prev));
+        setContactsValue(data.contacts || []);
+        toast.success(t('partners.contactsSaved'), { description: t('partners.contactsUpdated') });
+      } else {
+        toast.error(t('common.error'), { description: t('partners.failedToSaveContacts') });
+      }
+    } catch {
+      setContactsSaving(false);
       toast.error(t('common.error'), { description: t('partners.failedToSaveContacts') });
     }
   }

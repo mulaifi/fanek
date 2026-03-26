@@ -120,12 +120,21 @@ function EditCustomerForm({ customer, statuses, onSave, onClose }: EditCustomerF
       const v = values[k];
       if (v && v.trim?.() !== '') payload[k] = v as string;
     });
-    const res = await fetch(`/api/customers/${customer.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    const data = await res.json();
+    let res: Response;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let data: any;
+    try {
+      res = await fetch(`/api/customers/${customer.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      data = await res.json();
+    } catch {
+      setSaving(false);
+      setSaveError(t('common.networkError'));
+      return;
+    }
     setSaving(false);
     if (!res.ok) {
       const { formatApiError } = await import('@/lib/validation');
@@ -246,18 +255,27 @@ function AddServiceForm({ customerId, serviceTypes, onAdd, onClose }: AddService
     }
     setServiceErrors({});
     setAdding(true);
-    const res = await fetch('/api/services', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ customerId, serviceTypeId: selectedTypeId, fieldValues: serviceFields }),
-    });
-    const data = await res.json();
+    let res: Response;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let data: any;
+    try {
+      res = await fetch('/api/services', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ customerId, serviceTypeId: selectedTypeId, fieldValues: serviceFields }),
+      });
+      data = await res.json();
+    } catch {
+      setAdding(false);
+      setAddError(t('common.networkError'));
+      return;
+    }
     setAdding(false);
     if (!res.ok) {
       const { formatApiError } = await import('@/lib/validation');
       setAddError(formatApiError(data, t('services.failedToAdd')));
     } else {
-      onAdd({ ...data, serviceType: selectedType });
+      onAdd({ ...data, serviceType: selectedType } as ServiceShape);
     }
   }
 
@@ -348,18 +366,27 @@ function EditServiceForm({ service, onSave, onClose }: EditServiceFormProps) {
     }
     setServiceErrors({});
     setSaving(true);
-    const res = await fetch(`/api/services/${service.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fieldValues: serviceFields }),
-    });
-    const data = await res.json();
+    let res: Response;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let data: any;
+    try {
+      res = await fetch(`/api/services/${service.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fieldValues: serviceFields }),
+      });
+      data = await res.json();
+    } catch {
+      setSaving(false);
+      setSaveError(t('common.networkError'));
+      return;
+    }
     setSaving(false);
     if (!res.ok) {
       const { formatApiError } = await import('@/lib/validation');
       setSaveError(formatApiError(data, t('services.failedToUpdate')));
     } else {
-      onSave({ ...data, serviceType: service.serviceType });
+      onSave({ ...data, serviceType: service.serviceType } as ServiceShape);
     }
   }
 
@@ -590,35 +617,45 @@ export default function CustomerDetailPage() {
 
   async function handleSaveContacts() {
     setContactsSaving(true);
-    const res = await fetch(`/api/customers/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contacts: contactsValue }),
-    });
-    const data = await res.json();
-    setContactsSaving(false);
-    if (res.ok) {
-      setCustomer((prev) => (prev ? { ...prev, contacts: data.contacts } : prev));
-      setContactsValue(data.contacts || []);
-      toast.success(t('customers.contacts'), { description: t('customers.contactsSaved') });
-    } else {
+    try {
+      const res = await fetch(`/api/customers/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contacts: contactsValue }),
+      });
+      const data = await res.json();
+      setContactsSaving(false);
+      if (res.ok) {
+        setCustomer((prev) => (prev ? { ...prev, contacts: data.contacts } : prev));
+        setContactsValue(data.contacts || []);
+        toast.success(t('customers.contacts'), { description: t('customers.contactsSaved') });
+      } else {
+        toast.error(t('common.error'), { description: t('customers.failedToSaveContacts') });
+      }
+    } catch {
+      setContactsSaving(false);
       toast.error(t('common.error'), { description: t('customers.failedToSaveContacts') });
     }
   }
 
   async function handleSaveNotes() {
     setNotesSaving(true);
-    const res = await fetch(`/api/customers/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ notes: notesValue }),
-    });
-    const data = await res.json();
-    setNotesSaving(false);
-    if (res.ok) {
-      setCustomer((prev) => (prev ? { ...prev, notes: data.notes } : prev));
-      toast.success(t('customers.notes'), { description: t('customers.notesSaved') });
-    } else {
+    try {
+      const res = await fetch(`/api/customers/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notes: notesValue }),
+      });
+      const data = await res.json();
+      setNotesSaving(false);
+      if (res.ok) {
+        setCustomer((prev) => (prev ? { ...prev, notes: data.notes } : prev));
+        toast.success(t('customers.notes'), { description: t('customers.notesSaved') });
+      } else {
+        toast.error(t('common.error'), { description: t('customers.failedToSaveNotes') });
+      }
+    } catch {
+      setNotesSaving(false);
       toast.error(t('common.error'), { description: t('customers.failedToSaveNotes') });
     }
   }

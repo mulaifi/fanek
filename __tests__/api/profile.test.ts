@@ -14,6 +14,7 @@ jest.mock('@/lib/prisma', () => ({
 }));
 
 jest.mock('@/lib/auth/guard', () => ({
+  methodNotAllowed: (res: { setHeader: (k: string, v: string) => void; status: (n: number) => { json: (b: unknown) => void } }, allowed: string[]) => { res.setHeader('Allow', allowed.join(', ')); res.status(405).json({ error: 'Method not allowed' }); },
   withAuth: (h: (req: unknown, res: unknown) => unknown) => (req: Record<string, unknown>, res: unknown) => {
     req.session = { user: { id: 'u1', role: 'ADMIN' } };
     return h(req, res);
@@ -146,7 +147,6 @@ describe('PUT /api/profile', () => {
     expect(mockPrisma.user.update).toHaveBeenCalledWith({
       where: { id: 'u1' },
       data: { name: 'New Name' },
-      select: { name: true },
     });
     expect(res.json).toHaveBeenCalledWith({ success: true, name: 'New Name' });
   });
@@ -163,16 +163,10 @@ describe('PUT /api/profile', () => {
     });
     await handler(req as never, res as never);
 
-    // Name update call
+    // Single atomic update with all fields
     expect(mockPrisma.user.update).toHaveBeenCalledWith({
       where: { id: 'u1' },
-      data: { name: 'New Name' },
-      select: { name: true },
-    });
-    // Password update call
-    expect(mockPrisma.user.update).toHaveBeenCalledWith({
-      where: { id: 'u1' },
-      data: { passwordHash: 'newhash', firstLogin: false },
+      data: { name: 'New Name', passwordHash: 'newhash', firstLogin: false },
     });
     expect(res.json).toHaveBeenCalledWith({ success: true, name: 'New Name', firstLogin: false });
   });

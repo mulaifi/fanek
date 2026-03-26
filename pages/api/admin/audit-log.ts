@@ -1,14 +1,15 @@
 import type { NextApiResponse } from 'next';
 import type { AuthenticatedRequest } from '@/types';
-import { withAdmin } from '@/lib/auth/guard';
+import { withAdmin, methodNotAllowed } from '@/lib/auth/guard';
 import prisma from '@/lib/prisma';
+import { isValidCuid } from '@/lib/validation';
 
 const VALID_ACTIONS = ['CREATE', 'UPDATE', 'DELETE'] as const;
 const VALID_RESOURCES = ['customer', 'service', 'partner', 'user', 'settings', 'serviceType'] as const;
 
 async function handler(req: AuthenticatedRequest, res: NextApiResponse): Promise<void> {
   if (req.method !== 'GET') {
-    res.status(405).json({ error: 'Method not allowed' });
+    methodNotAllowed(res, ['GET']);
     return;
   }
 
@@ -43,6 +44,10 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse): Promise
   }
 
   if (userId) {
+    if (!isValidCuid(userId)) {
+      res.status(400).json({ error: 'Invalid userId format' });
+      return;
+    }
     where.userId = userId;
   }
 

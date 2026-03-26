@@ -27,7 +27,8 @@ export function getClientLocale(): Locale {
  */
 export function setLocaleCookie(locale: Locale): void {
   if (typeof document === 'undefined') return;
-  document.cookie = `${LOCALE_COOKIE}=${locale};path=/;max-age=${60 * 60 * 24 * 365};SameSite=Lax`;
+  const secure = window.location.protocol === 'https:' ? ';Secure' : '';
+  document.cookie = `${LOCALE_COOKIE}=${locale};path=/;max-age=${60 * 60 * 24 * 365};SameSite=Lax${secure}`;
 }
 
 export function isValidLocale(value: unknown): value is Locale {

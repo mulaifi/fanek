@@ -260,7 +260,9 @@ export default function AppShell({ children, title }: AppShellProps) {
 
         setSpotlightActions(actions);
       })
-      .catch(() => {});
+      .catch(() => {
+        setSpotlightActions([]);
+      });
   }, [debouncedQuery, router]);
 
   if (status === 'loading' || status === 'unauthenticated') {

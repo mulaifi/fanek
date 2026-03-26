@@ -67,12 +67,21 @@ export default function AuthProviderConfig({ settings, onSave }: AuthProviderCon
       };
     }
 
-    const res = await fetch('/api/admin/settings', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ authProviders }),
-    });
-    const data = await res.json();
+    let res: Response;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let data: any;
+    try {
+      res = await fetch('/api/admin/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ authProviders }),
+      });
+      data = await res.json();
+    } catch {
+      setSaving(false);
+      setError(t('common.networkError'));
+      return;
+    }
     setSaving(false);
 
     if (!res.ok) {

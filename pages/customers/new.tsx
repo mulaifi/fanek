@@ -50,7 +50,10 @@ export default function NewCustomerPage() {
 
   useEffect(() => {
     fetch('/api/settings')
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error('Failed to load');
+        return r.json();
+      })
       .then((data) => {
         if (data.customerStatuses?.length) setStatuses(data.customerStatuses);
       })
@@ -88,12 +91,21 @@ export default function NewCustomerPage() {
       if (v && v.trim?.() !== '') payload[k] = v as string;
     });
 
-    const res = await fetch('/api/customers', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    const data = await res.json();
+    let res: Response;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let data: any;
+    try {
+      res = await fetch('/api/customers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      data = await res.json();
+    } catch {
+      setSubmitting(false);
+      setApiError(t('common.networkError'));
+      return;
+    }
     setSubmitting(false);
 
     if (!res.ok) {

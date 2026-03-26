@@ -12,6 +12,7 @@ jest.mock('@/lib/prisma', () => ({
 }));
 
 jest.mock('@/lib/auth/guard', () => ({
+  methodNotAllowed: (res: { setHeader: (k: string, v: string) => void; status: (n: number) => { json: (b: unknown) => void } }, allowed: string[]) => { res.setHeader('Allow', allowed.join(', ')); res.status(405).json({ error: 'Method not allowed' }); },
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   withAdmin: (handler: any) => (req: any, res: any) => {
     req.session = { user: { id: 'admin-1', role: 'ADMIN' } };
@@ -90,11 +91,18 @@ describe('GET /api/admin/audit-log', () => {
 
   test('filters by userId', async () => {
     prisma.auditLog.findMany.mockResolvedValue([]);
-    const { req, res } = mockReqRes({ query: { userId: 'u1' } });
+    const { req, res } = mockReqRes({ query: { userId: 'clxxxxxxxxxxxxxxxxxxxxxxxxx' } });
     await auditLogHandler(req, res);
     expect(prisma.auditLog.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: expect.objectContaining({ userId: 'u1' }) })
+      expect.objectContaining({ where: expect.objectContaining({ userId: 'clxxxxxxxxxxxxxxxxxxxxxxxxx' }) })
     );
+  });
+
+  test('returns 400 for invalid userId format', async () => {
+    const { req, res } = mockReqRes({ query: { userId: 'not-a-cuid' } });
+    await auditLogHandler(req, res);
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json.mock.calls[0][0].error).toMatch(/invalid userId/i);
   });
 
   test('filters by date range (from and to)', async () => {
