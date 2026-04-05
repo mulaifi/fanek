@@ -30,7 +30,7 @@ The simplest way to run Fanek. Docker handles the database, secrets, and schema 
    ```bash
    docker compose up -d
    ```
-3. Open `http://localhost:3000` and follow the setup wizard.
+3. Open `http://localhost:8080` and follow the setup wizard.
 
 That's it. The Docker entrypoint automatically:
 - Generates a secure `NEXTAUTH_SECRET` on first start (persisted across restarts)
@@ -73,7 +73,7 @@ Requirements: Node.js 20 or later, PostgreSQL 16 or later.
    ```
    For development: `npm run dev`
 
-Open `http://localhost:3000` and follow the setup wizard.
+Open `http://localhost:8080` (or `http://localhost:3000` for development) and follow the setup wizard.
 
 
 ## 2. Setup Wizard
