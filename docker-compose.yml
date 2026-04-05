@@ -18,12 +18,12 @@ services:
   app:
     build: .
     ports:
-      - "${PORT:-3000}:${PORT:-3000}"
+      - "${PORT:-8080}:${PORT:-8080}"
     environment:
       DATABASE_URL: postgresql://fanek:fanek@db:5432/fanek
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-}
       NEXTAUTH_URL: ${NEXTAUTH_URL:-}
-      PORT: ${PORT:-3000}
+      PORT: ${PORT:-8080}
     volumes:
       - data:/data
     depends_on:

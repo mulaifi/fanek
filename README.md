@@ -66,7 +66,7 @@ cd fanek
 docker compose up -d
 ```
 
-Open [http://localhost:3000](http://localhost:3000) and follow the setup wizard. That's it.
+Open [http://localhost:8080](http://localhost:8080) and follow the setup wizard (port 3000 in development mode). That's it.
 
 Secrets are auto-generated, the database is created and migrated automatically. See the [Admin Guide](docs/en/admin-guide.md) for production configuration and customization.
 
@@ -104,8 +104,8 @@ Requires Node.js 20+ and PostgreSQL 16+. See the [Admin Guide](docs/en/admin-gui
 |----------|:--------:|-------------|
 | `DATABASE_URL` | Yes | PostgreSQL connection string |
 | `NEXTAUTH_SECRET` | Manual only | Random secret for session signing (auto-generated in Docker) |
-| `NEXTAUTH_URL` | Manual only | Full URL of the app (defaults to `http://localhost:3000` in Docker) |
-| `PORT` | No | HTTP port (default: 3000) |
+| `NEXTAUTH_URL` | Manual only | Full URL of the app (defaults to `http://localhost:8080` in Docker) |
+| `PORT` | No | HTTP port (default: 8080) |
 
 ## Project Structure
 

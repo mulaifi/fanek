@@ -114,7 +114,7 @@ services:
   app:
     ports:
       # Bind Fanek to localhost only, so it is not directly accessible from outside
-      - "127.0.0.1:${PORT:-3000}:${PORT:-3000}"
+      - "127.0.0.1:${PORT:-8080}:${PORT:-8080}"
   db:
     # Remove the exposed PostgreSQL port entirely
     ports: !reset []
@@ -133,7 +133,7 @@ docker compose up -d --build
 
 ```bash
 # Check that the app responds on localhost
-curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3000
+curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8080
 # Expected output: 200 (or 302 if redirecting to login/setup)
 ```
 
@@ -268,8 +268,8 @@ Type=simple
 User=fanek
 WorkingDirectory=/opt/fanek
 
-# Start the Next.js production server on port 3000
-ExecStart=/usr/bin/node node_modules/.bin/next start -p 3000
+# Start the Next.js production server on port 8080
+ExecStart=/usr/bin/node node_modules/.bin/next start -p 8080
 
 # Restart automatically on failure, with a 5-second delay
 Restart=on-failure
@@ -303,7 +303,7 @@ sudo systemctl status fanek
 
 ```bash
 # Check that the app responds on localhost
-curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3000
+curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8080
 # Expected output: 200 (or 302 if redirecting to login/setup)
 ```
 
@@ -362,7 +362,7 @@ dig +short fanek.example.com
 
 ## 4. Reverse Proxy Setup
 
-A reverse proxy sits between the internet (or your LAN) and Fanek. It handles SSL/TLS termination, so traffic between users and the server is encrypted. Fanek itself listens on `http://127.0.0.1:3000`, and the reverse proxy forwards requests to it.
+A reverse proxy sits between the internet (or your LAN) and Fanek. It handles SSL/TLS termination, so traffic between users and the server is encrypted. Fanek itself listens on `http://127.0.0.1:8080`, and the reverse proxy forwards requests to it.
 
 ### Choosing a reverse proxy
 
@@ -411,7 +411,7 @@ Replace the contents with:
 # Caddy automatically obtains and renews Let's Encrypt certificates
 fanek.example.com {
     # Forward all requests to the Fanek application
-    reverse_proxy localhost:3000
+    reverse_proxy localhost:8080
 }
 ```
 
@@ -459,7 +459,7 @@ server {
 
     location / {
         # Forward requests to the Fanek application
-        proxy_pass http://127.0.0.1:3000;
+        proxy_pass http://127.0.0.1:8080;
 
         # Use HTTP/1.1 for proxy connections (required for WebSocket support)
         proxy_http_version 1.1;
@@ -577,7 +577,7 @@ services:
       # Use Let's Encrypt for the certificate
       - "traefik.http.routers.fanek.tls.certresolver=letsencrypt"
       # Tell Traefik which port the app listens on inside the container
-      - "traefik.http.services.fanek.loadbalancer.server.port=3000"
+      - "traefik.http.services.fanek.loadbalancer.server.port=8080"
     # Remove the direct port mapping since Traefik handles external traffic
     ports: !reset []
 
@@ -634,7 +634,7 @@ Replace `fanek.company.local` with your internal hostname.
 fanek.company.local {
     # Use the self-signed certificate and key
     tls /etc/ssl/certs/fanek.crt /etc/ssl/private/fanek.key
-    reverse_proxy localhost:3000
+    reverse_proxy localhost:8080
 }
 ```
 
@@ -650,7 +650,7 @@ server {
     ssl_certificate_key /etc/ssl/private/fanek.key;
 
     location / {
-        proxy_pass http://127.0.0.1:3000;
+        proxy_pass http://127.0.0.1:8080;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -680,7 +680,7 @@ After configuring your reverse proxy, verify the following:
 
 ### Internet-facing firewall (UFW)
 
-UFW (Uncomplicated Firewall) is installed by default on Ubuntu. These rules allow SSH, HTTP, and HTTPS while blocking everything else, including direct access to Fanek's port 3000.
+UFW (Uncomplicated Firewall) is installed by default on Ubuntu. These rules allow SSH, HTTP, and HTTPS while blocking everything else, including direct access to Fanek's port 8080.
 
 ```bash
 # Set the default policies: deny all incoming, allow all outgoing
@@ -696,7 +696,7 @@ sudo ufw allow 443/tcp
 
 # Explicitly block direct access to Fanek's port
 # This ensures the app is only reachable through the reverse proxy
-sudo ufw deny 3000/tcp
+sudo ufw deny 8080/tcp
 
 # Enable the firewall (type 'y' when prompted)
 sudo ufw enable
@@ -915,7 +915,7 @@ sudo systemctl restart fanek
 
 ```bash
 # Check the app responds
-curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3000
+curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8080
 
 # Check the logs for errors (Docker)
 docker compose logs --tail 20 app
@@ -944,18 +944,18 @@ journalctl -u fanek --no-pager -n 100
 **Common causes and fixes:**
 
 - **`DATABASE_URL` is incorrect or missing.** Check the `.env` file. For Docker, the `DATABASE_URL` is set in `docker-compose.yml` and should not be overridden in `.env`. For bare-metal, verify the username, password, host, and database name are correct.
-- **Port 3000 is already in use.** Another process is listening on the same port. Check with `sudo lsof -i :3000` and stop the conflicting process, or change Fanek's port by setting `PORT` in `.env`.
+- **Port 8080 is already in use.** Another process is listening on the same port. Check with `sudo lsof -i :8080` and stop the conflicting process, or change Fanek's port by setting `PORT` in `.env`.
 - **Node.js version is too old.** Fanek requires Node.js 20 or later. Check with `node --version`.
 
 ### 502 Bad Gateway
 
 **Symptoms:** The reverse proxy returns a "502 Bad Gateway" error page.
 
-**Diagnosis:** The reverse proxy is running, but it cannot reach Fanek on `127.0.0.1:3000`.
+**Diagnosis:** The reverse proxy is running, but it cannot reach Fanek on `127.0.0.1:8080`.
 
 ```bash
-# Check if the app is actually listening on port 3000
-curl -I http://127.0.0.1:3000
+# Check if the app is actually listening on port 8080
+curl -I http://127.0.0.1:8080
 
 # Docker: check if the container is running
 docker compose ps
@@ -968,7 +968,7 @@ sudo systemctl status fanek
 
 - **The app is not running.** Start it with `docker compose up -d` or `sudo systemctl start fanek`.
 - **The app is bound to a different port.** Verify the `PORT` setting in `.env` matches the reverse proxy configuration.
-- **The `docker-compose.override.yml` binds to the wrong address.** The proxy must reach `127.0.0.1:3000`. If the override binds to a different address, update it.
+- **The `docker-compose.override.yml` binds to the wrong address.** The proxy must reach `127.0.0.1:8080`. If the override binds to a different address, update it.
 
 ### SSL certificate errors
 
