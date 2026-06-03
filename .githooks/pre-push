@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# Stage-2 review nudge.
+#
+# Reminds you to run the deliberate pre-merge review (/rabbit + /code-review)
+# before pushing a review-bound branch, when stage-2 hasn't run for the current
+# HEAD. NON-BLOCKING: always exits 0, the push continues regardless.
+#
+# /rabbit stamps the reviewed HEAD into .git/.stage2-reviewed (via
+# `git rev-parse --git-path .stage2-reviewed`), which silences this for that commit.
+# Installed via: git config core.hooksPath .githooks
+
+branch=$(git symbolic-ref --short HEAD 2>/dev/null || echo "")
+head=$(git rev-parse HEAD 2>/dev/null || echo "")
+
+case "$branch" in
+  main|master|feat/*|feature/*|fix/*|release/*) ;;
+  *) exit 0 ;;  # scratch branch: stay silent
+esac
+
+marker=$(git rev-parse --git-path .stage2-reviewed 2>/dev/null)
+if [ -n "$marker" ] && [ -f "$marker" ] && [ "$(cat "$marker" 2>/dev/null)" = "$head" ]; then
+  exit 0
+fi
+
+echo "" >&2
+echo "⚠️  Stage-2 review hasn't run for ${head:0:8} on '$branch'." >&2
+echo "    Reminder: run  /rabbit  and  /code-review  before merging." >&2
+echo "    (Reminder only — push continues. /rabbit clears this.)" >&2
+echo "" >&2
+exit 0
