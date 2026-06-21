@@ -65,7 +65,7 @@ export default function CustomersIndexPage() {
       .catch(() => {
         toast.error(t('common.networkError'));
       });
-  }, []);
+  }, [t]);
 
   const fetchData = useCallback(() => {
     setLoading(true);
@@ -94,7 +94,7 @@ export default function CustomersIndexPage() {
         setLoading(false);
         toast.error(t('common.networkError'));
       });
-  }, [page, sorting, statusFilter, search]);
+  }, [page, sorting, statusFilter, search, t]);
 
   useEffect(() => {
     fetchData();

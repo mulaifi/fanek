@@ -85,7 +85,7 @@ export default function PartnersIndexPage() {
         setLoading(false);
         toast.error(t('common.networkError'));
       });
-  }, [page, sorting, typeFilter, search]);
+  }, [page, sorting, typeFilter, search, t]);
 
   useEffect(() => {
     fetchData();
