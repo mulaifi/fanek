@@ -5,6 +5,11 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 10
+    ignore:
+      # TypeScript 6 deferred: tsconfig `baseUrl` triggers TS5101 and next-intl
+      # has an unresolved peer-dep conflict. Revisit as a dedicated migration.
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
     groups:
       dev-dependencies:
         dependency-type: development
