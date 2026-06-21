@@ -72,7 +72,7 @@
     "jest-environment-node": "^30.3.0",
     "postcss": "^8.5.11",
     "prettier": "^3.4.0",
-    "prisma": "^7.5.0",
+    "prisma": "^7.8.0",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.57.1"
   }
