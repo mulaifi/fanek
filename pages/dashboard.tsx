@@ -90,7 +90,7 @@ export default function DashboardPage() {
         setLoading(false);
         toast.error(t('common.networkError'));
       });
-  }, []);
+  }, [t]);
 
   const servicesByTypeData = (stats?.servicesByType || []).map((s) => ({
     name: s.name,
