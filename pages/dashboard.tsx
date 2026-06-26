@@ -32,7 +32,7 @@ interface StatCardProps {
 
 function StatCard({ label, value, icon: Icon, iconClassName }: StatCardProps) {
   return (
-    <Card>
+    <Card data-testid="stat-card">
       <CardContent className="pt-6">
         <div className="flex justify-between items-start">
           <div className="flex flex-col gap-1">

@@ -1,11 +1,13 @@
 import '@/styles/globals.css';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/router';
 import { ThemeProvider } from 'next-themes';
 import { Toaster } from 'sonner';
 import { useTheme } from 'next-themes';
 import { SessionProvider } from 'next-auth/react';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { NextIntlClientProvider } from 'next-intl';
 import '@/lib/fonts'; // Side-effect: registers Inter + Tajawal @font-face
 import { getClientLocale, getFontFamily, type Locale } from '@/lib/i18n';
@@ -27,6 +29,7 @@ type AppPropsWithSession = AppProps & {
 };
 
 export default function App({ Component, pageProps: { session, ...pageProps } }: AppPropsWithSession) {
+  const router = useRouter();
   const [locale, setLocale] = useState<Locale>('en');
 
   useEffect(() => {
@@ -44,7 +47,9 @@ export default function App({ Component, pageProps: { session, ...pageProps } }:
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
           <TooltipProvider>
             <ThemedToaster />
-            <Component {...pageProps} />
+            <ErrorBoundary key={router.asPath}>
+              <Component {...pageProps} />
+            </ErrorBoundary>
           </TooltipProvider>
         </ThemeProvider>
       </NextIntlClientProvider>

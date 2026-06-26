@@ -52,3 +52,59 @@ jobs:
         env:
           DATABASE_URL: postgresql://fanek:fanek@localhost:5432/fanek_test
           NEXTAUTH_SECRET: test-secret-not-for-production
+
+  e2e:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: fanek
+          POSTGRES_PASSWORD: fanek
+          POSTGRES_DB: fanek_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U fanek"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://fanek:fanek@localhost:5432/fanek_test
+      NEXTAUTH_SECRET: test-secret-not-for-production
+      NEXTAUTH_URL: http://localhost:3000
+      # Lets the auth rate-limit E2E spec key on X-Forwarded-For (simulated proxy).
+      TRUST_PROXY: 'true'
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - run: npx prisma generate
+
+      - name: Apply database migrations
+        run: npx prisma migrate deploy
+
+      - run: npm run build
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Run E2E tests
+        run: npm run test:e2e
+
+      - name: Upload Playwright report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 14

@@ -16,3 +16,6 @@ test-results/
 playwright-report/
 .superpowers/
 docs/superpowers/
+
+# Playwright auth state (contains session)
+playwright/.auth/
