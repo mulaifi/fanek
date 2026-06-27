@@ -200,14 +200,17 @@ export default function AppShell({ children, title }: AppShellProps) {
   }, []);
 
   useEffect(() => {
-    let active = true;
     if (!debouncedQuery || debouncedQuery.length < 2) {
       setSpotlightActions([]);
       setSpotlightActionsQuery(debouncedQuery ?? '');
       return;
     }
 
-    fetch(`/api/search?q=${encodeURIComponent(debouncedQuery)}`)
+    // Abort the in-flight request when the query changes so a superseded
+    // response can't clobber newer results (or leave the box stuck loading).
+    const controller = new AbortController();
+
+    fetch(`/api/search?q=${encodeURIComponent(debouncedQuery)}`, { signal: controller.signal })
       .then((r) => {
         if (!r.ok) throw new Error('Search request failed');
         return r.json();
@@ -271,18 +274,17 @@ export default function AppShell({ children, title }: AppShellProps) {
           });
         }
 
-        if (!active) return;
         setSpotlightActions(actions);
         setSpotlightActionsQuery(debouncedQuery);
       })
-      .catch(() => {
-        if (!active) return;
+      .catch((err: unknown) => {
+        if (err instanceof DOMException && err.name === 'AbortError') return;
         setSpotlightActions([]);
         setSpotlightActionsQuery(debouncedQuery);
       });
 
     return () => {
-      active = false;
+      controller.abort();
     };
   }, [debouncedQuery, router]);
 
