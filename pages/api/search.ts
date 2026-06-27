@@ -34,7 +34,13 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse): Promise
       select: { id: true, name: true, type: true },
     }),
     prisma.service.findMany({
-      where: { notes: { contains: search, mode: 'insensitive' } },
+      where: {
+        OR: [
+          { notes: { contains: search, mode: 'insensitive' } },
+          { serviceType: { is: { name: { contains: search, mode: 'insensitive' } } } },
+          { customer: { is: { name: { contains: search, mode: 'insensitive' } } } },
+        ],
+      },
       take: 10,
       include: {
         serviceType: { select: { name: true } },
