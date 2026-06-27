@@ -200,6 +200,7 @@ export default function AppShell({ children, title }: AppShellProps) {
   }, []);
 
   useEffect(() => {
+    let active = true;
     if (!debouncedQuery || debouncedQuery.length < 2) {
       setSpotlightActions([]);
       setSpotlightActionsQuery(debouncedQuery ?? '');
@@ -255,28 +256,34 @@ export default function AppShell({ children, title }: AppShellProps) {
         }
 
         if (services && services.length > 0) {
-          services.forEach((s) => {
-            if (!s.customer) return;
+          services.forEach(({ id, customer, serviceType }) => {
+            if (!customer) return;
             actions.push({
-              id: `service-${s.id}`,
-              label: s.serviceType?.name ?? 'Service',
-              description: s.customer.name,
+              id: `service-${id}`,
+              label: serviceType?.name ?? 'Service',
+              description: customer.name,
               group: 'Services',
               onClick: () => {
-                router.push(`/customers/${s.customer!.id}`);
+                router.push(`/customers/${customer.id}`);
                 setSpotlightOpen(false);
               },
             });
           });
         }
 
+        if (!active) return;
         setSpotlightActions(actions);
         setSpotlightActionsQuery(debouncedQuery);
       })
       .catch(() => {
+        if (!active) return;
         setSpotlightActions([]);
         setSpotlightActionsQuery(debouncedQuery);
       });
+
+    return () => {
+      active = false;
+    };
   }, [debouncedQuery, router]);
 
   if (status === 'loading' || status === 'unauthenticated') {
@@ -321,13 +328,13 @@ export default function AppShell({ children, title }: AppShellProps) {
           />
           <CommandList>
             {spotlightQuery.length < 2 && (
-              <CommandEmpty>Type at least 2 characters to search...</CommandEmpty>
+              <CommandEmpty>{t('nav.typeToSearch')}</CommandEmpty>
             )}
             {spotlightQuery.length >= 2 && spotlightLoading && (
-              <CommandEmpty>Searching…</CommandEmpty>
+              <CommandEmpty>{t('nav.searching')}</CommandEmpty>
             )}
             {spotlightQuery.length >= 2 && !spotlightLoading && visibleActions.length === 0 && (
-              <CommandEmpty>No results found.</CommandEmpty>
+              <CommandEmpty>{t('nav.noResults')}</CommandEmpty>
             )}
             {Object.entries(groupedActions).map(([group, actions]) => (
               <CommandGroup key={group} heading={group}>

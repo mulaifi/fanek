@@ -136,4 +136,30 @@ test.describe('Spotlight search', () => {
     // Once the delayed response resolves, the new query's result appears.
     await expect(resultItem(page, 'BetaUnique Co')).toBeVisible({ timeout: 10000 });
   });
+
+  // An older in-flight request must not clobber a newer one: if the response for
+  // a previous query resolves last, it must be ignored, not overwrite the current
+  // results (which would otherwise leave the box stuck on "Searching...").
+  test('ignores an out-of-order response from a superseded query', async ({ page }) => {
+    await page.request.post('/api/customers', { data: { name: 'RaceAlpha Co', status: 'Active' } });
+    await page.request.post('/api/customers', { data: { name: 'RaceBeta Co', status: 'Active' } });
+
+    // The earlier query (RaceAlpha) resolves AFTER the later one (RaceBeta).
+    await page.route('**/api/search**', async (route) => {
+      const delay = /RaceAlpha/.test(route.request().url()) ? 2500 : 200;
+      await new Promise((r) => setTimeout(r, delay));
+      await route.continue();
+    });
+
+    const input = await openSearch(page);
+    await input.fill('RaceAlpha');
+    await page.waitForTimeout(450); // let the RaceAlpha request start
+    await input.fill('RaceBeta');
+
+    // After the stale RaceAlpha response has long since resolved, the current
+    // RaceBeta result stands and the box is not stuck loading.
+    await page.waitForTimeout(3200);
+    await expect(resultItem(page, 'RaceBeta Co')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText(/searching/i)).toBeHidden();
+  });
 });
