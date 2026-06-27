@@ -158,6 +158,10 @@ export default function AppShell({ children, title }: AppShellProps) {
   const [spotlightQuery, setSpotlightQuery] = useState('');
   const [debouncedQuery] = useDebounce(spotlightQuery, 300);
   const [spotlightActions, setSpotlightActions] = useState<SpotlightAction[]>([]);
+  // The query that the current spotlightActions correspond to. While this lags
+  // behind spotlightQuery (debounce + in-flight fetch) the results are stale and
+  // must not be shown, since cmdk no longer filters them client-side (#81).
+  const [spotlightActionsQuery, setSpotlightActionsQuery] = useState('');
 
   const isAdmin = session?.user?.role === 'ADMIN';
   const sidebarWidth = expanded ? EXPANDED_WIDTH : RAIL_WIDTH;
@@ -198,6 +202,7 @@ export default function AppShell({ children, title }: AppShellProps) {
   useEffect(() => {
     if (!debouncedQuery || debouncedQuery.length < 2) {
       setSpotlightActions([]);
+      setSpotlightActionsQuery(debouncedQuery ?? '');
       return;
     }
 
@@ -211,7 +216,13 @@ export default function AppShell({ children, title }: AppShellProps) {
 
         const customers = data.customers as Array<{ id: string; name: string; clientCode?: string }> | undefined;
         const partners = data.partners as Array<{ id: string; name: string }> | undefined;
-        const services = data.services as Array<{ id: string; name: string; type?: string }> | undefined;
+        const services = data.services as
+          | Array<{
+              id: string;
+              serviceType?: { name: string };
+              customer?: { id: string; name: string };
+            }>
+          | undefined;
 
         if (customers && customers.length > 0) {
           customers.forEach((c) => {
@@ -245,13 +256,14 @@ export default function AppShell({ children, title }: AppShellProps) {
 
         if (services && services.length > 0) {
           services.forEach((s) => {
+            if (!s.customer) return;
             actions.push({
               id: `service-${s.id}`,
-              label: s.name,
-              description: s.type ?? 'Service',
+              label: s.serviceType?.name ?? 'Service',
+              description: s.customer.name,
               group: 'Services',
               onClick: () => {
-                router.push(`/services/${s.id}`);
+                router.push(`/customers/${s.customer!.id}`);
                 setSpotlightOpen(false);
               },
             });
@@ -259,9 +271,11 @@ export default function AppShell({ children, title }: AppShellProps) {
         }
 
         setSpotlightActions(actions);
+        setSpotlightActionsQuery(debouncedQuery);
       })
       .catch(() => {
         setSpotlightActions([]);
+        setSpotlightActionsQuery(debouncedQuery);
       });
   }, [debouncedQuery, router]);
 
@@ -271,8 +285,12 @@ export default function AppShell({ children, title }: AppShellProps) {
 
   const userInitial = session?.user?.name?.charAt(0)?.toUpperCase() ?? '?';
 
+  // Results are stale while the loaded query lags the typed one (debounce + fetch).
+  const spotlightLoading = spotlightQuery.length >= 2 && spotlightActionsQuery !== spotlightQuery;
+  const visibleActions = spotlightLoading ? [] : spotlightActions;
+
   // Group actions by group label
-  const groupedActions = spotlightActions.reduce<Record<string, SpotlightAction[]>>((acc, action) => {
+  const groupedActions = visibleActions.reduce<Record<string, SpotlightAction[]>>((acc, action) => {
     if (!acc[action.group]) acc[action.group] = [];
     acc[action.group].push(action);
     return acc;
@@ -292,6 +310,9 @@ export default function AppShell({ children, title }: AppShellProps) {
           title="Search"
           description="Search customers, partners, and services"
           showCloseButton={false}
+          // Results are already filtered server-side; cmdk must not re-filter the
+          // async-loaded items client-side, or non-prefix matches get dropped (#81).
+          shouldFilter={false}
         >
           <CommandInput
             placeholder={t('nav.search')}
@@ -299,11 +320,14 @@ export default function AppShell({ children, title }: AppShellProps) {
             onValueChange={setSpotlightQuery}
           />
           <CommandList>
-            {spotlightQuery.length >= 2 && spotlightActions.length === 0 && (
-              <CommandEmpty>No results found.</CommandEmpty>
-            )}
             {spotlightQuery.length < 2 && (
               <CommandEmpty>Type at least 2 characters to search...</CommandEmpty>
+            )}
+            {spotlightQuery.length >= 2 && spotlightLoading && (
+              <CommandEmpty>Searching…</CommandEmpty>
+            )}
+            {spotlightQuery.length >= 2 && !spotlightLoading && visibleActions.length === 0 && (
+              <CommandEmpty>No results found.</CommandEmpty>
             )}
             {Object.entries(groupedActions).map(([group, actions]) => (
               <CommandGroup key={group} heading={group}>
