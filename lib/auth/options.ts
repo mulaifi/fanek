@@ -33,11 +33,14 @@ export async function getAuthOptions(): Promise<NextAuthOptions> {
         const valid = await verifyPassword(credentials.password, user.passwordHash);
         if (!valid) return null;
 
-        // Update last active
-        await prisma.user.update({
-          where: { id: user.id },
-          data: { lastActiveAt: new Date() },
-        }).catch(() => {});
+        // Update last active. Non-critical and fire-and-forget: never block or fail
+        // login on this write; just log if it errors.
+        void prisma.user
+          .update({
+            where: { id: user.id },
+            data: { lastActiveAt: new Date() },
+          })
+          .catch((err) => logger.warn({ err, userId: user.id }, 'Failed to update lastActiveAt'));
 
         // Return custom user shape; role and firstLogin are picked up by the jwt callback.
         // Cast through `unknown` then to `User` so NextAuth accepts it while preserving our fields.

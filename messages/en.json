@@ -75,7 +75,13 @@
     "oauthCancelled": "Google sign-in was cancelled or failed.",
     "error": "An error occurred during sign-in. Please try again.",
     "welcomeBack": "Welcome back",
-    "signInToAccount": "Sign in to your account"
+    "signInToAccount": "Sign in to your account",
+    "rateLimited": "Too many sign-in attempts. Please wait a few minutes and try again."
+  },
+  "errorBoundary": {
+    "title": "Something went wrong",
+    "message": "An unexpected error occurred. Please reload the page to continue.",
+    "reload": "Reload page"
   },
   "setup": {
     "title": "Setup Wizard",

@@ -53,11 +53,13 @@ export default function LoginPage() {
     (queryErrorStr
       ? queryErrorStr === 'CredentialsSignin'
         ? t('auth.invalidCredentials')
-        : queryErrorStr === 'OAuthSignin'
-          ? t('auth.oauthError')
-          : queryErrorStr === 'OAuthCallback'
-            ? t('auth.oauthCancelled')
-            : t('auth.error')
+        : queryErrorStr === 'RateLimited'
+          ? t('auth.rateLimited')
+          : queryErrorStr === 'OAuthSignin'
+            ? t('auth.oauthError')
+            : queryErrorStr === 'OAuthCallback'
+              ? t('auth.oauthCancelled')
+              : t('auth.error')
       : null);
 
   async function handleCredentialsSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -72,7 +74,7 @@ export default function LoginPage() {
     });
 
     if (result?.error) {
-      setFormError(t('auth.invalidCredentials'));
+      setFormError(result.error === 'RateLimited' ? t('auth.rateLimited') : t('auth.invalidCredentials'));
       setSubmitting(false);
     } else {
       router.replace('/dashboard');
