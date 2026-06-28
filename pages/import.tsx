@@ -5,9 +5,7 @@ import { useTranslations } from 'next-intl';
 import { getAuthOptions } from '@/lib/auth/options';
 import AppShell from '@/components/AppShell';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import ImportWizard from '@/components/import/ImportWizard';
-
-interface ServiceTypeLite { id: string; name: string; fieldSchema: never[] }
+import ImportWizard, { type ServiceTypeLite } from '@/components/import/ImportWizard';
 
 export default function ImportPage() {
   const t = useTranslations('import');
@@ -22,7 +20,6 @@ export default function ImportPage() {
 
   return (
     <AppShell title={t('title')}>
-      <h1 className="text-2xl font-semibold mb-4">{t('title')}</h1>
       <Tabs defaultValue="customers">
         <TabsList>
           <TabsTrigger value="customers">{t('tabCustomers')}</TabsTrigger>

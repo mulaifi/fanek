@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import ColumnMapper from './ColumnMapper';
 import ImportPreview from './ImportPreview';
 
-interface ServiceTypeLite { id: string; name: string; fieldSchema: { name: string; label: string; type: string; required: boolean; options?: string[] }[] }
+export interface ServiceTypeLite { id: string; name: string; fieldSchema: { name: string; label: string; type: string; required: boolean; options?: string[] }[] }
 
 interface Props {
   entity: 'customer' | 'service';
@@ -86,6 +86,7 @@ export default function ImportWizard({ entity, serviceTypes = [] }: Props) {
 
       <div>
         <input
+          key={serviceTypeId || 'default'}
           type="file"
           accept=".csv,.json"
           data-testid="import-file"
@@ -101,7 +102,7 @@ export default function ImportWizard({ entity, serviceTypes = [] }: Props) {
             headers={headers}
             targets={targets}
             mapping={mapping}
-            onChange={(col, field) => setMapping((m) => ({ ...m, [col]: field }))}
+            onChange={(col, field) => { setMapping((m) => ({ ...m, [col]: field })); setReport(null); }}
           />
           <Button onClick={() => call(true)} disabled={busy} data-testid="preview-btn">{t('preview')}</Button>
         </>
