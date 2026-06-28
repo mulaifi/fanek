@@ -6,12 +6,19 @@ const os = require('os');
 /**
  * Write a temp file and return its absolute path.
  * Uses a timestamp in the name so concurrent runs don't collide.
+ * Tracks the path so afterEach can remove it.
  */
+const tmpFiles = [];
 function writeTmp(name, content) {
   const p = path.join(os.tmpdir(), `fanek-${Date.now()}-${name}`);
   fs.writeFileSync(p, content);
+  tmpFiles.push(p);
   return p;
 }
+
+test.afterEach(() => {
+  tmpFiles.splice(0).forEach((p) => fs.rmSync(p, { force: true }));
+});
 
 test.describe('Data import', () => {
   // ---------------------------------------------------------------------------
@@ -38,9 +45,9 @@ test.describe('Data import', () => {
     const commit = page.locator('[data-testid="commit-btn"]');
     await expect(commit).toBeEnabled();
 
-    // Commit — expect Sonner toast "Imported 1 rows"
+    // Commit — expect Sonner toast "Imported 1 rows" (explicit timeout for slow CI commits)
     await commit.click();
-    await expect(page.getByText(/Imported 1 rows/i)).toBeVisible();
+    await expect(page.getByText(/Imported 1 rows/i)).toBeVisible({ timeout: 15000 });
   });
 
   // ---------------------------------------------------------------------------
@@ -71,14 +78,11 @@ test.describe('Data import', () => {
     const suffix = Date.now();
 
     // --- Prerequisites: create a service type (no required type-specific fields) ---
+    // The test owns these prerequisites, so a failed POST is a real failure — assert, don't skip.
     const stRes = await page.request.post('/api/service-types', {
       data: { name: `E2E Import ST ${suffix}`, fieldSchema: [] },
     });
-    if (!stRes.ok()) {
-      // eslint-disable-next-line playwright/no-skipped-test
-      test.skip(true, `Could not create service type for services import test (HTTP ${stRes.status()})`);
-      return;
-    }
+    expect(stRes.ok()).toBeTruthy();
     const serviceType = await stRes.json();
 
     // --- Prerequisites: create a customer whose name the CSV will reference ---
@@ -89,11 +93,7 @@ test.describe('Data import', () => {
         status: 'Active',
       },
     });
-    if (!custRes.ok()) {
-      // eslint-disable-next-line playwright/no-skipped-test
-      test.skip(true, `Could not create prerequisite customer for services import test (HTTP ${custRes.status()})`);
-      return;
-    }
+    expect(custRes.ok()).toBeTruthy();
 
     // --- CSV: only "Customer" column needed (no required type-specific fields) ---
     // The auto-mapper maps "Customer" → customerRef via the label on SERVICE_BASE_FIELDS.
