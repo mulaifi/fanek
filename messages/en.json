@@ -43,7 +43,8 @@
     "add": "Add",
     "hidePassword": "Hide password",
     "showPassword": "Show password",
-    "failedToSave": "Failed to save"
+    "failedToSave": "Failed to save",
+    "networkError": "Network error. Please check your connection and try again."
   },
   "nav": {
     "appName": "Fanek",
@@ -80,7 +81,27 @@
     "error": "An error occurred during sign-in. Please try again.",
     "welcomeBack": "Welcome back",
     "signInToAccount": "Sign in to your account",
-    "rateLimited": "Too many sign-in attempts. Please wait a few minutes and try again."
+    "rateLimited": "Too many sign-in attempts. Please wait a few minutes and try again.",
+    "forgotPassword": {
+      "link": "Forgot password?",
+      "title": "Forgot your password?",
+      "subtitle": "Enter your email and we'll send you a link to reset your password.",
+      "submit": "Send reset link",
+      "genericSuccess": "If an account with that email exists, a password reset link has been sent. Please check your inbox.",
+      "rateLimited": "Too many requests. Please wait a few minutes and try again.",
+      "backToLogin": "Back to sign in"
+    },
+    "resetPassword": {
+      "title": "Reset your password",
+      "subtitle": "Choose a new password for your account.",
+      "newPassword": "New password",
+      "confirmPassword": "Confirm new password",
+      "submit": "Reset password",
+      "success": "Your password has been reset. You can now sign in with your new password.",
+      "goToLogin": "Go to sign in",
+      "invalidToken": "This password reset link is invalid or has expired.",
+      "requestNewLink": "Request a new link"
+    }
   },
   "errorBoundary": {
     "title": "Something went wrong",
@@ -400,6 +421,22 @@
       "leaveBlankSecret": "Leave blank to keep the existing secret",
       "authSettingsSaved": "Authentication settings saved.",
       "saveAuthSettings": "Save Authentication Settings",
+      "email": "Email",
+      "emailSettings": "Email (SMTP)",
+      "emailSettingsDesc": "Configure an SMTP server to enable password reset emails. Until this is set up, the password reset flow stays hidden from users.",
+      "smtpEmail": "SMTP Email",
+      "smtpHost": "SMTP Host",
+      "smtpPort": "Port",
+      "smtpSecure": "Use TLS/SSL",
+      "smtpUser": "Username",
+      "smtpPass": "Password",
+      "smtpFrom": "From address",
+      "saveEmailSettings": "Save Email Settings",
+      "emailSettingsSaved": "Email settings saved.",
+      "sendTestEmail": "Send test email",
+      "sendingTestEmail": "Sending...",
+      "testEmailSent": "Test email sent to {email}.",
+      "testEmailFailed": "Failed to send test email. Check your SMTP settings.",
       "statusNameEmpty": "Status name cannot be empty",
       "statusAlreadyExists": "This status already exists",
       "atLeastOneStatus": "At least one status is required",

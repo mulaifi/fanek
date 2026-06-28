@@ -14,6 +14,16 @@ type AuthProvidersInput = {
   microsoft?: OAuthProviderConfig;
 };
 
+type SmtpInput = {
+  enabled?: unknown;
+  host?: unknown;
+  port?: unknown;
+  secure?: unknown;
+  user?: unknown;
+  pass?: unknown;
+  from?: unknown;
+};
+
 function redactAuthSecrets(settings: Record<string, unknown>): Record<string, unknown> {
   const result = { ...settings };
   if (settings.authProviders && typeof settings.authProviders === 'object' && !Array.isArray(settings.authProviders)) {
@@ -24,6 +34,14 @@ function redactAuthSecrets(settings: Record<string, unknown>): Record<string, un
       }
     }
     result.authProviders = providers;
+  }
+  // Never expose the encrypted SMTP password; signal whether one is set instead.
+  if (settings.smtp && typeof settings.smtp === 'object' && !Array.isArray(settings.smtp)) {
+    const smtp = { ...(settings.smtp as Record<string, unknown>) };
+    const hasPass = !!smtp.pass;
+    delete smtp.pass;
+    smtp.hasPass = hasPass;
+    result.smtp = smtp;
   }
   return result;
 }
@@ -54,6 +72,7 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse): Promise
       sessionMaxAge,
       sessionIdleTimeout,
       defaultLocale,
+      smtp,
     } = req.body as {
       orgName?: unknown;
       orgLogo?: unknown;
@@ -62,6 +81,7 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse): Promise
       sessionMaxAge?: unknown;
       sessionIdleTimeout?: unknown;
       defaultLocale?: unknown;
+      smtp?: SmtpInput;
     };
 
     const updateData: Record<string, unknown> = {};
@@ -166,6 +186,79 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse): Promise
         return;
       }
       updateData.defaultLocale = defaultLocale;
+    }
+
+    if (smtp !== undefined) {
+      if (typeof smtp !== 'object' || smtp === null || Array.isArray(smtp)) {
+        res.status(400).json({ error: 'smtp must be an object' });
+        return;
+      }
+
+      const existingSmtp =
+        existing.smtp && typeof existing.smtp === 'object' && !Array.isArray(existing.smtp)
+          ? (existing.smtp as Record<string, unknown>)
+          : {};
+      const next: Record<string, unknown> = { ...existingSmtp };
+
+      if (smtp.enabled !== undefined) {
+        if (typeof smtp.enabled !== 'boolean') {
+          res.status(400).json({ error: 'smtp.enabled must be a boolean' });
+          return;
+        }
+        next.enabled = smtp.enabled;
+      }
+      if (smtp.host !== undefined) {
+        if (typeof smtp.host !== 'string') {
+          res.status(400).json({ error: 'smtp.host must be a string' });
+          return;
+        }
+        next.host = smtp.host.trim();
+      }
+      if (smtp.port !== undefined) {
+        const port = typeof smtp.port === 'string' ? Number(smtp.port) : smtp.port;
+        if (typeof port !== 'number' || !Number.isInteger(port) || port <= 0 || port > 65535) {
+          res.status(400).json({ error: 'smtp.port must be a valid port number' });
+          return;
+        }
+        next.port = port;
+      }
+      if (smtp.secure !== undefined) {
+        if (typeof smtp.secure !== 'boolean') {
+          res.status(400).json({ error: 'smtp.secure must be a boolean' });
+          return;
+        }
+        next.secure = smtp.secure;
+      }
+      if (smtp.user !== undefined) {
+        if (typeof smtp.user !== 'string') {
+          res.status(400).json({ error: 'smtp.user must be a string' });
+          return;
+        }
+        next.user = smtp.user.trim();
+      }
+      if (smtp.from !== undefined) {
+        if (typeof smtp.from !== 'string') {
+          res.status(400).json({ error: 'smtp.from must be a string' });
+          return;
+        }
+        next.from = smtp.from.trim();
+      }
+      // Encrypt the SMTP password at rest (reuses the OAuth-secret encryption helper).
+      // A blank/undefined pass leaves the existing one untouched.
+      if (smtp.pass !== undefined && smtp.pass !== '') {
+        if (typeof smtp.pass !== 'string') {
+          res.status(400).json({ error: 'smtp.pass must be a string' });
+          return;
+        }
+        const secret = process.env.NEXTAUTH_SECRET;
+        if (!secret) {
+          res.status(500).json({ error: 'NEXTAUTH_SECRET is not configured. Cannot encrypt SMTP credentials.' });
+          return;
+        }
+        next.pass = encrypt(smtp.pass, secret);
+      }
+
+      updateData.smtp = next;
     }
 
     if (Object.keys(updateData).length === 0) {

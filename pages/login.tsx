@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { signIn, getSession } from 'next-auth/react';
 import type { GetServerSidePropsContext } from 'next';
@@ -22,6 +23,7 @@ export default function LoginPage() {
   const [orgName, setOrgName] = useState<string>('Fanek');
   const [orgLogo, setOrgLogo] = useState<string | null>(null);
   const [googleEnabled, setGoogleEnabled] = useState<boolean>(false);
+  const [passwordResetEnabled, setPasswordResetEnabled] = useState<boolean>(false);
 
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
@@ -40,6 +42,7 @@ export default function LoginPage() {
         if (data.orgName) setOrgName(data.orgName);
         if (data.orgLogo) setOrgLogo(data.orgLogo);
         setGoogleEnabled(!!data.googleOAuthEnabled);
+        setPasswordResetEnabled(!!data.passwordResetEnabled);
       } catch {
         // Continue with defaults if settings fetch fails
       }
@@ -134,6 +137,16 @@ export default function LoginPage() {
                   required
                   autoComplete="current-password"
                 />
+                {passwordResetEnabled && (
+                  <div className="-mt-1 text-end">
+                    <Link
+                      href="/forgot-password"
+                      className="text-sm text-muted-foreground hover:text-foreground underline-offset-4 hover:underline"
+                    >
+                      {t('auth.forgotPassword.link')}
+                    </Link>
+                  </div>
+                )}
                 <Button type="submit" className="w-full mt-1" size="lg" disabled={submitting}>
                   {submitting ? (
                     <>
