@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { useTheme } from 'next-themes';
 import { useSession } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
+import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { LocaleSwitcher } from '@/components/LocaleSwitcher';
 
@@ -20,6 +21,7 @@ export default function NotFoundPage() {
   const logoSrc =
     mounted && resolvedTheme === 'dark' ? '/Fanek_logo_dark.svg' : '/Fanek_logo_light.svg';
 
+  const loading = status === 'loading';
   const authenticated = status === 'authenticated';
   const backHref = authenticated ? '/dashboard' : '/login';
   const backLabel = authenticated ? t('backToDashboard') : t('backToLogin');
@@ -36,9 +38,15 @@ export default function NotFoundPage() {
           <h1 className="text-2xl font-bold">{t('title')}</h1>
           <p className="text-sm text-muted-foreground max-w-sm">{t('message')}</p>
         </div>
-        <Button asChild size="lg">
-          <Link href={backHref}>{backLabel}</Link>
-        </Button>
+        {loading ? (
+          <Button size="lg" disabled aria-busy="true">
+            <Loader2 className="h-4 w-4 animate-spin" />
+          </Button>
+        ) : (
+          <Button asChild size="lg">
+            <Link href={backHref}>{backLabel}</Link>
+          </Button>
+        )}
       </div>
     </div>
   );
