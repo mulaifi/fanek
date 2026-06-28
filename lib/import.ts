@@ -271,7 +271,7 @@ export function validateServiceRows(
     const fieldValues: Record<string, unknown> = {};
     for (const f of ctx.fieldSchema) {
       const rawVal = candidate[f.name];
-      const present = rawVal !== undefined && rawVal !== '' && !String(rawVal).startsWith('__INVALID_DATE__');
+      const present = rawVal !== undefined && rawVal !== '';
       if (!present) {
         if (f.required) errors.push(`${f.name}: required`);
         continue;
@@ -289,8 +289,16 @@ export function validateServiceRows(
     }
 
     // Optional base dates
-    const startDate = typeof candidate.startDate === 'string' ? coerceDate(candidate.startDate) : null;
-    const endDate = typeof candidate.endDate === 'string' ? coerceDate(candidate.endDate) : null;
+    let startDate: string | null = null;
+    if (typeof candidate.startDate === 'string' && candidate.startDate !== '') {
+      startDate = coerceDate(candidate.startDate);
+      if (!startDate) errors.push('startDate: invalid date');
+    }
+    let endDate: string | null = null;
+    if (typeof candidate.endDate === 'string' && candidate.endDate !== '') {
+      endDate = coerceDate(candidate.endDate);
+      if (!endDate) errors.push('endDate: invalid date');
+    }
 
     if (errors.length > 0) return { index, status: 'error', errors };
 
@@ -301,7 +309,7 @@ export function validateServiceRows(
     };
     if (startDate) data.startDate = startDate;
     if (endDate) data.endDate = endDate;
-    if (typeof candidate.notes === 'string') data.notes = candidate.notes;
+    if (candidate.notes) data.notes = candidate.notes;
 
     return { index, status: 'valid', errors: [], data };
   });

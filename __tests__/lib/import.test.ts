@@ -1,4 +1,4 @@
-import { parseRows, autoMap, CUSTOMER_FIELDS, MAX_IMPORT_ROWS, validateCustomerRows, coerceDate } from '@/lib/import';
+import { parseRows, autoMap, CUSTOMER_FIELDS, MAX_IMPORT_ROWS, validateCustomerRows, coerceDate, validateServiceRows, serviceFieldTargets } from '@/lib/import';
 
 describe('parseRows', () => {
   test('parses CSV with header row and quoted commas', () => {
@@ -111,8 +111,6 @@ describe('validateCustomerRows', () => {
   });
 });
 
-import { validateServiceRows, serviceFieldTargets } from '@/lib/import';
-
 const fieldSchema = [
   { name: 'bandwidth', label: 'Bandwidth', type: 'number', required: true },
   { name: 'tier', label: 'Tier', type: 'select', required: false, options: ['Gold', 'Silver'] },
@@ -158,5 +156,25 @@ describe('validateServiceRows', () => {
   test('errors on select value not in options', () => {
     const r = validateServiceRows([{ Customer: 'AC1', Bandwidth: '100', Tier: 'Bronze' }], svcCtx);
     expect(r.rows[0].errors.join(' ')).toMatch(/tier/i);
+  });
+
+  test('resolves customer by name (not just clientCode)', () => {
+    const r = validateServiceRows([{ Customer: 'Acme', Bandwidth: '100', Tier: 'Gold' }], svcCtx);
+    expect(r.rows[0].status).toBe('valid');
+    expect(r.rows[0].data).toMatchObject({ customerId: 'ccust0000000000000000001' });
+  });
+
+  test('errors on invalid date in a date-typed dynamic field', () => {
+    const ctx = {
+      ...svcCtx,
+      mapping: { Customer: 'customerRef', Bandwidth: 'bandwidth', Renewal: 'renewal' },
+      fieldSchema: [
+        { name: 'bandwidth', label: 'Bandwidth', type: 'number', required: true },
+        { name: 'renewal', label: 'Renewal', type: 'date', required: true },
+      ],
+    };
+    const r = validateServiceRows([{ Customer: 'AC1', Bandwidth: '100', Renewal: 'not-a-date' }], ctx);
+    expect(r.rows[0].status).toBe('error');
+    expect(r.rows[0].errors.join(' ')).toMatch(/renewal/i);
   });
 });
