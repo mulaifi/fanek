@@ -110,3 +110,53 @@ describe('validateCustomerRows', () => {
     expect(r.rows[0].status).toBe('duplicate');
   });
 });
+
+import { validateServiceRows, serviceFieldTargets } from '@/lib/import';
+
+const fieldSchema = [
+  { name: 'bandwidth', label: 'Bandwidth', type: 'number', required: true },
+  { name: 'tier', label: 'Tier', type: 'select', required: false, options: ['Gold', 'Silver'] },
+];
+
+const svcCtx = {
+  mapping: { Customer: 'customerRef', Bandwidth: 'bandwidth', Tier: 'tier', Notes: 'notes' },
+  serviceTypeId: 'ctype00000000000000000001',
+  fieldSchema,
+  customerByKey: new Map([['ac1', 'ccust0000000000000000001'], ['acme', 'ccust0000000000000000001']]),
+};
+
+describe('serviceFieldTargets', () => {
+  test('produces base fields plus one target per schema field', () => {
+    const t = serviceFieldTargets(fieldSchema).map((f) => f.field);
+    expect(t).toEqual(expect.arrayContaining(['customerRef', 'startDate', 'endDate', 'notes', 'bandwidth', 'tier']));
+  });
+});
+
+describe('validateServiceRows', () => {
+  test('resolves customer, coerces number, marks valid', () => {
+    const r = validateServiceRows([{ Customer: 'AC1', Bandwidth: '100', Tier: 'Gold', Notes: 'x' }], svcCtx);
+    expect(r.canCommit).toBe(true);
+    expect(r.rows[0].data).toMatchObject({
+      customerId: 'ccust0000000000000000001',
+      serviceTypeId: 'ctype00000000000000000001',
+      fieldValues: { bandwidth: 100, tier: 'Gold' },
+      notes: 'x',
+    });
+  });
+
+  test('errors when customer cannot be resolved', () => {
+    const r = validateServiceRows([{ Customer: 'Nope', Bandwidth: '100' }], svcCtx);
+    expect(r.rows[0].status).toBe('error');
+    expect(r.rows[0].errors.join(' ')).toMatch(/customer/i);
+  });
+
+  test('errors on missing required dynamic field', () => {
+    const r = validateServiceRows([{ Customer: 'AC1', Bandwidth: '', Tier: 'Gold' }], svcCtx);
+    expect(r.rows[0].errors.join(' ')).toMatch(/bandwidth/i);
+  });
+
+  test('errors on select value not in options', () => {
+    const r = validateServiceRows([{ Customer: 'AC1', Bandwidth: '100', Tier: 'Bronze' }], svcCtx);
+    expect(r.rows[0].errors.join(' ')).toMatch(/tier/i);
+  });
+});

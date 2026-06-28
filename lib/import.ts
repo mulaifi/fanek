@@ -1,5 +1,6 @@
 import { parse } from 'csv-parse/sync';
 import { customerSchema } from '@/lib/validation';
+import type { ServiceTypeFieldInput } from '@/lib/validation';
 
 export type ImportFormat = 'csv' | 'json';
 export type RowStatus = 'valid' | 'error' | 'duplicate';
@@ -201,6 +202,108 @@ export function validateCustomerRows(
     if (nameKey) seenNames.add(nameKey);
 
     return { index, status: 'valid', errors: [], data: data as Record<string, unknown> };
+  });
+
+  const errorCount = reports.filter((r) => r.status !== 'valid').length;
+  return {
+    totalRows: reports.length,
+    validCount: reports.length - errorCount,
+    errorCount,
+    canCommit: errorCount === 0 && reports.length > 0,
+    rows: reports,
+  };
+}
+
+export const SERVICE_BASE_FIELDS: FieldTarget[] = [
+  { field: 'customerRef', label: 'Customer', required: true },
+  { field: 'startDate', label: 'Start Date' },
+  { field: 'endDate', label: 'End Date' },
+  { field: 'notes', label: 'Notes' },
+];
+
+export function serviceFieldTargets(fieldSchema: ServiceTypeFieldInput[]): FieldTarget[] {
+  return [
+    ...SERVICE_BASE_FIELDS,
+    ...fieldSchema.map((f) => ({ field: f.name, label: f.label, required: f.required })),
+  ];
+}
+
+export interface ServiceValidationContext {
+  mapping: Record<string, string | null>;
+  serviceTypeId: string;
+  fieldSchema: ServiceTypeFieldInput[];
+  /** key = clientCode.toLowerCase() AND name.toLowerCase() → customerId */
+  customerByKey: Map<string, string>;
+}
+
+function coerceFieldValue(raw: string, type: string): { value: unknown } | { error: string } {
+  if (type === 'number' || type === 'currency') {
+    const n = Number(raw);
+    return Number.isNaN(n) ? { error: 'not a number' } : { value: n };
+  }
+  if (type === 'boolean') {
+    const low = raw.toLowerCase();
+    if (['true', 'yes', '1'].includes(low)) return { value: true };
+    if (['false', 'no', '0'].includes(low)) return { value: false };
+    return { error: 'not a boolean' };
+  }
+  if (type === 'date') {
+    const iso = coerceDate(raw);
+    return iso ? { value: iso } : { error: 'invalid date' };
+  }
+  return { value: raw };
+}
+
+export function validateServiceRows(
+  rows: Record<string, string>[],
+  ctx: ServiceValidationContext
+): ImportReport {
+  const reports: RowReport[] = rows.map((row, index) => {
+    const candidate = buildCandidate(row, ctx.mapping);
+    const errors: string[] = [];
+
+    // Resolve customer
+    const ref = typeof candidate.customerRef === 'string' ? candidate.customerRef.toLowerCase() : '';
+    const customerId = ref ? ctx.customerByKey.get(ref) : undefined;
+    if (!customerId) errors.push(`customer: "${candidate.customerRef ?? ''}" not found`);
+
+    // Dynamic fields
+    const fieldValues: Record<string, unknown> = {};
+    for (const f of ctx.fieldSchema) {
+      const rawVal = candidate[f.name];
+      const present = rawVal !== undefined && rawVal !== '' && !String(rawVal).startsWith('__INVALID_DATE__');
+      if (!present) {
+        if (f.required) errors.push(`${f.name}: required`);
+        continue;
+      }
+      const coerced = coerceFieldValue(String(rawVal), f.type);
+      if ('error' in coerced) {
+        errors.push(`${f.name}: ${coerced.error}`);
+        continue;
+      }
+      if (f.type === 'select' && f.options && !f.options.includes(String(coerced.value))) {
+        errors.push(`${f.name}: must be one of ${f.options.join(', ')}`);
+        continue;
+      }
+      fieldValues[f.name] = coerced.value;
+    }
+
+    // Optional base dates
+    const startDate = typeof candidate.startDate === 'string' ? coerceDate(candidate.startDate) : null;
+    const endDate = typeof candidate.endDate === 'string' ? coerceDate(candidate.endDate) : null;
+
+    if (errors.length > 0) return { index, status: 'error', errors };
+
+    const data: Record<string, unknown> = {
+      customerId,
+      serviceTypeId: ctx.serviceTypeId,
+      fieldValues,
+    };
+    if (startDate) data.startDate = startDate;
+    if (endDate) data.endDate = endDate;
+    if (typeof candidate.notes === 'string') data.notes = candidate.notes;
+
+    return { index, status: 'valid', errors: [], data };
   });
 
   const errorCount = reports.filter((r) => r.status !== 'valid').length;
