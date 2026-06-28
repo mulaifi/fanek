@@ -18,6 +18,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   HelpCircle,
+  Upload,
   type LucideIcon,
 } from 'lucide-react';
 import {
@@ -170,6 +171,7 @@ export default function AppShell({ children, title }: AppShellProps) {
     { href: '/dashboard', label: t('nav.dashboard'), icon: LayoutDashboard },
     { href: '/customers', label: t('nav.customers'), icon: Users },
     { href: '/partners', label: t('nav.partners'), icon: Handshake },
+    { href: '/import', label: t('nav.import'), icon: Upload },
   ];
 
   const adminNavItems: NavItemDef[] = [

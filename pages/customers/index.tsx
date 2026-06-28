@@ -6,7 +6,7 @@ import { useSession } from 'next-auth/react';
 import type { GetServerSidePropsContext } from 'next';
 import type { ColumnDef, SortingState } from '@tanstack/react-table';
 import { getAuthOptions } from '@/lib/auth/options';
-import { Search, Plus, Download } from 'lucide-react';
+import { Search, Plus, Download, Upload } from 'lucide-react';
 import { useTranslations, useFormatter } from 'next-intl';
 import AppShell from '@/components/AppShell';
 import { DataTable } from '@/components/ui/data-table';
@@ -199,10 +199,16 @@ export default function CustomersIndexPage() {
           </div>
           <div className="flex items-center gap-2">
             {canCreate && (
-              <Button onClick={() => router.push('/customers/new')}>
-                <Plus className="h-4 w-4 me-1" />
-                {t('customers.newCustomer')}
-              </Button>
+              <>
+                <Button onClick={() => router.push('/customers/new')}>
+                  <Plus className="h-4 w-4 me-1" />
+                  {t('customers.newCustomer')}
+                </Button>
+                <Button variant="outline" onClick={() => router.push('/import')} data-testid="import-link">
+                  <Upload className="mr-2 h-4 w-4" />
+                  {t('import.title')}
+                </Button>
+              </>
             )}
             {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
             <a

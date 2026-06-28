@@ -64,7 +64,8 @@
     "profile": "Profile",
     "collapseSidebar": "Collapse sidebar",
     "expandSidebar": "Expand sidebar",
-    "help": "Help"
+    "help": "Help",
+    "import": "Import"
   },
   "auth": {
     "signIn": "Sign in",
@@ -479,6 +480,33 @@
     "passwordWeak": "Password is too weak",
     "emailTaken": "This email is already in use",
     "genericError": "Something went wrong. Please try again."
+  },
+  "import": {
+    "title": "Import data",
+    "tabCustomers": "Customers",
+    "tabServices": "Services",
+    "selectServiceType": "Service type",
+    "selectServiceTypePlaceholder": "Choose a service type to import",
+    "uploadPrompt": "Upload a CSV or JSON file",
+    "downloadTemplate": "Download template",
+    "csvContactsNote": "Contacts can only be imported via JSON.",
+    "mapColumns": "Map columns",
+    "column": "File column",
+    "mapsTo": "Maps to",
+    "ignore": "Ignore",
+    "preview": "Preview",
+    "rowsTotal": "{count} rows",
+    "rowsValid": "{count} valid",
+    "rowsError": "{count} with errors",
+    "rowNumber": "Row",
+    "status": "Status",
+    "errors": "Errors",
+    "commit": "Import {count} rows",
+    "commitDisabled": "Fix all errors before importing",
+    "successTitle": "Imported {count} rows",
+    "backToList": "Back to list",
+    "genericError": "Import failed. Please try again.",
+    "tooManyRows": "File has too many rows (max 2000)."
   },
   "format": {
     "justNow": "Just now",

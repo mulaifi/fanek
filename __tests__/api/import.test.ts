@@ -1,5 +1,6 @@
 import customersHandler from '../../pages/api/import/customers';
 import servicesHandler from '../../pages/api/import/services';
+import * as auditLib from '@/lib/audit';
 
 const mockState = {
   role: 'EDITOR' as string,
@@ -50,7 +51,7 @@ beforeEach(() => {
   mockState.serviceType = { id: 'ctype00000000000000000001', fieldSchema: [{ name: 'bandwidth', label: 'Bandwidth', type: 'number', required: true }] } as any;
   mockState.svcCreateMany = jest.fn().mockResolvedValue({ count: 1 });
   mockState.customers = [{ id: 'ccust0000000000000000001', clientCode: 'AC1', name: 'Acme' }];
-  (require('@/lib/audit').logAudit as jest.Mock).mockClear();
+  (auditLib.logAudit as jest.Mock).mockClear();
 });
 
 describe('/api/import/customers', () => {
@@ -123,7 +124,7 @@ describe('/api/import/services', () => {
   });
 
   test('commit writes services and audits', async () => {
-    const logAudit = require('@/lib/audit').logAudit as jest.Mock;
+    const logAudit = auditLib.logAudit as jest.Mock;
     mockState.svcCreateMany = jest.fn().mockResolvedValue({ count: 1 });
     const { req, res } = mockReqRes({ format: 'csv', data: csv, mapping, serviceTypeId, dryRun: false });
     await (servicesHandler as any)(req, res);
