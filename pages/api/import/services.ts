@@ -5,13 +5,17 @@ import prisma from '@/lib/prisma';
 import { logAudit } from '@/lib/audit';
 import logger from '@/lib/logger';
 import { isValidCuid, type ServiceTypeFieldInput } from '@/lib/validation';
-import { parseRows, validateServiceRows, type ImportFormat } from '@/lib/import';
+import { parseRows, validateServiceRows, duplicateMappingTargets, type ImportFormat } from '@/lib/import';
 import type { Prisma } from '@prisma/client';
 
 export const config = { api: { bodyParser: { sizeLimit: '4mb' } } };
 
 async function handler(req: AuthenticatedRequest, res: NextApiResponse): Promise<void> {
   if (req.method !== 'POST') return methodNotAllowed(res, ['POST']);
+
+  if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) {
+    return void res.status(400).json({ error: 'Invalid request body' });
+  }
 
   const { format, data, mapping, serviceTypeId, dryRun } = req.body as {
     format: ImportFormat;
@@ -27,6 +31,9 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse): Promise
     typeof dryRun !== 'boolean'
   ) {
     return void res.status(400).json({ error: 'Invalid request body' });
+  }
+  if (duplicateMappingTargets(mapping).length > 0) {
+    return void res.status(400).json({ error: 'Each field can only be mapped once' });
   }
   if (!isValidCuid(serviceTypeId)) {
     return void res.status(400).json({ error: 'A valid serviceTypeId is required' });
@@ -53,10 +60,14 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse): Promise
     [...nameCounts.entries()].filter(([, count]) => count > 1).map(([name]) => name)
   );
   const customerByKey = new Map<string, string>();
+  // First pass: clientCode keys take highest priority and must never be overwritten by a name
   for (const c of customers) {
     if (c.clientCode) customerByKey.set(c.clientCode.toLowerCase(), c.id);
+  }
+  // Second pass: name keys only if the key isn't already claimed by a clientCode (and name is unambiguous)
+  for (const c of customers) {
     const nameKey = c.name.toLowerCase();
-    if (!duplicateNames.has(nameKey)) {
+    if (!duplicateNames.has(nameKey) && !customerByKey.has(nameKey)) {
       customerByKey.set(nameKey, c.id);
     }
   }

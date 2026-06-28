@@ -205,7 +205,7 @@ export default function CustomersIndexPage() {
                   {t('customers.newCustomer')}
                 </Button>
                 <Button variant="outline" onClick={() => router.push('/import')} data-testid="import-link">
-                  <Upload className="mr-2 h-4 w-4" />
+                  <Upload className="me-2 h-4 w-4" />
                   {t('import.title')}
                 </Button>
               </>

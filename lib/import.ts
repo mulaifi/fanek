@@ -123,9 +123,26 @@ const DATE_FIELDS = new Set(['contractStart', 'contractEnd']);
 export function coerceDate(value: string): string | null {
   const v = value?.trim();
   if (!v) return null;
-  const iso = /^\d{4}-\d{2}-\d{2}$/.test(v) ? `${v}T00:00:00.000Z` : v;
-  const d = new Date(iso);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(v)) {
+    const [year, month, day] = v.split('-').map(Number);
+    const d = new Date(`${v}T00:00:00.000Z`);
+    if (Number.isNaN(d.getTime())) return null;
+    // Reject calendar-impossible dates (e.g. 2024-02-31 rolls forward to Mar 2)
+    if (d.getUTCFullYear() !== year || d.getUTCMonth() + 1 !== month || d.getUTCDate() !== day) return null;
+    return d.toISOString();
+  }
+  const d = new Date(v);
   return Number.isNaN(d.getTime()) ? null : d.toISOString();
+}
+
+/** Returns target fields that are mapped by more than one source column (ignoring null/ignore values). */
+export function duplicateMappingTargets(mapping: Record<string, string | null>): string[] {
+  const counts = new Map<string, number>();
+  for (const target of Object.values(mapping)) {
+    if (!target) continue;
+    counts.set(target, (counts.get(target) ?? 0) + 1);
+  }
+  return [...counts.entries()].filter(([, count]) => count > 1).map(([field]) => field);
 }
 
 export function buildCandidate(

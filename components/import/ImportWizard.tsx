@@ -5,11 +5,12 @@ import {
   parseRows, autoMap, CUSTOMER_FIELDS, serviceFieldTargets,
   type FieldTarget, type ImportFormat, type ImportReport,
 } from '@/lib/import';
+import type { ServiceTypeFieldInput } from '@/lib/validation';
 import { Button } from '@/components/ui/button';
 import ColumnMapper from './ColumnMapper';
 import ImportPreview from './ImportPreview';
 
-export interface ServiceTypeLite { id: string; name: string; fieldSchema: { name: string; label: string; type: string; required: boolean; options?: string[] }[] }
+export interface ServiceTypeLite { id: string; name: string; fieldSchema: ServiceTypeFieldInput[] }
 
 interface Props {
   entity: 'customer' | 'service';
@@ -29,7 +30,7 @@ export default function ImportWizard({ entity, serviceTypes = [] }: Props) {
   const targets: FieldTarget[] = useMemo(() => {
     if (entity === 'customer') return CUSTOMER_FIELDS;
     const st = serviceTypes.find((s) => s.id === serviceTypeId);
-    return st ? serviceFieldTargets(st.fieldSchema as never) : [];
+    return st ? serviceFieldTargets(st.fieldSchema) : [];
   }, [entity, serviceTypeId, serviceTypes]);
 
   const onFile = useCallback(async (file: File) => {

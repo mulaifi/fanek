@@ -109,6 +109,21 @@ describe('/api/import/customers', () => {
     await (customersHandler as any)(req, res);
     expect(res.status).toHaveBeenCalledWith(405);
   });
+
+  test('null body returns 400 without writing', async () => {
+    const { req, res } = mockReqRes(null);
+    await (customersHandler as any)(req, res);
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(mockState.createMany).not.toHaveBeenCalled();
+  });
+
+  test('duplicate mapping targets return 400 without writing', async () => {
+    const dupMapping = { Name: 'name', AltName: 'name', Status: 'status' };
+    const { req, res } = mockReqRes({ format: 'csv', data: csv, mapping: dupMapping, dryRun: true });
+    await (customersHandler as any)(req, res);
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(mockState.createMany).not.toHaveBeenCalled();
+  });
 });
 
 describe('/api/import/services', () => {
@@ -170,6 +185,36 @@ describe('/api/import/services', () => {
     const { req, res } = mockReqRes({}, 'GET');
     await (servicesHandler as any)(req, res);
     expect(res.status).toHaveBeenCalledWith(405);
+  });
+
+  test('null body returns 400 without writing', async () => {
+    const { req, res } = mockReqRes(null);
+    await (servicesHandler as any)(req, res);
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(mockState.svcCreateMany).not.toHaveBeenCalled();
+  });
+
+  test('duplicate mapping targets return 400 without writing', async () => {
+    const dupMapping = { Customer: 'customerRef', AltCustomer: 'customerRef', Bandwidth: 'bandwidth' };
+    const { req, res } = mockReqRes({ format: 'csv', data: csv, mapping: dupMapping, serviceTypeId, dryRun: true });
+    await (servicesHandler as any)(req, res);
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(mockState.svcCreateMany).not.toHaveBeenCalled();
+  });
+
+  test('clientCode takes priority over customer name when they collide', async () => {
+    // Customer A has clientCode 'x1'; Customer B has name 'X1' (different code)
+    mockState.customers = [
+      { id: 'ccust0000000000000000001', clientCode: 'x1', name: 'Customer A' },
+      { id: 'ccust0000000000000000002', clientCode: 'x2', name: 'X1' },
+    ];
+    const refCsv = 'Customer,Bandwidth\nx1,100\n';
+    const { req, res } = mockReqRes({ format: 'csv', data: refCsv, mapping, serviceTypeId, dryRun: true });
+    await (servicesHandler as any)(req, res);
+    expect(res.status).toHaveBeenCalledWith(200);
+    const body = res.json.mock.calls[0][0];
+    expect(body.canCommit).toBe(true);
+    expect(body.rows[0].data).toMatchObject({ customerId: 'ccust0000000000000000001' });
   });
 
   test('ambiguous customer name resolves as error (not silently picking the wrong customer)', async () => {

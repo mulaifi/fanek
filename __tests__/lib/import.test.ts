@@ -1,4 +1,4 @@
-import { parseRows, autoMap, CUSTOMER_FIELDS, MAX_IMPORT_ROWS, validateCustomerRows, coerceDate, validateServiceRows, serviceFieldTargets } from '@/lib/import';
+import { parseRows, autoMap, CUSTOMER_FIELDS, MAX_IMPORT_ROWS, validateCustomerRows, coerceDate, validateServiceRows, serviceFieldTargets, duplicateMappingTargets } from '@/lib/import';
 
 describe('parseRows', () => {
   test('parses CSV with header row and quoted commas', () => {
@@ -61,6 +61,26 @@ describe('coerceDate', () => {
   test('returns null for empty or garbage', () => {
     expect(coerceDate('')).toBeNull();
     expect(coerceDate('not-a-date')).toBeNull();
+  });
+  test('rejects impossible date that rolls forward (2024-02-31)', () => {
+    expect(coerceDate('2024-02-31')).toBeNull();
+  });
+  test('rejects impossible date in non-leap year (2023-02-29)', () => {
+    expect(coerceDate('2023-02-29')).toBeNull();
+  });
+  test('accepts valid leap-year date (2024-02-29)', () => {
+    expect(coerceDate('2024-02-29')).toBe('2024-02-29T00:00:00.000Z');
+  });
+});
+
+describe('duplicateMappingTargets', () => {
+  test('returns fields that are mapped more than once', () => {
+    const mapping = { ColA: 'name', ColB: 'name', ColC: 'status' };
+    expect(duplicateMappingTargets(mapping)).toEqual(['name']);
+  });
+  test('returns empty array when no duplicates exist', () => {
+    const mapping: Record<string, string | null> = { ColA: 'name', ColB: 'clientCode', ColC: null };
+    expect(duplicateMappingTargets(mapping)).toEqual([]);
   });
 });
 

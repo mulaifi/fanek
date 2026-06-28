@@ -5,13 +5,17 @@ import prisma from '@/lib/prisma';
 import { getSettings } from '@/lib/settings';
 import { logAudit } from '@/lib/audit';
 import logger from '@/lib/logger';
-import { parseRows, validateCustomerRows, type ImportFormat } from '@/lib/import';
+import { parseRows, validateCustomerRows, duplicateMappingTargets, type ImportFormat } from '@/lib/import';
 import type { Prisma } from '@prisma/client';
 
 export const config = { api: { bodyParser: { sizeLimit: '4mb' } } };
 
 async function handler(req: AuthenticatedRequest, res: NextApiResponse): Promise<void> {
   if (req.method !== 'POST') return methodNotAllowed(res, ['POST']);
+
+  if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) {
+    return void res.status(400).json({ error: 'Invalid request body' });
+  }
 
   const { format, data, mapping, dryRun } = req.body as {
     format: ImportFormat;
@@ -26,6 +30,10 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse): Promise
     typeof dryRun !== 'boolean'
   ) {
     return void res.status(400).json({ error: 'Invalid request body' });
+  }
+
+  if (duplicateMappingTargets(mapping).length > 0) {
+    return void res.status(400).json({ error: 'Each field can only be mapped once' });
   }
 
   let parsed;
