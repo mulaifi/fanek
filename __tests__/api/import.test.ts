@@ -75,6 +75,20 @@ describe('/api/import/customers', () => {
     expect(res.status).toHaveBeenCalledWith(409);
   });
 
+  test('invalid body (bad format) returns 400 without writing', async () => {
+    const { req, res } = mockReqRes({ format: 'xml', data: 'x', mapping: {}, dryRun: true });
+    await (customersHandler as any)(req, res);
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(mockState.createMany).not.toHaveBeenCalled();
+  });
+
+  test('missing dryRun returns 400 without writing', async () => {
+    const { req, res } = mockReqRes({ format: 'csv', data: csv, mapping });
+    await (customersHandler as any)(req, res);
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(mockState.createMany).not.toHaveBeenCalled();
+  });
+
   test('non-POST returns 405', async () => {
     const { req, res } = mockReqRes({}, 'GET');
     await (customersHandler as any)(req, res);

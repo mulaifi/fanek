@@ -19,7 +19,12 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse): Promise
     mapping: Record<string, string | null>;
     dryRun: boolean;
   };
-  if ((format !== 'csv' && format !== 'json') || typeof data !== 'string' || typeof mapping !== 'object' || !mapping) {
+  if (
+    (format !== 'csv' && format !== 'json') ||
+    typeof data !== 'string' ||
+    typeof mapping !== 'object' || !mapping ||
+    typeof dryRun !== 'boolean'
+  ) {
     return void res.status(400).json({ error: 'Invalid request body' });
   }
 
@@ -44,6 +49,8 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse): Promise
     return void res.status(400).json({ error: 'Cannot commit: file has errors', ...report });
   }
 
+  // Only canCommit rows reach here; each row's `data` is customerSchema's output
+  // (Zod strips unknown keys), so no extra fields leak into createMany.
   const payload = report.rows.map((r) => r.data as Prisma.CustomerCreateManyInput);
   try {
     const result = await prisma.$transaction(async (tx) => tx.customer.createMany({ data: payload }));
