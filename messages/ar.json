@@ -64,7 +64,8 @@
     "profile": "الملف الشخصي",
     "collapseSidebar": "طي الشريط الجانبي",
     "expandSidebar": "توسيع الشريط الجانبي",
-    "help": "مساعدة"
+    "help": "مساعدة",
+    "import": "استيراد"
   },
   "auth": {
     "signIn": "تسجيل الدخول",
@@ -479,6 +480,33 @@
     "passwordWeak": "كلمة المرور ضعيفة جداً",
     "emailTaken": "هذا البريد الإلكتروني مستخدم بالفعل",
     "genericError": "حدث خطأ ما. يرجى المحاولة مرة أخرى."
+  },
+  "import": {
+    "title": "استيراد البيانات",
+    "tabCustomers": "العملاء",
+    "tabServices": "الخدمات",
+    "selectServiceType": "نوع الخدمة",
+    "selectServiceTypePlaceholder": "اختر نوع خدمة للاستيراد",
+    "uploadPrompt": "رفع ملف CSV أو JSON",
+    "downloadTemplate": "تنزيل القالب",
+    "csvContactsNote": "تفاصيل جهات الاتصال لا يتم استيرادها - أضفها لكل سجل بعد الاستيراد.",
+    "mapColumns": "ربط الأعمدة",
+    "column": "عمود الملف",
+    "mapsTo": "يُربط بـ",
+    "ignore": "تجاهل",
+    "preview": "معاينة",
+    "rowsTotal": "{count} صف",
+    "rowsValid": "{count} صحيح",
+    "rowsError": "{count} بها أخطاء",
+    "rowNumber": "الصف",
+    "status": "الحالة",
+    "errors": "الأخطاء",
+    "commit": "استيراد {count} صف",
+    "commitDisabled": "يرجى إصلاح جميع الأخطاء قبل الاستيراد",
+    "successTitle": "تم استيراد {count} صف",
+    "backToList": "العودة إلى القائمة",
+    "genericError": "فشل الاستيراد. يرجى المحاولة مرة أخرى.",
+    "tooManyRows": "يحتوي الملف على عدد كبير جداً من الصفوف (الحد الأقصى 2000)."
   },
   "format": {
     "justNow": "الآن",
