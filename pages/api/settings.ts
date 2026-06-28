@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getSettings } from '@/lib/settings';
 import { methodNotAllowed } from '@/lib/auth/guard';
+import { isPasswordResetEnabled } from '@/lib/email';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse): Promise<void> {
   if (req.method !== 'GET') {
@@ -23,5 +24,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     customerStatuses: settings.customerStatuses,
     googleOAuthEnabled: !!authProviders?.google?.enabled,
     defaultLocale: settings.defaultLocale ?? 'en',
+    // Whether the email-based password reset flow is available (drives the
+    // "Forgot password?" link). Requires SMTP configured AND NEXTAUTH_URL set, so
+    // the link matches the API's actual readiness. Exposes only a boolean.
+    passwordResetEnabled: isPasswordResetEnabled(settings),
   });
 }

@@ -16,6 +16,7 @@ model Settings {
   sessionMaxAge    Int      @default(2592000)
   sessionIdleTimeout Int    @default(86400)
   defaultLocale    String   @default("en")
+  smtp             Json     @default("{}")
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 }
@@ -35,6 +36,24 @@ model User {
   auditLogs     AuditLog[]
   accounts      Account[]
   sessions      Session[]
+  passwordResetTokens PasswordResetToken[]
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  // NOTE: a partial UNIQUE index enforcing "at most one active (usedAt IS NULL)
+  // token per user" is defined directly in the SQL migration
+  // (PasswordResetToken_one_active_per_user_key). Prisma's schema language cannot
+  // express a partial filter (WHERE usedAt IS NULL), so it is DB-enforced only.
 }
 
 enum Role {

@@ -195,6 +195,77 @@ describe('PUT /api/admin/settings - authProviders', () => {
   });
 });
 
+describe('PUT /api/admin/settings - smtp', () => {
+  const originalSecret = process.env.NEXTAUTH_SECRET;
+  beforeAll(() => { process.env.NEXTAUTH_SECRET = 'test-secret-for-encryption'; });
+  afterAll(() => { process.env.NEXTAUTH_SECRET = originalSecret; });
+
+  test('encrypts smtp.pass before storing', async () => {
+    prisma.settings.update.mockResolvedValue({ ...mockSettings });
+    const { req, res } = mockReqRes({
+      method: 'PUT',
+      body: { smtp: { enabled: true, host: 'smtp.example.com', port: 587, from: 'a@b.c', pass: 'smtp-secret' } },
+    });
+    await settingsHandler(req, res);
+    const callArgs = prisma.settings.update.mock.calls[0][0];
+    expect(callArgs.data.smtp.pass).toBe('encrypted:smtp-secret');
+    expect(callArgs.data.smtp.host).toBe('smtp.example.com');
+  });
+
+  test('GET redacts smtp.pass to a hasPass boolean', async () => {
+    settingsLib.getSettings.mockResolvedValue({
+      ...mockSettings,
+      smtp: { enabled: true, host: 'h', port: 587, from: 'a@b.c', pass: 'encrypted:xyz' },
+    });
+    const { req, res } = mockReqRes({ method: 'GET' });
+    await settingsHandler(req, res);
+    const body = res.json.mock.calls[0][0];
+    expect(body.smtp.pass).toBeUndefined();
+    expect(body.smtp.hasPass).toBe(true);
+  });
+});
+
+describe('PUT /api/admin/settings - audit redaction (#11, #91)', () => {
+  const originalSecret = process.env.NEXTAUTH_SECRET;
+  beforeAll(() => { process.env.NEXTAUTH_SECRET = 'test-secret-for-encryption'; });
+  afterAll(() => { process.env.NEXTAUTH_SECRET = originalSecret; });
+
+  test('strips OAuth clientSecret and smtp.pass from the audit before/after', async () => {
+    // Existing settings already hold encrypted secrets (the "before").
+    settingsLib.getSettings.mockResolvedValue({
+      ...mockSettings,
+      authProviders: { google: { enabled: true, clientId: 'gid', clientSecret: 'encrypted:old' } },
+      smtp: { enabled: true, host: 'h', port: 587, from: 'a@b.c', pass: 'encrypted:oldpass' },
+    });
+    // The "after" returned by the update also contains encrypted secrets.
+    prisma.settings.update.mockResolvedValue({
+      ...mockSettings,
+      authProviders: { google: { enabled: true, clientId: 'gid', clientSecret: 'encrypted:secret123' } },
+      smtp: { enabled: true, host: 'h', port: 587, from: 'a@b.c', pass: 'encrypted:smtp-secret' },
+    });
+
+    const { req, res } = mockReqRes({
+      method: 'PUT',
+      body: { smtp: { pass: 'smtp-secret' } },
+    });
+    await settingsHandler(req, res);
+
+    expect(logAudit).toHaveBeenCalledTimes(1);
+    const auditArg = logAudit.mock.calls[0][0];
+    const serialized = JSON.stringify(auditArg.details);
+    // No raw OR encrypted secret material leaks into the audit trail.
+    expect(serialized).not.toContain('encrypted:secret123');
+    expect(serialized).not.toContain('encrypted:smtp-secret');
+    expect(serialized).not.toContain('encrypted:old');
+    expect(serialized).not.toContain('encrypted:oldpass');
+    // Masking applied
+    expect(auditArg.details.after.authProviders.google.clientSecret).toBe('••••••••');
+    expect(auditArg.details.after.smtp.pass).toBeUndefined();
+    expect(auditArg.details.after.smtp.hasPass).toBe(true);
+    expect(auditArg.details.before.smtp.pass).toBeUndefined();
+  });
+});
+
 describe('PUT /api/admin/settings - session settings', () => {
   test('updates sessionMaxAge', async () => {
     const updated = { ...mockSettings, sessionMaxAge: 86400 };

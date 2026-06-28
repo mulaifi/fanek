@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { Download, Loader2 } from 'lucide-react';
 import AppShell from '@/components/AppShell';
 import AuthProviderConfig, { type AuthSettingsInput } from '@/components/admin/AuthProviderConfig';
+import SmtpConfig, { type SmtpSettingsInput } from '@/components/admin/SmtpConfig';
 import StatusManager from '@/components/admin/StatusManager';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -149,6 +150,7 @@ export default function AdminSettingsPage() {
         <TabsList className="mb-6">
           <TabsTrigger value="organization">{t('admin.settings.general')}</TabsTrigger>
           <TabsTrigger value="authentication">{t('admin.settings.authentication')}</TabsTrigger>
+          <TabsTrigger value="email">{t('admin.settings.email')}</TabsTrigger>
           <TabsTrigger value="statuses">{t('admin.settings.statuses')}</TabsTrigger>
           <TabsTrigger value="data">{t('admin.settings.data')}</TabsTrigger>
         </TabsList>
@@ -251,6 +253,19 @@ export default function AdminSettingsPage() {
             <h2 className="text-base font-semibold">{t('admin.settings.authProviders')}</h2>
             <AuthProviderConfig
               settings={settings as AuthSettingsInput}
+              onSave={(updated) =>
+                setSettings((prev) => ({ ...prev, ...(updated as SettingsShape) }))
+              }
+            />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="email">
+          <div className="flex flex-col gap-4 max-w-lg">
+            <h2 className="text-base font-semibold">{t('admin.settings.emailSettings')}</h2>
+            <p className="text-sm text-muted-foreground">{t('admin.settings.emailSettingsDesc')}</p>
+            <SmtpConfig
+              settings={settings as SmtpSettingsInput}
               onSave={(updated) =>
                 setSettings((prev) => ({ ...prev, ...(updated as SettingsShape) }))
               }

@@ -34,6 +34,7 @@ CI fails if the suite fails, so coverage only protects us if it tracks the app.
 | `csp.spec.js` | No Content-Security-Policy violations across all pages |
 | `api.spec.js` | `/api/health`, auth-endpoint rate limiting (429) |
 | `import.spec.js` | CSV import: customers happy path (upload/map/preview/commit), error row blocks commit, services tab (type select + customer resolution) |
+| `forgot-password.spec.js` | Email reset flow: request form generic success, reset form with invalid/missing token, login-page link hidden when SMTP unconfigured |
 | `mobile.spec.js` | Mobile viewport: bottom tabs, sidebar hidden |
 
 ## Project flow
