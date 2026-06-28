@@ -33,6 +33,7 @@ CI fails if the suite fails, so coverage only protects us if it tracks the app.
 | `theme-i18n.spec.js` | Light/dark toggle, Arabic RTL ↔ English LTR |
 | `csp.spec.js` | No Content-Security-Policy violations across all pages |
 | `api.spec.js` | `/api/health`, auth-endpoint rate limiting (429) |
+| `import.spec.js` | CSV import: customers happy path (upload/map/preview/commit), error row blocks commit, services tab (type select + customer resolution) |
 | `mobile.spec.js` | Mobile viewport: bottom tabs, sidebar hidden |
 
 ## Project flow
