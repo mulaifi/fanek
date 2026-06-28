@@ -1,4 +1,5 @@
 import { parse } from 'csv-parse/sync';
+import { customerSchema } from '@/lib/validation';
 
 export type ImportFormat = 'csv' | 'json';
 export type RowStatus = 'valid' | 'error' | 'duplicate';
@@ -114,4 +115,100 @@ export function autoMap(headers: string[], targets: FieldTarget[]): Record<strin
     mapping[h] = byNorm.get(n) ?? FIELD_ALIASES[n] ?? null;
   }
   return mapping;
+}
+
+const DATE_FIELDS = new Set(['contractStart', 'contractEnd']);
+
+export function coerceDate(value: string): string | null {
+  const v = value?.trim();
+  if (!v) return null;
+  const iso = /^\d{4}-\d{2}-\d{2}$/.test(v) ? `${v}T00:00:00.000Z` : v;
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? null : d.toISOString();
+}
+
+export function buildCandidate(
+  row: Record<string, string>,
+  mapping: Record<string, string | null>
+): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [col, field] of Object.entries(mapping)) {
+    if (!field) continue;
+    const raw = (row[col] ?? '').trim();
+    if (DATE_FIELDS.has(field)) {
+      out[field] = raw === '' ? undefined : (coerceDate(raw) ?? `__INVALID_DATE__:${raw}`);
+    } else {
+      out[field] = raw === '' ? undefined : raw;
+    }
+  }
+  return out;
+}
+
+export interface CustomerValidationContext {
+  mapping: Record<string, string | null>;
+  allowedStatuses: string[];
+  existingClientCodes: Set<string>;
+  existingNames: Set<string>;
+}
+
+export function validateCustomerRows(
+  rows: Record<string, string>[],
+  ctx: CustomerValidationContext
+): ImportReport {
+  const seenCodes = new Set<string>();
+  const seenNames = new Set<string>();
+  const reports: RowReport[] = rows.map((row, index) => {
+    const candidate = buildCandidate(row, ctx.mapping);
+    const errors: string[] = [];
+
+    // Invalid-date sentinel surfaced from buildCandidate
+    for (const [field, val] of Object.entries(candidate)) {
+      if (typeof val === 'string' && val.startsWith('__INVALID_DATE__:')) {
+        errors.push(`${field}: invalid date "${val.split(':').slice(1).join(':')}"`);
+        delete candidate[field];
+      }
+    }
+
+    const parsed = customerSchema.safeParse(candidate);
+    if (!parsed.success) {
+      const fieldErrors = parsed.error.flatten().fieldErrors;
+      for (const [field, msgs] of Object.entries(fieldErrors)) {
+        if (msgs && msgs.length) errors.push(`${field}: ${msgs[0]}`);
+      }
+    }
+
+    const data = parsed.success ? parsed.data : candidate;
+    const status = typeof data.status === 'string' ? data.status : undefined;
+    if (status && !ctx.allowedStatuses.includes(status)) {
+      errors.push(`status: must be one of ${ctx.allowedStatuses.join(', ')}`);
+    }
+
+    if (errors.length > 0) {
+      return { index, status: 'error', errors, data: data as Record<string, unknown> };
+    }
+
+    // Duplicate detection (only once the row is otherwise valid)
+    const code = typeof data.clientCode === 'string' ? data.clientCode : '';
+    const nameKey = typeof data.name === 'string' ? data.name.toLowerCase() : '';
+    if (code) {
+      if (ctx.existingClientCodes.has(code) || seenCodes.has(code)) {
+        return { index, status: 'duplicate', errors: [`clientCode "${code}" already exists`], data: data as Record<string, unknown> };
+      }
+      seenCodes.add(code);
+    } else if (nameKey && (ctx.existingNames.has(nameKey) || seenNames.has(nameKey))) {
+      return { index, status: 'duplicate', errors: [`name "${data.name}" already exists`], data: data as Record<string, unknown> };
+    }
+    if (nameKey) seenNames.add(nameKey);
+
+    return { index, status: 'valid', errors: [], data: data as Record<string, unknown> };
+  });
+
+  const errorCount = reports.filter((r) => r.status !== 'valid').length;
+  return {
+    totalRows: reports.length,
+    validCount: reports.length - errorCount,
+    errorCount,
+    canCommit: errorCount === 0 && reports.length > 0,
+    rows: reports,
+  };
 }

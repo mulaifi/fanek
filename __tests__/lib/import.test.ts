@@ -1,4 +1,4 @@
-import { parseRows, autoMap, CUSTOMER_FIELDS, MAX_IMPORT_ROWS } from '@/lib/import';
+import { parseRows, autoMap, CUSTOMER_FIELDS, MAX_IMPORT_ROWS, validateCustomerRows, coerceDate } from '@/lib/import';
 
 describe('parseRows', () => {
   test('parses CSV with header row and quoted commas', () => {
@@ -44,5 +44,69 @@ describe('autoMap', () => {
     const m = autoMap(['company', 'account_no', 'Region'], CUSTOMER_FIELDS);
     expect(m['company']).toBe('name');      // alias-normalized to name
     expect(m['Region']).toBeNull();
+  });
+});
+
+const baseCtx = {
+  mapping: { Name: 'name', 'Client Code': 'clientCode', Status: 'status', Start: 'contractStart' },
+  allowedStatuses: ['Active', 'Inactive'],
+  existingClientCodes: new Set<string>(),
+  existingNames: new Set<string>(),
+};
+
+describe('coerceDate', () => {
+  test('normalizes YYYY-MM-DD to ISO datetime', () => {
+    expect(coerceDate('2026-01-15')).toBe('2026-01-15T00:00:00.000Z');
+  });
+  test('returns null for empty or garbage', () => {
+    expect(coerceDate('')).toBeNull();
+    expect(coerceDate('not-a-date')).toBeNull();
+  });
+});
+
+describe('validateCustomerRows', () => {
+  test('marks a clean row valid and coerces the date', () => {
+    const r = validateCustomerRows(
+      [{ Name: 'Acme', 'Client Code': 'AC1', Status: 'Active', Start: '2026-01-15' }],
+      baseCtx
+    );
+    expect(r.canCommit).toBe(true);
+    expect(r.rows[0].status).toBe('valid');
+    expect(r.rows[0].data).toMatchObject({ name: 'Acme', clientCode: 'AC1', contractStart: '2026-01-15T00:00:00.000Z' });
+  });
+
+  test('errors on missing required name', () => {
+    const r = validateCustomerRows([{ Name: '', 'Client Code': 'AC1', Status: 'Active' }], baseCtx);
+    expect(r.canCommit).toBe(false);
+    expect(r.rows[0].status).toBe('error');
+    expect(r.rows[0].errors.join(' ')).toMatch(/name/i);
+  });
+
+  test('errors on status not in allowed list', () => {
+    const r = validateCustomerRows([{ Name: 'Acme', 'Client Code': 'AC1', Status: 'Bogus' }], baseCtx);
+    expect(r.rows[0].errors.join(' ')).toMatch(/status/i);
+  });
+
+  test('flags duplicate clientCode against the DB set', () => {
+    const ctx = { ...baseCtx, existingClientCodes: new Set(['AC1']) };
+    const r = validateCustomerRows([{ Name: 'Acme', 'Client Code': 'AC1', Status: 'Active' }], ctx);
+    expect(r.rows[0].status).toBe('duplicate');
+  });
+
+  test('flags duplicate clientCode appearing twice in the file', () => {
+    const r = validateCustomerRows(
+      [
+        { Name: 'Acme', 'Client Code': 'AC1', Status: 'Active' },
+        { Name: 'Acme2', 'Client Code': 'AC1', Status: 'Active' },
+      ],
+      baseCtx
+    );
+    expect(r.rows[1].status).toBe('duplicate');
+  });
+
+  test('flags name collision when row has no clientCode', () => {
+    const ctx = { ...baseCtx, existingNames: new Set(['acme']) };
+    const r = validateCustomerRows([{ Name: 'Acme', 'Client Code': '', Status: 'Active' }], ctx);
+    expect(r.rows[0].status).toBe('duplicate');
   });
 });
