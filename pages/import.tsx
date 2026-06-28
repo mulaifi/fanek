@@ -12,7 +12,7 @@ export default function ImportPage() {
   const [serviceTypes, setServiceTypes] = useState<ServiceTypeLite[]>([]);
 
   useEffect(() => {
-    fetch('/api/service-types')
+    fetch('/api/service-types?active=true')
       .then((r) => r.json())
       .then((d) => setServiceTypes(d.data ?? d ?? []))
       .catch(() => setServiceTypes([]));

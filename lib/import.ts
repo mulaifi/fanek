@@ -239,7 +239,7 @@ export interface ServiceValidationContext {
 function coerceFieldValue(raw: string, type: string): { value: unknown } | { error: string } {
   if (type === 'number' || type === 'currency') {
     const n = Number(raw);
-    return Number.isNaN(n) ? { error: 'not a number' } : { value: n };
+    return !Number.isFinite(n) ? { error: 'not a number' } : { value: n };
   }
   if (type === 'boolean') {
     const low = raw.toLowerCase();

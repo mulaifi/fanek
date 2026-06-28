@@ -165,13 +165,14 @@ export default function AppShell({ children, title }: AppShellProps) {
   const [spotlightActionsQuery, setSpotlightActionsQuery] = useState('');
 
   const isAdmin = session?.user?.role === 'ADMIN';
+  const canImport = session?.user?.role === 'ADMIN' || session?.user?.role === 'EDITOR';
   const sidebarWidth = expanded ? EXPANDED_WIDTH : RAIL_WIDTH;
 
   const mainNavItems: NavItemDef[] = [
     { href: '/dashboard', label: t('nav.dashboard'), icon: LayoutDashboard },
     { href: '/customers', label: t('nav.customers'), icon: Users },
     { href: '/partners', label: t('nav.partners'), icon: Handshake },
-    { href: '/import', label: t('nav.import'), icon: Upload },
+    ...(canImport ? [{ href: '/import', label: t('nav.import'), icon: Upload }] : []),
   ];
 
   const adminNavItems: NavItemDef[] = [

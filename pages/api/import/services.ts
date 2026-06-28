@@ -43,10 +43,22 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse): Promise
   }
 
   const customers = await prisma.customer.findMany({ select: { id: true, clientCode: true, name: true } });
+  // Detect names that appear more than once so ambiguous name lookups fail rather than silently picking the wrong customer
+  const nameCounts = new Map<string, number>();
+  for (const c of customers) {
+    const nameKey = c.name.toLowerCase();
+    nameCounts.set(nameKey, (nameCounts.get(nameKey) ?? 0) + 1);
+  }
+  const duplicateNames = new Set<string>(
+    [...nameCounts.entries()].filter(([, count]) => count > 1).map(([name]) => name)
+  );
   const customerByKey = new Map<string, string>();
   for (const c of customers) {
     if (c.clientCode) customerByKey.set(c.clientCode.toLowerCase(), c.id);
-    customerByKey.set(c.name.toLowerCase(), c.id);
+    const nameKey = c.name.toLowerCase();
+    if (!duplicateNames.has(nameKey)) {
+      customerByKey.set(nameKey, c.id);
+    }
   }
 
   const report = validateServiceRows(parsed.rows, {

@@ -171,4 +171,20 @@ describe('/api/import/services', () => {
     await (servicesHandler as any)(req, res);
     expect(res.status).toHaveBeenCalledWith(405);
   });
+
+  test('ambiguous customer name resolves as error (not silently picking the wrong customer)', async () => {
+    // Two customers share the same name "Dup Co" - the name key is ambiguous
+    mockState.customers = [
+      { id: 'ccust0000000000000000010', clientCode: 'DC1', name: 'Dup Co' },
+      { id: 'ccust0000000000000000011', clientCode: 'DC2', name: 'Dup Co' },
+    ];
+    const dupCsv = 'Customer,Bandwidth\nDup Co,50\n';
+    const dupMapping = { Customer: 'customerRef', Bandwidth: 'bandwidth' };
+    const { req, res } = mockReqRes({ format: 'csv', data: dupCsv, mapping: dupMapping, serviceTypeId, dryRun: true });
+    await (servicesHandler as any)(req, res);
+    expect(res.status).toHaveBeenCalledWith(200);
+    const body = res.json.mock.calls[0][0];
+    expect(body.canCommit).toBe(false);
+    expect(body.rows[0].status).toBe('error');
+  });
 });

@@ -489,7 +489,7 @@
     "selectServiceTypePlaceholder": "اختر نوع خدمة للاستيراد",
     "uploadPrompt": "رفع ملف CSV أو JSON",
     "downloadTemplate": "تنزيل القالب",
-    "csvContactsNote": "يمكن استيراد جهات الاتصال عبر JSON فقط.",
+    "csvContactsNote": "تفاصيل جهات الاتصال لا يتم استيرادها - أضفها لكل سجل بعد الاستيراد.",
     "mapColumns": "ربط الأعمدة",
     "column": "عمود الملف",
     "mapsTo": "يُربط بـ",

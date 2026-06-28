@@ -489,7 +489,7 @@
     "selectServiceTypePlaceholder": "Choose a service type to import",
     "uploadPrompt": "Upload a CSV or JSON file",
     "downloadTemplate": "Download template",
-    "csvContactsNote": "Contacts can only be imported via JSON.",
+    "csvContactsNote": "Contact details aren't imported - add them to each record after importing.",
     "mapColumns": "Map columns",
     "column": "File column",
     "mapsTo": "Maps to",

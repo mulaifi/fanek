@@ -43,7 +43,11 @@ export default function ImportWizard({ entity, serviceTypes = [] }: Props) {
       setMapping(autoMap(parsed.headers, targets));
       setReport(null);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : t('genericError'));
+      if (err instanceof Error && /too many rows/i.test(err.message)) {
+        toast.error(t('tooManyRows'));
+      } else {
+        toast.error(err instanceof Error ? err.message : t('genericError'));
+      }
     }
   }, [targets, t]);
 

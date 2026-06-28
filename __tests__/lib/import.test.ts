@@ -164,6 +164,23 @@ describe('validateServiceRows', () => {
     expect(r.rows[0].data).toMatchObject({ customerId: 'ccust0000000000000000001' });
   });
 
+  test('rejects Infinity (1e999) for number field type', () => {
+    const r = validateServiceRows([{ Customer: 'AC1', Bandwidth: '1e999', Tier: 'Gold' }], svcCtx);
+    expect(r.rows[0].status).toBe('error');
+    expect(r.rows[0].errors.join(' ')).toMatch(/bandwidth/i);
+  });
+
+  test('rejects Infinity (1e999) for currency field type', () => {
+    const currencyCtx = {
+      ...svcCtx,
+      mapping: { Customer: 'customerRef', Price: 'price' },
+      fieldSchema: [{ name: 'price', label: 'Price', type: 'currency', required: true }],
+    };
+    const r = validateServiceRows([{ Customer: 'AC1', Price: '1e999' }], currencyCtx);
+    expect(r.rows[0].status).toBe('error');
+    expect(r.rows[0].errors.join(' ')).toMatch(/price/i);
+  });
+
   test('errors on invalid date in a date-typed dynamic field', () => {
     const ctx = {
       ...svcCtx,
