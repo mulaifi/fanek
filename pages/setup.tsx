@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/router';
 import { ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
@@ -29,6 +29,14 @@ export default function SetupPage() {
     }
     router.replace('/login');
   }
+
+  useEffect(() => {
+    return () => {
+      if (redirectTimerRef.current) {
+        clearTimeout(redirectTimerRef.current);
+      }
+    };
+  }, []);
 
   const STEPS = [
     { label: t('setup.stepAdmin') },
@@ -109,7 +117,7 @@ export default function SetupPage() {
         // Auto-redirect to login after a short delay; the Step 4 screen also
         // offers a button to proceed immediately (see StepComplete onContinue).
         redirectTimerRef.current = setTimeout(() => {
-          router.replace('/login');
+          goToLogin();
         }, 2500);
       } catch {
         setError(t('setup.networkError'));
