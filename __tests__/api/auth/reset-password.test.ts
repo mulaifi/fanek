@@ -37,8 +37,11 @@ const mockHashPassword = hashPassword as jest.Mock;
 const mockVerify = verifyResetToken as jest.Mock;
 const mockConsume = consumeResetToken as jest.Mock;
 
-function mockReqRes({ method = 'POST', body = {} as Record<string, unknown> } = {}) {
-  const req = { method, body, headers: { host: 'app.example.com' }, socket: { remoteAddress: '127.0.0.1' } };
+let ipCounter = 0;
+function mockReqRes({ method = 'POST', body = {} as Record<string, unknown>, ip = '' } = {}) {
+  // Unique IP per call by default so the per-IP rate limiter does not bleed across tests.
+  const remoteAddress = ip || `10.1.0.${ipCounter++}`;
+  const req = { method, body, headers: { host: 'app.example.com' }, socket: { remoteAddress } };
   const res = {
     status: jest.fn().mockReturnThis(),
     json: jest.fn().mockReturnThis(),
@@ -107,5 +110,20 @@ describe('POST /api/auth/reset-password', () => {
     });
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json.mock.calls[0][0]).toEqual({ success: true });
+  });
+
+  test('M3: rate limits after 10 attempts from the same IP (11th returns 429)', async () => {
+    mockVerify.mockResolvedValue(null); // invalid token; we only care about limiting
+    const ip = '198.51.100.55';
+    for (let i = 0; i < 10; i++) {
+      const { req, res } = mockReqRes({ body: { token: 'x', password: 'Str0ng!Pass1' }, ip });
+      await handler(req as never, res as never);
+      expect(res.status).not.toHaveBeenCalledWith(429);
+    }
+    const { req, res } = mockReqRes({ body: { token: 'x', password: 'Str0ng!Pass1' }, ip });
+    await handler(req as never, res as never);
+    expect(res.status).toHaveBeenCalledWith(429);
+    // The 11th request is blocked before any token verification happens.
+    expect(mockVerify).toHaveBeenCalledTimes(10);
   });
 });

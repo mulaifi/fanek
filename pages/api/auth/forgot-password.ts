@@ -48,24 +48,41 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return;
   }
 
-  // All real work is best-effort and swallowed: the response is always the same
-  // generic 200 so callers cannot infer account existence or SMTP state.
-  try {
-    const settings = await getSettings();
-    if (isSmtpConfigured(settings)) {
+  // Fire-and-forget: the DB lookup + email send are NOT awaited, so response
+  // latency is constant whether or not the account exists (defends against
+  // timing-based user enumeration). All work is best-effort and errors are
+  // swallowed (logged) so the response never branches.
+  //
+  // This relies on a long-running Node server that keeps executing the detached
+  // task after the response is flushed — correct for self-hosted Fanek. It would
+  // NOT be safe on a serverless platform that freezes the process post-response.
+  void (async () => {
+    try {
+      // Reset links must be built from the configured canonical URL only. The
+      // caller-controlled Host header is never used (defends against host
+      // header poisoning of the emailed link).
+      const baseUrl = process.env.NEXTAUTH_URL?.replace(/\/+$/, '');
+      if (!baseUrl) {
+        logger.warn('NEXTAUTH_URL is not configured; skipping password reset email');
+        return;
+      }
+
+      const settings = await getSettings();
+      if (!isSmtpConfigured(settings)) return;
+
       const user = await prisma.user.findUnique({ where: { email: normalized } });
       // Only credential users (those with a password hash) get a reset link.
-      if (user && user.passwordHash) {
-        const rawToken = await createPasswordResetToken(user.id);
-        const baseUrl = process.env.NEXTAUTH_URL ?? `http://${req.headers.host ?? 'localhost'}`;
-        const resetUrl = `${baseUrl}/reset-password?token=${rawToken}`;
-        await sendPasswordResetEmail(settings, user.email, resetUrl);
-        logger.info({ userId: user.id }, 'Password reset email sent');
-      }
+      if (!user || !user.passwordHash) return;
+
+      const rawToken = await createPasswordResetToken(user.id);
+      // Encode the token so it can never break out of the URL/href attribute.
+      const resetUrl = `${baseUrl}/reset-password?token=${encodeURIComponent(rawToken)}`;
+      await sendPasswordResetEmail(settings, user.email, resetUrl);
+      logger.info({ userId: user.id }, 'Password reset email sent');
+    } catch (err) {
+      logger.error({ err }, 'forgot-password processing failed');
     }
-  } catch (err) {
-    logger.error({ err }, 'forgot-password processing failed');
-  }
+  })();
 
   res.status(200).json(GENERIC);
 }

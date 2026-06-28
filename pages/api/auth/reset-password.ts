@@ -2,13 +2,36 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import prisma from '@/lib/prisma';
 import { checkStrength, hashPassword } from '@/lib/password';
 import { verifyResetToken, consumeResetToken } from '@/lib/passwordReset';
+import { createRateLimiter } from '@/lib/rateLimit';
 import { methodNotAllowed } from '@/lib/auth/guard';
 import { logAudit } from '@/lib/audit';
 import logger from '@/lib/logger';
 
+// 10 reset attempts per 15 minutes per IP (limits brute-forcing of reset tokens).
+const limiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 10 });
+
+// X-Forwarded-For is caller-controlled; only trust it behind a reverse proxy (TRUST_PROXY).
+const TRUST_PROXY = process.env.TRUST_PROXY === 'true' || process.env.TRUST_PROXY === '1';
+
+function getClientIp(req: NextApiRequest): string {
+  if (TRUST_PROXY) {
+    const xff = req.headers['x-forwarded-for'];
+    if (typeof xff === 'string' && xff.length > 0) return xff.split(',')[0]!.trim();
+    if (Array.isArray(xff) && xff.length > 0) return xff[0]!;
+  }
+  return req.socket?.remoteAddress ?? 'unknown';
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse): Promise<void> {
   if (req.method !== 'POST') {
     methodNotAllowed(res, ['POST']);
+    return;
+  }
+
+  const ip = getClientIp(req);
+  const { allowed } = limiter.check(`reset:${ip}`);
+  if (!allowed) {
+    res.status(429).json({ error: 'Too many requests. Please wait a few minutes and try again.' });
     return;
   }
 
