@@ -28,11 +28,14 @@ export default function ForgotPasswordPage() {
       });
       if (res.status === 429) {
         setError(t('auth.forgotPassword.rateLimited'));
-        setSubmitting(false);
-        return;
+      } else if (res.ok) {
+        // Success is the generic, enumeration-safe message. Only a 2xx (which the
+        // API returns identically whether or not the account exists) promotes to it.
+        setDone(true);
+      } else {
+        // 4xx/5xx (e.g. malformed email) — show a generic error, never success.
+        setError(t('common.networkError'));
       }
-      // Any non-rate-limited response is treated as success (generic, no enumeration).
-      setDone(true);
     } catch {
       setError(t('common.networkError'));
     }

@@ -56,6 +56,8 @@ export default function ResetPasswordPage() {
     e.preventDefault();
     setError(null);
 
+    // Router query is not populated on the first client render; don't act until ready.
+    if (!router.isReady) return;
     if (!token) {
       setError(t('auth.resetPassword.invalidToken'));
       return;
@@ -110,7 +112,11 @@ export default function ResetPasswordPage() {
               </Alert>
             )}
 
-            {done ? (
+            {!router.isReady ? (
+              <div className="flex justify-center py-4" data-testid="reset-password-loading">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : done ? (
               <div className="flex flex-col gap-4" data-testid="reset-password-success">
                 <Alert className="border-green-200 bg-green-50 text-green-800">
                   <AlertDescription>{t('auth.resetPassword.success')}</AlertDescription>

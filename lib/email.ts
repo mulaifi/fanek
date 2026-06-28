@@ -38,6 +38,16 @@ export function isSmtpConfigured(settings: SettingsLike): boolean {
   return !!(c.enabled && c.host && c.port && c.from);
 }
 
+/**
+ * Whether the email-based password reset flow is actually usable end to end.
+ * Requires both SMTP to be configured AND a canonical NEXTAUTH_URL (the reset link
+ * is built only from it; the Host header is never trusted). Centralized here so the
+ * public settings endpoint and the forgot-password handler can never drift.
+ */
+export function isPasswordResetEnabled(settings: SettingsLike): boolean {
+  return isSmtpConfigured(settings) && Boolean(process.env.NEXTAUTH_URL);
+}
+
 function buildTransport(c: SmtpConfig): nodemailer.Transporter {
   let pass: string | undefined;
   if (c.pass) {
@@ -49,6 +59,11 @@ function buildTransport(c: SmtpConfig): nodemailer.Transporter {
     host: c.host,
     port: c.port,
     secure: !!c.secure,
+    // Bound the time spent on a slow/unresponsive SMTP server so a request thread
+    // (or the detached send task) cannot hang indefinitely.
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 20000,
     ...(c.user ? { auth: { user: c.user, pass } } : {}),
   });
 }

@@ -50,6 +50,10 @@ model PasswordResetToken {
 
   @@index([userId])
   @@index([expiresAt])
+  // NOTE: a partial UNIQUE index enforcing "at most one active (usedAt IS NULL)
+  // token per user" is defined directly in the SQL migration
+  // (PasswordResetToken_one_active_per_user_key). Prisma's schema language cannot
+  // express a partial filter (WHERE usedAt IS NULL), so it is DB-enforced only.
 }
 
 enum Role {

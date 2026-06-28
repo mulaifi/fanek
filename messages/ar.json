@@ -434,6 +434,7 @@
       "saveEmailSettings": "حفظ إعدادات البريد الإلكتروني",
       "emailSettingsSaved": "تم حفظ إعدادات البريد الإلكتروني.",
       "sendTestEmail": "إرسال بريد تجريبي",
+      "saveBeforeTest": "احفظ تغييراتك قبل إرسال بريد تجريبي.",
       "sendingTestEmail": "جارٍ الإرسال...",
       "testEmailSent": "تم إرسال بريد تجريبي إلى {email}.",
       "testEmailFailed": "فشل إرسال البريد التجريبي. تحقق من إعدادات SMTP.",

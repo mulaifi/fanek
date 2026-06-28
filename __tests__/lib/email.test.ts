@@ -1,4 +1,10 @@
-import { getSmtpConfig, isSmtpConfigured, sendMail, sendPasswordResetEmail } from '@/lib/email';
+import {
+  getSmtpConfig,
+  isSmtpConfigured,
+  isPasswordResetEnabled,
+  sendMail,
+  sendPasswordResetEmail,
+} from '@/lib/email';
 import { encrypt } from '@/lib/encryption';
 
 const sendMailMock = jest.fn();
@@ -50,6 +56,30 @@ describe('isSmtpConfigured', () => {
   });
 });
 
+describe('isPasswordResetEnabled (#6)', () => {
+  const configured = { enabled: true, host: 'h', port: 587, from: 'a@b.c' };
+  const ORIGINAL = process.env.NEXTAUTH_URL;
+  afterEach(() => {
+    if (ORIGINAL === undefined) delete process.env.NEXTAUTH_URL;
+    else process.env.NEXTAUTH_URL = ORIGINAL;
+  });
+
+  test('true only when SMTP configured AND NEXTAUTH_URL set', () => {
+    process.env.NEXTAUTH_URL = 'https://app.example.com';
+    expect(isPasswordResetEnabled(settingsWith(configured))).toBe(true);
+  });
+
+  test('false when NEXTAUTH_URL is unset even if SMTP is configured', () => {
+    delete process.env.NEXTAUTH_URL;
+    expect(isPasswordResetEnabled(settingsWith(configured))).toBe(false);
+  });
+
+  test('false when SMTP not configured even if NEXTAUTH_URL is set', () => {
+    process.env.NEXTAUTH_URL = 'https://app.example.com';
+    expect(isPasswordResetEnabled(settingsWith({ enabled: false }))).toBe(false);
+  });
+});
+
 describe('sendMail', () => {
   test('throws when SMTP is not configured', async () => {
     await expect(sendMail(settingsWith({ enabled: false }), { to: 'x@y.z', subject: 's', html: '<p>h</p>' })).rejects.toThrow(/not configured/i);
@@ -72,11 +102,17 @@ describe('sendMail', () => {
 
     expect(createTransportMock).toHaveBeenCalledTimes(1);
     const transportArg = createTransportMock.mock.calls[0][0] as {
-      host: string; port: number; secure: boolean; auth: { user: string; pass: string };
+      host: string; port: number; secure: boolean;
+      connectionTimeout: number; greetingTimeout: number; socketTimeout: number;
+      auth: { user: string; pass: string };
     };
     expect(transportArg.host).toBe('smtp.example.com');
     expect(transportArg.port).toBe(465);
     expect(transportArg.secure).toBe(true);
+    // #5: bounded timeouts so a slow SMTP server cannot hang the send indefinitely.
+    expect(transportArg.connectionTimeout).toBe(10000);
+    expect(transportArg.greetingTimeout).toBe(10000);
+    expect(transportArg.socketTimeout).toBe(20000);
     // The decrypted (plaintext) password is used, never the ciphertext
     expect(transportArg.auth.user).toBe('mailer');
     expect(transportArg.auth.pass).toBe('s3cret-pass');

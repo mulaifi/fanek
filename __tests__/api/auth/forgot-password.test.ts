@@ -1,7 +1,7 @@
 import handler from '../../../pages/api/auth/forgot-password';
 import prisma from '@/lib/prisma';
 import { getSettings } from '@/lib/settings';
-import { isSmtpConfigured, sendPasswordResetEmail } from '@/lib/email';
+import { isSmtpConfigured, isPasswordResetEnabled, sendPasswordResetEmail } from '@/lib/email';
 import { createPasswordResetToken } from '@/lib/passwordReset';
 
 jest.mock('@/lib/prisma', () => ({
@@ -13,6 +13,7 @@ jest.mock('@/lib/settings', () => ({ getSettings: jest.fn() }));
 
 jest.mock('@/lib/email', () => ({
   isSmtpConfigured: jest.fn(),
+  isPasswordResetEnabled: jest.fn(),
   sendPasswordResetEmail: jest.fn(),
 }));
 
@@ -26,6 +27,7 @@ jest.mock('@/lib/logger', () => ({
 const mockPrisma = prisma as unknown as { user: { findUnique: jest.Mock } };
 const mockGetSettings = getSettings as jest.Mock;
 const mockIsConfigured = isSmtpConfigured as jest.Mock;
+const mockIsResetEnabled = isPasswordResetEnabled as jest.Mock;
 const mockSend = sendPasswordResetEmail as jest.Mock;
 const mockCreateToken = createPasswordResetToken as jest.Mock;
 
@@ -58,6 +60,7 @@ beforeEach(() => {
   process.env.NEXTAUTH_URL = 'https://app.example.com';
   mockGetSettings.mockResolvedValue({ smtp: { enabled: true } });
   mockIsConfigured.mockReturnValue(true);
+  mockIsResetEnabled.mockReturnValue(true);
   mockCreateToken.mockResolvedValue('rawtoken123');
 });
 
@@ -77,6 +80,23 @@ describe('POST /api/auth/forgot-password', () => {
     const { req, res } = mockReqRes({ body: {} });
     await handler(req as never, res as never);
     expect(res.status).toHaveBeenCalledWith(400);
+  });
+
+  test('#3: rejects a malformed email with 400 (no DB work)', async () => {
+    const { req, res } = mockReqRes({ body: { email: 'not-an-email' } });
+    await handler(req as never, res as never);
+    expect(res.status).toHaveBeenCalledWith(400);
+    await flush();
+    expect(mockPrisma.user.findUnique).not.toHaveBeenCalled();
+  });
+
+  test('#3: rejects an over-long email (> 254 chars) with 400', async () => {
+    const longEmail = `${'a'.repeat(250)}@b.co`; // > 254 chars
+    const { req, res } = mockReqRes({ body: { email: longEmail } });
+    await handler(req as never, res as never);
+    expect(res.status).toHaveBeenCalledWith(400);
+    await flush();
+    expect(mockPrisma.user.findUnique).not.toHaveBeenCalled();
   });
 
   test('returns generic 200 and sends email (built from NEXTAUTH_URL) when user exists', async () => {
@@ -116,8 +136,11 @@ describe('POST /api/auth/forgot-password', () => {
     expect(url).not.toContain('evil.attacker.example');
   });
 
-  test('H1: when NEXTAUTH_URL is unset, sends NO email but still returns generic 200', async () => {
-    delete process.env.NEXTAUTH_URL;
+  test('H1/#6: when reset is not enabled (NEXTAUTH_URL unset), sends NO email but still returns generic 200', async () => {
+    // isPasswordResetEnabled() is the shared readiness gate; false here simulates a
+    // missing NEXTAUTH_URL while SMTP itself is configured (so a warning is logged).
+    mockIsResetEnabled.mockReturnValue(false);
+    mockIsConfigured.mockReturnValue(true);
     mockPrisma.user.findUnique.mockResolvedValue({ id: 'u1', email: 'user@example.com', passwordHash: 'h' });
     const { req, res } = mockReqRes({ body: { email: 'user@example.com' } });
     await handler(req as never, res as never);
@@ -126,8 +149,20 @@ describe('POST /api/auth/forgot-password', () => {
     await flush();
     expect(mockCreateToken).not.toHaveBeenCalled();
     expect(mockSend).not.toHaveBeenCalled();
-    // No DB lookup either — the missing-config check short-circuits before it.
+    // No DB lookup either — the readiness gate short-circuits before it.
     expect(mockPrisma.user.findUnique).not.toHaveBeenCalled();
+  });
+
+  test('does not send (and returns 200) when a concurrent create returns null', async () => {
+    mockPrisma.user.findUnique.mockResolvedValue({ id: 'u1', email: 'user@example.com', passwordHash: 'h' });
+    mockCreateToken.mockResolvedValue(null); // concurrent request already created an active token
+    const { req, res } = mockReqRes({ body: { email: 'user@example.com' } });
+    await handler(req as never, res as never);
+    expect(res.status).toHaveBeenCalledWith(200);
+
+    await flush();
+    expect(mockCreateToken).toHaveBeenCalledWith('u1');
+    expect(mockSend).not.toHaveBeenCalled();
   });
 
   test('returns the SAME generic 200 when user does NOT exist (no enumeration)', async () => {
@@ -153,6 +188,7 @@ describe('POST /api/auth/forgot-password', () => {
   });
 
   test('returns generic 200 without sending when SMTP not configured', async () => {
+    mockIsResetEnabled.mockReturnValue(false);
     mockIsConfigured.mockReturnValue(false);
     mockPrisma.user.findUnique.mockResolvedValue({ id: 'u1', email: 'user@example.com', passwordHash: 'h' });
     const { req, res } = mockReqRes({ body: { email: 'user@example.com' } });

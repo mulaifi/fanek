@@ -278,7 +278,12 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse): Promise
       action: 'UPDATE',
       resource: 'settings',
       resourceId: 'default',
-      details: { before: existing, after: updated },
+      // Strip OAuth client secrets and the SMTP password from the audit trail
+      // (they are encrypted at rest but must not be persisted in audit logs).
+      details: {
+        before: redactAuthSecrets({ ...(existing as Record<string, unknown>) }),
+        after: redactAuthSecrets({ ...(updated as Record<string, unknown>) }),
+      },
     });
 
     logger.info({ fields: Object.keys(updateData) }, 'Settings updated');

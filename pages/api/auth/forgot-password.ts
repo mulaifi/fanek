@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import prisma from '@/lib/prisma';
 import { getSettings } from '@/lib/settings';
-import { isSmtpConfigured, sendPasswordResetEmail } from '@/lib/email';
+import { isSmtpConfigured, isPasswordResetEnabled, sendPasswordResetEmail } from '@/lib/email';
 import { createPasswordResetToken } from '@/lib/passwordReset';
 import { createRateLimiter } from '@/lib/rateLimit';
 import { methodNotAllowed } from '@/lib/auth/guard';
@@ -28,6 +28,11 @@ const GENERIC = {
   message: 'If an account with that email exists, a password reset link has been sent.',
 };
 
+// Basic shape check; the RFC max length for an email address is 254 chars. This is
+// a format/abuse guard only and reveals nothing about account existence.
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MAX_EMAIL_LENGTH = 254;
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse): Promise<void> {
   if (req.method !== 'POST') {
     methodNotAllowed(res, ['POST']);
@@ -35,11 +40,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   const { email } = (req.body ?? {}) as { email?: unknown };
-  if (typeof email !== 'string' || email.trim() === '') {
+  if (typeof email !== 'string') {
     res.status(400).json({ error: 'Email is required' });
     return;
   }
   const normalized = email.toLowerCase().trim();
+  if (normalized === '' || normalized.length > MAX_EMAIL_LENGTH || !EMAIL_RE.test(normalized)) {
+    res.status(400).json({ error: 'A valid email address is required' });
+    return;
+  }
 
   const ip = getClientIp(req);
   const { allowed } = limiter.check(`forgot:${ip}:${normalized}`);
@@ -58,23 +67,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   // NOT be safe on a serverless platform that freezes the process post-response.
   void (async () => {
     try {
-      // Reset links must be built from the configured canonical URL only. The
-      // caller-controlled Host header is never used (defends against host
-      // header poisoning of the emailed link).
-      const baseUrl = process.env.NEXTAUTH_URL?.replace(/\/+$/, '');
-      if (!baseUrl) {
-        logger.warn('NEXTAUTH_URL is not configured; skipping password reset email');
+      const settings = await getSettings();
+      // Centralized readiness gate (shared with /api/settings so they can't drift):
+      // requires SMTP configured AND a canonical NEXTAUTH_URL. The reset link is
+      // built only from NEXTAUTH_URL — the caller-controlled Host header is never
+      // used (defends against host-header poisoning of the emailed link).
+      if (!isPasswordResetEnabled(settings)) {
+        if (isSmtpConfigured(settings)) {
+          logger.warn('NEXTAUTH_URL is not configured; skipping password reset email');
+        }
         return;
       }
-
-      const settings = await getSettings();
-      if (!isSmtpConfigured(settings)) return;
+      const baseUrl = process.env.NEXTAUTH_URL!.replace(/\/+$/, '');
 
       const user = await prisma.user.findUnique({ where: { email: normalized } });
       // Only credential users (those with a password hash) get a reset link.
       if (!user || !user.passwordHash) return;
 
       const rawToken = await createPasswordResetToken(user.id);
+      // null means a concurrent request already created/sent an active token.
+      if (!rawToken) return;
       // Encode the token so it can never break out of the URL/href attribute.
       const resetUrl = `${baseUrl}/reset-password?token=${encodeURIComponent(rawToken)}`;
       await sendPasswordResetEmail(settings, user.email, resetUrl);

@@ -38,6 +38,26 @@ export default function SmtpConfig({ settings, onSave }: SmtpConfigProps) {
   const [from, setFrom] = useState<string>(smtp.from ?? '');
   const [hasPass, setHasPass] = useState<boolean>(smtp.hasPass ?? false);
 
+  // Saved baseline used to detect unsaved edits. "Send test email" tests the
+  // PERSISTED config, so it must be disabled while local edits are pending.
+  const [baseline, setBaseline] = useState({
+    enabled: smtp.enabled ?? false,
+    host: smtp.host ?? '',
+    port: smtp.port ? String(smtp.port) : '587',
+    secure: smtp.secure ?? false,
+    user: smtp.user ?? '',
+    from: smtp.from ?? '',
+  });
+
+  const isDirty =
+    enabled !== baseline.enabled ||
+    host !== baseline.host ||
+    port !== baseline.port ||
+    secure !== baseline.secure ||
+    user !== baseline.user ||
+    from !== baseline.from ||
+    pass !== '';
+
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [error, setError] = useState('');
@@ -83,6 +103,8 @@ export default function SmtpConfig({ settings, onSave }: SmtpConfigProps) {
       setSuccess(t('admin.settings.emailSettingsSaved'));
       if (pass) setHasPass(true);
       setPass('');
+      // Reset the baseline so the form is no longer "dirty" after a successful save.
+      setBaseline({ enabled, host, port, secure, user, from });
       onSave?.(data);
     }
   }
@@ -180,10 +202,18 @@ export default function SmtpConfig({ settings, onSave }: SmtpConfigProps) {
         <Button onClick={handleSave} disabled={saving}>
           {saving ? t('common.saving') : t('admin.settings.saveEmailSettings')}
         </Button>
-        <Button variant="outline" onClick={handleTest} disabled={testing || !enabled}>
+        <Button
+          variant="outline"
+          onClick={handleTest}
+          disabled={testing || !enabled || isDirty}
+          title={isDirty ? t('admin.settings.saveBeforeTest') : undefined}
+        >
           {testing ? t('admin.settings.sendingTestEmail') : t('admin.settings.sendTestEmail')}
         </Button>
       </div>
+      {isDirty && (
+        <p className="text-xs text-muted-foreground mt-2">{t('admin.settings.saveBeforeTest')}</p>
+      )}
     </div>
   );
 }

@@ -434,6 +434,7 @@
       "saveEmailSettings": "Save Email Settings",
       "emailSettingsSaved": "Email settings saved.",
       "sendTestEmail": "Send test email",
+      "saveBeforeTest": "Save your changes before sending a test email.",
       "sendingTestEmail": "Sending...",
       "testEmailSent": "Test email sent to {email}.",
       "testEmailFailed": "Failed to send test email. Check your SMTP settings.",

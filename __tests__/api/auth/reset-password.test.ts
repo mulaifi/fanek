@@ -1,15 +1,13 @@
 import handler from '../../../pages/api/auth/reset-password';
-import prisma from '@/lib/prisma';
 import { checkStrength, hashPassword } from '@/lib/password';
 import { verifyResetToken, consumeResetToken } from '@/lib/passwordReset';
+import { logAudit } from '@/lib/audit';
 
-jest.mock('@/lib/prisma', () => ({
-  __esModule: true,
-  default: {
-    user: { update: jest.fn() },
-    passwordResetToken: { deleteMany: jest.fn() },
-  },
-}));
+// The handler imports lib/auth/guard, which transitively loads the real Prisma
+// client at module load (needs DATABASE_URL). The handler itself uses no Prisma
+// directly (all DB work is behind the mocked lib/passwordReset), so a bare mock
+// is enough to keep the import graph from touching a real database.
+jest.mock('@/lib/prisma', () => ({ __esModule: true, default: {} }));
 
 jest.mock('@/lib/password', () => ({
   checkStrength: jest.fn(),
@@ -28,14 +26,11 @@ jest.mock('@/lib/logger', () => ({
   default: { info: jest.fn(), error: jest.fn(), warn: jest.fn() },
 }));
 
-const mockPrisma = prisma as unknown as {
-  user: { update: jest.Mock };
-  passwordResetToken: { deleteMany: jest.Mock };
-};
 const mockCheckStrength = checkStrength as jest.Mock;
 const mockHashPassword = hashPassword as jest.Mock;
 const mockVerify = verifyResetToken as jest.Mock;
 const mockConsume = consumeResetToken as jest.Mock;
+const mockLogAudit = logAudit as jest.Mock;
 
 let ipCounter = 0;
 function mockReqRes({ method = 'POST', body = {} as Record<string, unknown>, ip = '' } = {}) {
@@ -69,13 +64,12 @@ describe('POST /api/auth/reset-password', () => {
     expect(res.status).toHaveBeenCalledWith(400);
   });
 
-  test('rejects an invalid/expired token with a generic 400 and does not update', async () => {
+  test('rejects an invalid/expired token with a generic 400 and does not consume', async () => {
     mockVerify.mockResolvedValue(null);
     const { req, res } = mockReqRes({ body: { token: 'badtoken', password: 'Str0ng!Pass1' } });
     await handler(req as never, res as never);
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.json.mock.calls[0][0].error).toMatch(/invalid or has expired/i);
-    expect(mockPrisma.user.update).not.toHaveBeenCalled();
     expect(mockConsume).not.toHaveBeenCalled();
   });
 
@@ -86,30 +80,48 @@ describe('POST /api/auth/reset-password', () => {
     await handler(req as never, res as never);
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.json.mock.calls[0][0].error).toBe('Weak password');
-    expect(mockPrisma.user.update).not.toHaveBeenCalled();
     expect(mockConsume).not.toHaveBeenCalled();
   });
 
-  test('on success: hashes password, updates user, consumes token, invalidates other tokens', async () => {
+  test('on success: hashes password, atomically consumes token, audits, returns 200', async () => {
     mockVerify.mockResolvedValue({ id: 't1', userId: 'u1' });
-    mockPrisma.user.update.mockResolvedValue({});
-    mockPrisma.passwordResetToken.deleteMany.mockResolvedValue({ count: 0 });
+    mockConsume.mockResolvedValue(true);
 
     const { req, res } = mockReqRes({ body: { token: 'goodtoken', password: 'Str0ng!Pass1' } });
     await handler(req as never, res as never);
 
     expect(mockHashPassword).toHaveBeenCalledWith('Str0ng!Pass1');
-    expect(mockPrisma.user.update).toHaveBeenCalledWith({
-      where: { id: 'u1' },
-      data: { passwordHash: 'newhash', firstLogin: false },
-    });
-    expect(mockConsume).toHaveBeenCalledWith('t1');
-    // remaining unused tokens for that user are invalidated
-    expect(mockPrisma.passwordResetToken.deleteMany).toHaveBeenCalledWith({
-      where: { userId: 'u1', usedAt: null },
-    });
+    // Atomic consume gets the verified id + userId + the new hash.
+    expect(mockConsume).toHaveBeenCalledWith('t1', 'u1', 'newhash');
+    expect(mockLogAudit).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: 'u1', action: 'PASSWORD_RESET', resource: 'user' })
+    );
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json.mock.calls[0][0]).toEqual({ success: true });
+  });
+
+  test('race: token consumed between the read check and the atomic consume → generic 400, not 500, no audit', async () => {
+    mockVerify.mockResolvedValue({ id: 't1', userId: 'u1' });
+    mockConsume.mockResolvedValue(false); // updateMany matched 0 rows
+
+    const { req, res } = mockReqRes({ body: { token: 'goodtoken', password: 'Str0ng!Pass1' } });
+    await handler(req as never, res as never);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.status).not.toHaveBeenCalledWith(500);
+    expect(res.json.mock.calls[0][0].error).toMatch(/invalid or has expired/i);
+    expect(mockLogAudit).not.toHaveBeenCalled();
+  });
+
+  test('returns 500 if the atomic consume throws unexpectedly', async () => {
+    mockVerify.mockResolvedValue({ id: 't1', userId: 'u1' });
+    mockConsume.mockRejectedValue(new Error('db down'));
+
+    const { req, res } = mockReqRes({ body: { token: 'goodtoken', password: 'Str0ng!Pass1' } });
+    await handler(req as never, res as never);
+
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(mockLogAudit).not.toHaveBeenCalled();
   });
 
   test('M3: rate limits after 10 attempts from the same IP (11th returns 429)', async () => {

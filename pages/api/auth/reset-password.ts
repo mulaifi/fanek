@@ -1,5 +1,4 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import prisma from '@/lib/prisma';
 import { checkStrength, hashPassword } from '@/lib/password';
 import { verifyResetToken, consumeResetToken } from '@/lib/passwordReset';
 import { createRateLimiter } from '@/lib/rateLimit';
@@ -41,8 +40,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return;
   }
 
-  // Verify the token first (without consuming it) so a valid token survives a weak
-  // password attempt and the user can retry.
+  // Read-only check first so a valid token survives a weak-password attempt and the
+  // user can retry (we don't consume it until the password passes validation).
   const verified = await verifyResetToken(token);
   if (!verified) {
     res.status(400).json({ error: 'This password reset link is invalid or has expired.' });
@@ -55,28 +54,32 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return;
   }
 
+  let success: boolean;
   try {
     const passwordHash = await hashPassword(password);
-    await prisma.user.update({
-      where: { id: verified.userId },
-      data: { passwordHash, firstLogin: false },
-    });
-    await consumeResetToken(verified.id);
-    // Invalidate any other outstanding tokens for this user.
-    await prisma.passwordResetToken.deleteMany({ where: { userId: verified.userId, usedAt: null } });
-
-    await logAudit({
-      userId: verified.userId,
-      action: 'PASSWORD_RESET',
-      resource: 'user',
-      resourceId: verified.userId,
-    });
-    logger.info({ userId: verified.userId }, 'Password reset completed');
+    // Atomic: consume the token (single-use guard) + set the new password +
+    // invalidate other tokens, all in one transaction. No half-applied state.
+    success = await consumeResetToken(verified.id, verified.userId, passwordHash);
   } catch (err) {
     logger.error({ err }, 'reset-password processing failed');
     res.status(500).json({ error: 'An unexpected error occurred. Please try again later.' });
     return;
   }
+
+  // The token was used/expired between the read check and the atomic consume
+  // (replay/race). Return the same generic invalid response, never a 500.
+  if (!success) {
+    res.status(400).json({ error: 'This password reset link is invalid or has expired.' });
+    return;
+  }
+
+  await logAudit({
+    userId: verified.userId,
+    action: 'PASSWORD_RESET',
+    resource: 'user',
+    resourceId: verified.userId,
+  });
+  logger.info({ userId: verified.userId }, 'Password reset completed');
 
   res.status(200).json({ success: true });
 }
