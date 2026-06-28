@@ -50,6 +50,7 @@ beforeEach(() => {
   mockState.serviceType = { id: 'ctype00000000000000000001', fieldSchema: [{ name: 'bandwidth', label: 'Bandwidth', type: 'number', required: true }] } as any;
   mockState.svcCreateMany = jest.fn().mockResolvedValue({ count: 1 });
   mockState.customers = [{ id: 'ccust0000000000000000001', clientCode: 'AC1', name: 'Acme' }];
+  (require('@/lib/audit').logAudit as jest.Mock).mockClear();
 });
 
 describe('/api/import/customers', () => {
@@ -122,11 +123,19 @@ describe('/api/import/services', () => {
   });
 
   test('commit writes services and audits', async () => {
+    const logAudit = require('@/lib/audit').logAudit as jest.Mock;
     mockState.svcCreateMany = jest.fn().mockResolvedValue({ count: 1 });
     const { req, res } = mockReqRes({ format: 'csv', data: csv, mapping, serviceTypeId, dryRun: false });
     await (servicesHandler as any)(req, res);
     expect(mockState.svcCreateMany).toHaveBeenCalled();
     expect(res.json.mock.calls[0][0].committed).toBe(1);
+    expect(logAudit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'IMPORT',
+        resource: 'service',
+        details: expect.objectContaining({ serviceTypeId }),
+      })
+    );
   });
 
   test('rejects missing serviceTypeId', async () => {
@@ -135,10 +144,30 @@ describe('/api/import/services', () => {
     expect(res.status).toHaveBeenCalledWith(400);
   });
 
+  test('rejects missing dryRun', async () => {
+    const { req, res } = mockReqRes({ format: 'csv', data: csv, mapping, serviceTypeId });
+    await (servicesHandler as any)(req, res);
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(mockState.svcCreateMany).not.toHaveBeenCalled();
+  });
+
   test('rejects unknown service type', async () => {
     mockState.serviceType = null;
     const { req, res } = mockReqRes({ format: 'csv', data: csv, mapping, serviceTypeId, dryRun: true });
     await (servicesHandler as any)(req, res);
     expect(res.status).toHaveBeenCalledWith(400);
+  });
+
+  test('unique-constraint race during commit returns 409', async () => {
+    mockState.svcCreateMany = jest.fn().mockRejectedValue(Object.assign(new Error('dup'), { code: 'P2002' }));
+    const { req, res } = mockReqRes({ format: 'csv', data: csv, mapping, serviceTypeId, dryRun: false });
+    await (servicesHandler as any)(req, res);
+    expect(res.status).toHaveBeenCalledWith(409);
+  });
+
+  test('non-POST returns 405', async () => {
+    const { req, res } = mockReqRes({}, 'GET');
+    await (servicesHandler as any)(req, res);
+    expect(res.status).toHaveBeenCalledWith(405);
   });
 });
