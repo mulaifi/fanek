@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/router';
 import { ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
@@ -20,6 +20,23 @@ export default function SetupPage() {
   const [activeStep, setActiveStep] = useState<number>(0);
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const redirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function goToLogin() {
+    if (redirectTimerRef.current) {
+      clearTimeout(redirectTimerRef.current);
+      redirectTimerRef.current = null;
+    }
+    router.replace('/login');
+  }
+
+  useEffect(() => {
+    return () => {
+      if (redirectTimerRef.current) {
+        clearTimeout(redirectTimerRef.current);
+      }
+    };
+  }, []);
 
   const STEPS = [
     { label: t('setup.stepAdmin') },
@@ -97,9 +114,10 @@ export default function SetupPage() {
           return;
         }
         setActiveStep(3);
-        // Redirect to login after a short delay so user can authenticate
-        setTimeout(() => {
-          router.replace('/login');
+        // Auto-redirect to login after a short delay; the Step 4 screen also
+        // offers a button to proceed immediately (see StepComplete onContinue).
+        redirectTimerRef.current = setTimeout(() => {
+          goToLogin();
         }, 2500);
       } catch {
         setError(t('setup.networkError'));
@@ -178,7 +196,7 @@ export default function SetupPage() {
               {activeStep === 2 && (
                 <StepTemplate selected={template} onSelect={setTemplate} />
               )}
-              {activeStep === 3 && <StepComplete />}
+              {activeStep === 3 && <StepComplete onContinue={goToLogin} />}
             </div>
 
             {!isComplete && (

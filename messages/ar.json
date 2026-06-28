@@ -122,7 +122,7 @@
     "templateBlankDesc": "ابدأ من الصفر بدون خدمات محددة مسبقاً",
     "setupComplete": "اكتمل الإعداد!",
     "setupCompleteDesc": "تم تهيئة مؤسستك وحساب المسؤول الخاص بك جاهز.",
-    "redirectingToDashboard": "جاري التحويل إلى لوحة المعلومات...",
+    "redirectingToLogin": "جاري التحويل إلى تسجيل الدخول...",
     "goToLogin": "الذهاب إلى تسجيل الدخول",
     "passwordsMismatch": "كلمتا المرور غير متطابقتين",
     "finishSetup": "إنهاء الإعداد",

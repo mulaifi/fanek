@@ -122,7 +122,7 @@
     "templateBlankDesc": "Start from scratch with no pre-defined services",
     "setupComplete": "Setup Complete!",
     "setupCompleteDesc": "Your organization has been configured and your admin account is ready.",
-    "redirectingToDashboard": "Redirecting to dashboard...",
+    "redirectingToLogin": "Redirecting to login...",
     "goToLogin": "Go to Login",
     "passwordsMismatch": "Passwords do not match",
     "finishSetup": "Finish Setup",

@@ -27,10 +27,15 @@ test.describe('Setup wizard', () => {
     await page.getByText('Cloud Provider', { exact: true }).click();
     await page.getByRole('button', { name: 'Finish Setup' }).click();
 
-    // Step 4 - Completion
+    // Step 4 - Completion confirmation screen (the step indicator now activates).
     await expect(page.getByText('Setup Complete!')).toBeVisible();
 
-    // Wizard auto-redirects to /login after a short delay.
+    // A "Go to Login" button lets the user proceed immediately.
+    const goToLogin = page.getByTestId('go-to-login');
+    await expect(goToLogin).toBeVisible();
+    await goToLogin.click();
+
+    // Clicking the button lands on /login (same end state as the auto-redirect).
     await expect(page).toHaveURL(/\/login/, { timeout: 10000 });
 
     expect(cspViolations, `CSP violations: ${cspViolations.join('\n')}`).toHaveLength(0);

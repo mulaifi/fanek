@@ -1,7 +1,8 @@
 import { useTranslations } from 'next-intl';
 import { Check, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
-export default function StepComplete() {
+export default function StepComplete({ onContinue }: { onContinue: () => void }) {
   const t = useTranslations();
 
   return (
@@ -13,9 +14,12 @@ export default function StepComplete() {
       <p className="text-muted-foreground">
         {t('setup.setupCompleteDesc')}
       </p>
+      <Button data-testid="go-to-login" onClick={onContinue}>
+        {t('setup.goToLogin')}
+      </Button>
       <div className="flex items-center gap-2">
         <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-        <span className="text-sm text-muted-foreground">{t('setup.redirectingToDashboard')}</span>
+        <span className="text-sm text-muted-foreground">{t('setup.redirectingToLogin')}</span>
       </div>
     </div>
   );
