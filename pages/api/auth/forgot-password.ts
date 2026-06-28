@@ -7,8 +7,13 @@ import { createRateLimiter } from '@/lib/rateLimit';
 import { methodNotAllowed } from '@/lib/auth/guard';
 import logger from '@/lib/logger';
 
-// 5 reset requests per 15 minutes, keyed by IP + email (brute-force / abuse defense).
+// 5 reset requests per 15 minutes, keyed by IP + email (targets one account).
 const limiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 5 });
+
+// 20 reset requests per 15 minutes per IP, regardless of email. Bounds an IP that
+// rotates many distinct addresses (inbox / SMTP-quota spam) which the ip+email
+// bucket alone would not catch.
+const ipLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 20 });
 
 // X-Forwarded-For is caller-controlled; only trust it behind a reverse proxy (TRUST_PROXY).
 const TRUST_PROXY = process.env.TRUST_PROXY === 'true' || process.env.TRUST_PROXY === '1';
@@ -51,8 +56,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   const ip = getClientIp(req);
-  const { allowed } = limiter.check(`forgot:${ip}:${normalized}`);
-  if (!allowed) {
+  // Per-IP+email bucket (one account) and per-IP bucket (rotating addresses).
+  const perEmail = limiter.check(`forgot:${ip}:${normalized}`);
+  const perIp = ipLimiter.check(`forgot-ip:${ip}`);
+  if (!perEmail.allowed || !perIp.allowed) {
     res.status(429).json({ error: 'Too many requests. Please wait a few minutes and try again.' });
     return;
   }

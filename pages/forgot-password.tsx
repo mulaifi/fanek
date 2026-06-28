@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -15,6 +15,24 @@ export default function ForgotPasswordPage() {
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [done, setDone] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  // null = still loading the public flag; gates the form so direct navigation
+  // doesn't show a live form when password reset is disabled.
+  const [resetEnabled, setResetEnabled] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    fetch('/api/settings')
+      .then((res) => res.json())
+      .then((data) => {
+        if (active) setResetEnabled(!!data.passwordResetEnabled);
+      })
+      .catch(() => {
+        if (active) setResetEnabled(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -63,7 +81,20 @@ export default function ForgotPasswordPage() {
               </Alert>
             )}
 
-            {done ? (
+            {resetEnabled === null ? (
+              <div className="flex justify-center py-4" data-testid="forgot-password-loading">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : resetEnabled === false ? (
+              <div className="flex flex-col gap-4" data-testid="forgot-password-unavailable">
+                <Alert>
+                  <AlertDescription>{t('auth.forgotPassword.notAvailable')}</AlertDescription>
+                </Alert>
+                <Button asChild variant="outline" className="w-full">
+                  <Link href="/login">{t('auth.forgotPassword.backToLogin')}</Link>
+                </Button>
+              </div>
+            ) : done ? (
               <div className="flex flex-col gap-4" data-testid="forgot-password-success">
                 <Alert className="border-green-200 bg-green-50 text-green-800">
                   <AlertDescription>{t('auth.forgotPassword.genericSuccess')}</AlertDescription>

@@ -223,4 +223,24 @@ describe('POST /api/auth/forgot-password', () => {
     await handler(req as never, res as never);
     expect(res.status).toHaveBeenCalledWith(429);
   });
+
+  test('CR2: rate limits one IP rotating many DISTINCT emails (per-IP bucket, 20/15min)', async () => {
+    mockPrisma.user.findUnique.mockResolvedValue(null);
+    const ip = '203.0.113.77';
+    const call = (email: string) => {
+      const req = { method: 'POST', body: { email }, headers: { host: 'h' }, socket: { remoteAddress: ip } };
+      const res = { status: jest.fn().mockReturnThis(), json: jest.fn().mockReturnThis(), setHeader: jest.fn() };
+      return { req, res };
+    };
+    // 20 distinct emails each pass their own ip+email bucket but fill the per-IP one.
+    for (let i = 0; i < 20; i++) {
+      const { req, res } = call(`rotate${i}@example.com`);
+      await handler(req as never, res as never);
+      expect(res.status).toHaveBeenCalledWith(200);
+    }
+    // The 21st distinct email from the same IP is blocked by the per-IP bucket.
+    const { req, res } = call('rotate-last@example.com');
+    await handler(req as never, res as never);
+    expect(res.status).toHaveBeenCalledWith(429);
+  });
 });

@@ -4,21 +4,18 @@ const { test, expect } = require('./fixtures');
 //
 // In the E2E environment SMTP is NOT configured, so:
 //   - the "Forgot password?" link is hidden on /login;
-//   - POST /api/auth/forgot-password still returns the generic success (no enumeration,
-//     no leak of SMTP state), which the request page surfaces as a success message.
+//   - the /forgot-password page gates on the public passwordResetEnabled flag and
+//     shows a "not available" notice instead of a live request form.
 // The reset page is exercised with an invalid token, which the server always rejects.
 
 test.describe('Forgot password — request form', () => {
-  test('always shows the generic success message after submitting an email', async ({ page }) => {
+  test('shows the "not available" notice when SMTP is not configured (E2E env)', async ({ page }) => {
     await page.goto('/forgot-password');
     await expect(page.getByRole('heading', { name: 'Forgot your password?' })).toBeVisible();
 
-    await page.locator('#email').fill('nobody-here@example.com');
-    await page.getByRole('button', { name: 'Send reset link' }).click();
-
-    // Generic, enumeration-safe success — shown whether or not the account exists.
-    await expect(page.getByTestId('forgot-password-success')).toBeVisible();
-    await expect(page.getByText(/a password reset link has been sent/i)).toBeVisible();
+    // Gated on the public flag: with SMTP unconfigured the form is replaced by a notice.
+    await expect(page.getByTestId('forgot-password-unavailable')).toBeVisible();
+    await expect(page.locator('#email')).toHaveCount(0);
   });
 });
 

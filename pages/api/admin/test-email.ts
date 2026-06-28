@@ -5,6 +5,8 @@ import { getSettings } from '@/lib/settings';
 import { isSmtpConfigured, sendTestEmail } from '@/lib/email';
 import logger from '@/lib/logger';
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 async function handler(req: AuthenticatedRequest, res: NextApiResponse): Promise<void> {
   if (req.method !== 'POST') {
     methodNotAllowed(res, ['POST']);
@@ -23,6 +25,12 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse): Promise
 
   if (!recipient || typeof recipient !== 'string') {
     res.status(400).json({ error: 'No recipient email available' });
+    return;
+  }
+
+  // Reject a malformed address up front (otherwise the transport fails with a 502).
+  if (!EMAIL_RE.test(recipient)) {
+    res.status(400).json({ error: 'A valid recipient email address is required' });
     return;
   }
 

@@ -76,10 +76,16 @@ export default function ResetPasswordPage() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        if (data.error === 'Weak password' && Array.isArray(data.details)) {
-          setError(data.details.join(', '));
+        // Map server responses to localized strings; never surface raw backend
+        // English (which would leak into non-English locales).
+        if (res.status === 429) {
+          setError(t('auth.resetPassword.rateLimited'));
+        } else if (data?.error === 'Weak password') {
+          setError(t('auth.resetPassword.weakPassword'));
+        } else if (res.status === 400) {
+          setError(t('auth.resetPassword.invalidToken'));
         } else {
-          setError(data.error || t('auth.resetPassword.invalidToken'));
+          setError(t('auth.resetPassword.genericError'));
         }
         setSubmitting(false);
         return;

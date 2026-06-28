@@ -51,8 +51,20 @@ describe('isSmtpConfigured', () => {
     expect(isSmtpConfigured(settingsWith({ enabled: true }))).toBe(false);
     expect(isSmtpConfigured(settingsWith({ enabled: true, host: 'h' }))).toBe(false);
   });
-  test('true when enabled and host/port/from present', () => {
+  test('true when enabled and host/port/from present (no auth)', () => {
     expect(isSmtpConfigured(settingsWith({ enabled: true, host: 'h', port: 587, from: 'a@b.c' }))).toBe(true);
+  });
+
+  test('CR6: false when a username is set but no password (incomplete auth pair)', () => {
+    expect(
+      isSmtpConfigured(settingsWith({ enabled: true, host: 'h', port: 587, from: 'a@b.c', user: 'mailer' }))
+    ).toBe(false);
+  });
+
+  test('CR6: true when a username AND password are both present', () => {
+    expect(
+      isSmtpConfigured(settingsWith({ enabled: true, host: 'h', port: 587, from: 'a@b.c', user: 'mailer', pass: 'p' }))
+    ).toBe(true);
   });
 });
 

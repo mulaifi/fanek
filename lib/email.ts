@@ -35,7 +35,12 @@ export function getSmtpConfig(settings: SettingsLike): SmtpConfig {
 /** True when SMTP is enabled and has the minimum fields required to send mail. */
 export function isSmtpConfigured(settings: SettingsLike): boolean {
   const c = getSmtpConfig(settings);
-  return !!(c.enabled && c.host && c.port && c.from);
+  const baseOk = !!(c.enabled && c.host && c.port && c.from);
+  // Auth must be a COMPLETE pair: either no username (unauthenticated relay) or a
+  // username WITH a password. A username without a password would advertise the
+  // feature but fail at delivery time.
+  const authComplete = !c.user || !!c.pass;
+  return baseOk && authComplete;
 }
 
 /**

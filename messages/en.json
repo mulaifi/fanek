@@ -89,6 +89,7 @@
       "submit": "Send reset link",
       "genericSuccess": "If an account with that email exists, a password reset link has been sent. Please check your inbox.",
       "rateLimited": "Too many requests. Please wait a few minutes and try again.",
+      "notAvailable": "Password reset is not available. Please contact your administrator.",
       "backToLogin": "Back to sign in"
     },
     "resetPassword": {
@@ -100,6 +101,9 @@
       "success": "Your password has been reset. You can now sign in with your new password.",
       "goToLogin": "Go to sign in",
       "invalidToken": "This password reset link is invalid or has expired.",
+      "weakPassword": "Your password does not meet the requirements. Please choose a stronger one.",
+      "rateLimited": "Too many requests. Please wait a few minutes and try again.",
+      "genericError": "Something went wrong. Please try again.",
       "requestNewLink": "Request a new link"
     }
   },
