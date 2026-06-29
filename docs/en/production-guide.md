@@ -14,6 +14,7 @@ Fanek's application configuration (organization name, service catalog, users) is
 6. [Backups](#6-backups)
 7. [Updates and Upgrades](#7-updates-and-upgrades)
 8. [Troubleshooting](#8-troubleshooting)
+9. [Monitoring and Alerting](#9-monitoring-and-alerting)
 
 
 ## 1. Prerequisites
@@ -1068,3 +1069,46 @@ docker stats --no-stream
   Then restart the app.
 - **Disk is full.** Check with `df -h`. Old backups, Docker images, or log files may be filling the disk. Clean up with `docker system prune` (for Docker) or remove old log files.
 - **Database needs vacuuming.** For long-running instances, PostgreSQL may need maintenance. Run: `docker exec fanek-db-1 psql -U fanek -c "VACUUM ANALYZE;"` (Docker) or `psql -U fanek -c "VACUUM ANALYZE;"` (bare-metal).
+
+## 9. Monitoring and Alerting
+
+Fanek is self-hosted, so monitoring is the operator's responsibility — you choose the stack that fits your environment. Fanek gives you the two building blocks you need: a health endpoint and structured logs.
+
+### Health checks
+
+Fanek exposes a liveness endpoint at `/api/health` that returns `200` with a small JSON body (`{ "status": "ok", ... }`) when the app is up. Use it for:
+
+- **Container orchestration** — Docker/Kubernetes health/liveness probes (point them at `/api/health`).
+- **Load balancers / reverse proxies** — upstream health checks before routing traffic.
+- **Uptime monitoring** — an external uptime service (e.g. UptimeRobot, Healthchecks.io, a Prometheus blackbox probe) polling the URL every minute.
+
+```bash
+# Quick manual check
+curl -fsS http://localhost:8080/api/health && echo OK
+```
+
+### Structured logs
+
+Fanek logs as structured JSON (via Pino), with sensitive fields redacted. Ship these logs to your aggregator of choice — Grafana Loki, the ELK/OpenSearch stack, Datadog, CloudWatch, etc. — by collecting the container's stdout (Docker) or the systemd journal (bare-metal).
+
+```bash
+# Docker: follow logs
+docker compose logs -f app
+
+# Bare-metal (systemd): follow logs
+journalctl -u fanek -f
+```
+
+### What to alert on
+
+At a minimum, configure alerts for:
+
+- **Health-check failures** — `/api/health` non-200 or unreachable for N consecutive checks (service down).
+- **Error-level log spikes** — a sustained increase in `level: 50` (error) log lines.
+- **HTTP 5xx rate** — elevated server-error responses at the reverse proxy.
+- **Host resources** — disk usage (backups/images/logs fill disks over time — see Troubleshooting), memory, and CPU saturation.
+- **Database** — connection failures and disk usage on the PostgreSQL volume.
+
+### Optional: error-tracking service
+
+If you want aggregated exception tracking with stack traces, you can integrate an error-tracking service (e.g. Sentry, GlitchTip, Bugsnag) at the infrastructure level. Fanek does not bundle one — this keeps the app free of third-party telemetry by default and lets you pick a self-hosted or SaaS option that meets your data-residency requirements.
