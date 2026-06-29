@@ -64,6 +64,6 @@ export default [
     },
   },
   {
-    ignores: ['.next/', 'node_modules/', 'coverage/', 'public/'],
+    ignores: ['.next/', 'node_modules/', 'coverage/', 'public/', 'website/'],
   },
 ];
