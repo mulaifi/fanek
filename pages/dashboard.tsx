@@ -21,6 +21,7 @@ import { DataTable } from '@/components/ui/data-table';
 import AppShell from '@/components/AppShell';
 import { statusColors } from '@/lib/theme';
 import { cn } from '@/lib/utils';
+import { fetchWithRetry } from '@/lib/fetchWithRetry';
 import { toast } from 'sonner';
 
 interface StatCardProps {
@@ -77,7 +78,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    fetch('/api/dashboard/stats')
+    fetchWithRetry('/api/dashboard/stats')
       .then((r) => {
         if (!r.ok) throw new Error('Failed to load');
         return r.json();
