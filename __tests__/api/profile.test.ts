@@ -236,6 +236,7 @@ describe('DELETE /api/profile (self-service account deletion)', () => {
   // comes from the DB record returned by findUnique, so each test sets it there.
 
   test('rejects when password confirmation is missing', async () => {
+    mockPrisma.user.findUnique.mockResolvedValue({ id: 'u1', role: 'VIEWER', passwordHash: 'hash' });
     const { req, res } = mockReqRes({ method: 'DELETE', body: {} });
     await handler(req as never, res as never);
     expect(res.status).toHaveBeenCalledWith(400);
@@ -253,13 +254,56 @@ describe('DELETE /api/profile (self-service account deletion)', () => {
     expect(mockPrisma.$transaction).not.toHaveBeenCalled();
   });
 
-  test('rejects OAuth users with no password hash', async () => {
-    mockPrisma.user.findUnique.mockResolvedValue({ id: 'u1', role: 'VIEWER', passwordHash: null });
-    const { req, res } = mockReqRes({ method: 'DELETE', body: { password: 'whatever' } });
+  test('rejects OAuth deletion when email confirmation does not match', async () => {
+    mockPrisma.user.findUnique.mockResolvedValue({ id: 'u1', email: 'oauth@example.com', role: 'VIEWER', passwordHash: null });
+    const { req, res } = mockReqRes({ method: 'DELETE', body: { emailConfirmation: 'wrong@example.com' } });
     await handler(req as never, res as never);
     expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.json.mock.calls[0][0].error).toMatch(/oauth/i);
+    expect(res.json.mock.calls[0][0].error).toMatch(/does not match/i);
     expect(mockPrisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  test('rejects OAuth deletion when email confirmation is missing', async () => {
+    mockPrisma.user.findUnique.mockResolvedValue({ id: 'u1', email: 'oauth@example.com', role: 'VIEWER', passwordHash: null });
+    const { req, res } = mockReqRes({ method: 'DELETE', body: {} });
+    await handler(req as never, res as never);
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json.mock.calls[0][0].error).toMatch(/email confirmation is required/i);
+    expect(mockPrisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  test('allows an OAuth-only user to delete with matching email confirmation', async () => {
+    mockPrisma.user.findUnique.mockResolvedValue({
+      id: 'u1',
+      email: 'oauth@example.com',
+      role: 'VIEWER',
+      passwordHash: null,
+    });
+    const { req, res } = mockReqRes({ method: 'DELETE', body: { emailConfirmation: 'oauth@example.com' } });
+    await handler(req as never, res as never);
+
+    expect(txQueryRaw).not.toHaveBeenCalled();
+    expect(txAuditDeleteMany).toHaveBeenCalledWith({ where: { userId: 'u1' } });
+    expect(txUserDelete).toHaveBeenCalledWith({ where: { id: 'u1' } });
+    expect(res.json).toHaveBeenCalledWith({ success: true });
+  });
+
+  test('refuses to delete the last remaining OAuth admin (409)', async () => {
+    mockPrisma.user.findUnique.mockResolvedValue({
+      id: 'u1',
+      email: 'admin@example.com',
+      role: 'ADMIN',
+      passwordHash: null,
+    });
+    txQueryRaw.mockResolvedValue([{ id: 'u1' }]);
+    const { req, res } = mockReqRes({ method: 'DELETE', body: { emailConfirmation: 'admin@example.com' } });
+    await handler(req as never, res as never);
+
+    expect(mockPrisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(res.status).toHaveBeenCalledWith(409);
+    expect(res.json.mock.calls[0][0].error).toMatch(/only administrator/i);
+    expect(txAuditDeleteMany).not.toHaveBeenCalled();
+    expect(txUserDelete).not.toHaveBeenCalled();
   });
 
   test('returns 404 when the user no longer exists', async () => {
