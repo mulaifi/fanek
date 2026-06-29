@@ -373,6 +373,9 @@ export default function AppShell({ children, title }: AppShellProps) {
               <img
                 src={resolvedTheme === 'dark' ? '/Fanek_logo_dark.svg' : '/Fanek_logo_light.svg'}
                 alt={t('nav.appName')}
+                width={64}
+                height={64}
+                decoding="async"
                 style={{ width: expanded ? 64 : 32, height: expanded ? 64 : 32, flexShrink: 0, transition: 'width 200ms ease, height 200ms ease' }}
               />
               {expanded && (

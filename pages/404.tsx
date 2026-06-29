@@ -32,7 +32,14 @@ export default function NotFoundPage() {
         <LocaleSwitcher />
       </div>
       <div className="w-full max-w-[420px] flex flex-col items-center text-center gap-6">
-        <img src={logoSrc} alt={tNav('appName')} className="w-16 h-16" />
+        <img
+          src={logoSrc}
+          alt={tNav('appName')}
+          width={64}
+          height={64}
+          decoding="async"
+          className="w-16 h-16"
+        />
         <div className="flex flex-col items-center gap-2">
           <p className="text-5xl font-bold tracking-tight text-primary">404</p>
           <h1 className="text-2xl font-bold">{t('title')}</h1>
