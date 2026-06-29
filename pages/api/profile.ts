@@ -116,9 +116,12 @@ async function handlePut(req: AuthenticatedRequest, res: NextApiResponse): Promi
 /**
  * DELETE /api/profile — self-service account deletion (GDPR Art. 17 erasure).
  *
- * Deletes the requesting user's OWN account after re-confirming their password
- * (defense against a hijacked session or accidental click). Refuses if the user is
- * the last remaining Admin, to avoid locking the whole organization out.
+ * Deletes the requesting user's OWN account after re-confirming their identity:
+ * - Credential users: password verification
+ * - OAuth-only users: email confirmation
+ *
+ * Refuses if the user is the last remaining Admin, to avoid locking the whole
+ * organization out.
  *
  * Audit handling: `AuditLog.userId` is a RESTRICT foreign key, so a user with audit
  * entries cannot be deleted while those rows exist, and no AuditLog row may reference
@@ -130,11 +133,10 @@ async function handlePut(req: AuthenticatedRequest, res: NextApiResponse): Promi
 async function handleDelete(req: AuthenticatedRequest, res: NextApiResponse): Promise<void> {
   const userId = req.session.user.id;
 
-  const { password } = req.body as { password?: unknown };
-  if (typeof password !== 'string' || password.length === 0) {
-    res.status(400).json({ error: 'Password confirmation is required' });
-    return;
-  }
+  const { password, emailConfirmation } = req.body as {
+    password?: unknown;
+    emailConfirmation?: unknown;
+  };
 
   const { allowed, remaining } = deleteAccountLimiter.check(userId);
   if (!allowed) {
@@ -149,15 +151,25 @@ async function handleDelete(req: AuthenticatedRequest, res: NextApiResponse): Pr
     return;
   }
 
-  if (!user.passwordHash) {
-    res.status(400).json({ error: 'Password confirmation is not available for OAuth accounts' });
-    return;
-  }
-
-  const valid = await verifyPassword(password, user.passwordHash);
-  if (!valid) {
-    res.status(400).json({ error: 'Password is incorrect' });
-    return;
+  if (user.passwordHash) {
+    if (typeof password !== 'string' || password.length === 0) {
+      res.status(400).json({ error: 'Password confirmation is required' });
+      return;
+    }
+    const valid = await verifyPassword(password, user.passwordHash);
+    if (!valid) {
+      res.status(400).json({ error: 'Password is incorrect' });
+      return;
+    }
+  } else {
+    if (typeof emailConfirmation !== 'string' || emailConfirmation.length === 0) {
+      res.status(400).json({ error: 'Email confirmation is required' });
+      return;
+    }
+    if (emailConfirmation.toLowerCase().trim() !== user.email.toLowerCase().trim()) {
+      res.status(400).json({ error: 'Email does not match your account' });
+      return;
+    }
   }
 
   // Last-admin safeguard + erasure run in a single INTERACTIVE transaction so the
