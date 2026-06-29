@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fanek — Know which client has which service, at a glance</title>
+  <meta name="description" content="Fanek is an open-source, self-hosted client information manager for IT, cloud, telecom, and MSP service providers. A living inventory of who-has-what. Not a CRM, helpdesk, or billing system." />
+
+  <!-- Open Graph / social -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Fanek — Know which client has which service, at a glance" />
+  <meta property="og:description" content="Open-source, self-hosted client information manager for service providers. A living inventory of who-has-what." />
+  <meta property="og:image" content="screenshots/dashboard.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16.png" />
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
+  <link rel="icon" href="assets/favicon.ico" />
+
+  <!-- Set theme before paint to avoid flash -->
+  <script>
+    (function () {
+      try {
+        var stored = localStorage.getItem('fanek-theme');
+        var theme = stored || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+        document.documentElement.setAttribute('data-theme', theme);
+      } catch (e) {}
+    })();
+  </script>
+
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="#top" aria-label="Fanek home">
+        <img class="brand-logo" src="assets/Fanek_logo_light.svg" alt="Fanek logo" width="40" height="27" />
+        <span class="brand-name">Fanek</span>
+      </a>
+      <nav class="site-nav" aria-label="Primary">
+        <a href="#why">Why Fanek</a>
+        <a href="#features">Features</a>
+        <a href="#screenshots">Screenshots</a>
+        <a href="#quick-start">Quick Start</a>
+        <a href="https://github.com/mulaifi/fanek" rel="noopener">GitHub</a>
+      </nav>
+      <div class="header-actions">
+        <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle color theme" aria-pressed="false">
+          <span class="theme-icon theme-icon--sun" aria-hidden="true">☀</span>
+          <span class="theme-icon theme-icon--moon" aria-hidden="true">☾</span>
+        </button>
+        <a class="btn btn-primary btn-sm" href="https://github.com/mulaifi/fanek" rel="noopener">Star on GitHub</a>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+    <!-- Hero -->
+    <section class="hero" id="top">
+      <div class="container hero-inner">
+        <img class="hero-logo" src="assets/Fanek_logo_light.svg" alt="Fanek logo" width="120" height="82" />
+        <p class="eyebrow">Open-source · Self-hosted · Made in Kuwait 🇰🇼</p>
+        <h1 class="hero-title">Know which client has which service, at&nbsp;a&nbsp;glance.</h1>
+        <p class="hero-subhead">
+          Fanek is a clean, searchable record book for service providers — a living
+          inventory of who-has-what. Not a CRM. Not a helpdesk. Not a billing system.
+        </p>
+        <div class="hero-cta">
+          <a class="btn btn-primary" href="https://github.com/mulaifi/fanek" rel="noopener">View on GitHub</a>
+          <a class="btn btn-secondary" href="#quick-start">Quick Start &rarr;</a>
+        </div>
+        <p class="hero-note">MIT licensed · Docker-ready · English &amp; Arabic (RTL)</p>
+      </div>
+    </section>
+
+    <!-- Why Fanek (origin story) -->
+    <section class="section section-why" id="why">
+      <div class="container narrow">
+        <p class="section-eyebrow">The origin story</p>
+        <h2 class="section-title">Built because nothing else fit.</h2>
+        <div class="prose">
+          <p>
+            If you run an IT, cloud, telecom, or managed-services company, you have clients,
+            and each client subscribes to some combination of your services. Your provisioning
+            team sets them up. Your support team looks them up ten times a day. Your operations
+            team updates them as things change.
+          </p>
+          <p>
+            Everyone needs one place to answer a single question:
+            <strong>"What does this client have?"</strong>
+          </p>
+          <p>
+            We tried the obvious tools and every one was the wrong shape. A spreadsheet goes
+            stale the moment two people touch it. A full CRM buries the answer under sales
+            pipelines and marketing funnels you will never use. A helpdesk tracks tickets, not
+            inventory. A billing system tracks invoices, not what's actually deployed. And there
+            was no open-source tool built for exactly this job.
+          </p>
+          <p>
+            So we built Fanek. A focused, self-hosted record of your clients and their
+            services. <strong>Nothing more, nothing less.</strong>
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- What it is / isn't -->
+    <section class="section section-isnt">
+      <div class="container">
+        <div class="isnt-grid">
+          <div class="isnt-card isnt-is">
+            <h3>What Fanek <span class="accent">is</span></h3>
+            <ul class="check-list">
+              <li>A living inventory of who-has-what</li>
+              <li>A clean, searchable record of clients &amp; services</li>
+              <li>A shared source of truth for provisioning, support &amp; ops</li>
+              <li>Self-hosted and fully under your control</li>
+            </ul>
+          </div>
+          <div class="isnt-card isnt-not">
+            <h3>What Fanek is <span class="accent-muted">not</span></h3>
+            <ul class="cross-list">
+              <li>A CRM with sales pipelines &amp; marketing</li>
+              <li>A helpdesk or ticketing system</li>
+              <li>A billing or invoicing platform</li>
+              <li>Another spreadsheet that goes stale</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features -->
+    <section class="section section-features" id="features">
+      <div class="container">
+        <p class="section-eyebrow">Features</p>
+        <h2 class="section-title">Everything you need. Nothing you don't.</h2>
+        <div class="features-grid">
+          <article class="feature-card">
+            <div class="feature-icon" aria-hidden="true">🗂️</div>
+            <h3>Dynamic Service Catalog</h3>
+            <p>Admins define service types with custom field schemas. Service records store values as structured data — no code changes.</p>
+          </article>
+          <article class="feature-card">
+            <div class="feature-icon" aria-hidden="true">🧭</div>
+            <h3>Setup Wizard</h3>
+            <p>Guided first-run flow: create the admin, set org details, and pick a starter template — Cloud, Telecom, MSP, or Blank.</p>
+          </article>
+          <article class="feature-card">
+            <div class="feature-icon" aria-hidden="true">🔐</div>
+            <h3>Role-Based Access</h3>
+            <p>Three clear roles: Admin (full access), Editor (create &amp; edit), and Viewer (read-only). Simple to reason about.</p>
+          </article>
+          <article class="feature-card">
+            <div class="feature-icon" aria-hidden="true">⌘</div>
+            <h3>Global Search</h3>
+            <p>Spotlight-style command palette (Cmd+K) across customers, partners, and services. Find anything in a keystroke.</p>
+          </article>
+          <article class="feature-card">
+            <div class="feature-icon" aria-hidden="true">📇</div>
+            <h3>Contacts Manager</h3>
+            <p>Multiple contacts per customer or partner, each with multiple emails and phone numbers. Inline editing throughout.</p>
+          </article>
+          <article class="feature-card">
+            <div class="feature-icon" aria-hidden="true">📝</div>
+            <h3>Audit Log</h3>
+            <p>Structured logs for every data change, with user attribution and JSON detail. Know who changed what, and when.</p>
+          </article>
+          <article class="feature-card">
+            <div class="feature-icon" aria-hidden="true">🌐</div>
+            <h3>English &amp; Arabic</h3>
+            <p>Full bilingual UI with right-to-left support. Users switch language from the navigation bar at any time.</p>
+          </article>
+          <article class="feature-card">
+            <div class="feature-icon" aria-hidden="true">📤</div>
+            <h3>CSV / JSON Export</h3>
+            <p>Export customer and partner data for reporting and integrations. Your data stays portable, always.</p>
+          </article>
+          <article class="feature-card">
+            <div class="feature-icon" aria-hidden="true">🔑</div>
+            <h3>OAuth Support</h3>
+            <p>Enable Google or other OAuth providers from Admin Settings — no file edits, no redeploys.</p>
+          </article>
+          <article class="feature-card">
+            <div class="feature-icon" aria-hidden="true">🐳</div>
+            <h3>Docker-Ready</h3>
+            <p>Ship and run with a single <code>docker compose up</code>. Secrets auto-generated, database migrated automatically.</p>
+          </article>
+          <article class="feature-card">
+            <div class="feature-icon" aria-hidden="true">🎨</div>
+            <h3>Dark &amp; Light Mode</h3>
+            <p>Toggle between a dark (default) and light theme. Comfortable in any environment, day or night.</p>
+          </article>
+          <article class="feature-card">
+            <div class="feature-icon" aria-hidden="true">🛠️</div>
+            <h3>CLI Admin Tools</h3>
+            <p>Server-side helpers like <code>reset-password</code> and <code>list-users</code> for when you need them most.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Screenshots -->
+    <section class="section section-screenshots" id="screenshots">
+      <div class="container">
+        <p class="section-eyebrow">A look inside</p>
+        <h2 class="section-title">Clean, fast, and focused.</h2>
+        <div class="shots-grid">
+          <figure class="shot">
+            <img src="screenshots/dashboard.png" alt="Fanek dashboard showing an overview of customers and services" loading="lazy" />
+            <figcaption>Dashboard</figcaption>
+          </figure>
+          <figure class="shot">
+            <img src="screenshots/customer-detail.png" alt="Customer detail page showing contacts and subscribed services" loading="lazy" />
+            <figcaption>Customer detail</figcaption>
+          </figure>
+          <figure class="shot">
+            <img src="screenshots/customers.png" alt="Searchable list of customers with statuses" loading="lazy" />
+            <figcaption>Customers list</figcaption>
+          </figure>
+          <figure class="shot">
+            <img src="screenshots/service-catalog.png" alt="Service catalog with admin-defined service types and field schemas" loading="lazy" />
+            <figcaption>Service catalog</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <!-- Quick Start -->
+    <section class="section section-quickstart" id="quick-start">
+      <div class="container narrow">
+        <p class="section-eyebrow">Quick Start</p>
+        <h2 class="section-title">Up and running in three commands.</h2>
+        <p class="quickstart-lead">
+          With Docker installed, clone the repo and bring it up. Secrets are auto-generated and
+          the database is created and migrated for you.
+        </p>
+        <div class="code-block">
+          <button class="copy-btn" type="button" data-copy="git clone https://github.com/mulaifi/fanek.git&#10;cd fanek&#10;docker compose up -d">Copy</button>
+          <pre><code><span class="cmt"># 1. Clone the repository</span>
+git clone https://github.com/mulaifi/fanek.git
+
+<span class="cmt"># 2. Enter the project</span>
+cd fanek
+
+<span class="cmt"># 3. Start it</span>
+docker compose up -d</code></pre>
+        </div>
+        <p class="quickstart-after">
+          Then open <a href="http://localhost:8080" rel="noopener">http://localhost:8080</a> and
+          follow the setup wizard. That's it.
+        </p>
+        <div class="quickstart-cta">
+          <a class="btn btn-secondary" href="https://github.com/mulaifi/fanek/blob/main/docs/en/admin-guide.md" rel="noopener">Admin Guide</a>
+          <a class="btn btn-secondary" href="https://github.com/mulaifi/fanek/blob/main/docs/en/production-guide.md" rel="noopener">Production Guide</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Final CTA -->
+    <section class="section section-cta">
+      <div class="container narrow cta-box">
+        <h2 class="section-title">Stop hunting for "what does this client have?"</h2>
+        <p>Self-host Fanek and give your team one source of truth. Free and open source under the MIT license.</p>
+        <div class="hero-cta">
+          <a class="btn btn-primary" href="https://github.com/mulaifi/fanek" rel="noopener">Get Fanek on GitHub</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div class="footer-brand">
+        <img class="brand-logo" src="assets/Fanek_logo_light.svg" alt="Fanek logo" width="36" height="25" />
+        <div>
+          <span class="brand-name">Fanek</span>
+          <p class="footer-tag">Know which client has which service, at a glance.</p>
+        </div>
+      </div>
+      <nav class="footer-links" aria-label="Footer">
+        <div class="footer-col">
+          <h4>Project</h4>
+          <a href="https://github.com/mulaifi/fanek" rel="noopener">GitHub Repository</a>
+          <a href="https://github.com/mulaifi/fanek/releases" rel="noopener">Releases</a>
+          <a href="https://github.com/mulaifi/fanek/blob/main/LICENSE" rel="noopener">MIT License</a>
+        </div>
+        <div class="footer-col">
+          <h4>Docs (English)</h4>
+          <a href="https://github.com/mulaifi/fanek/blob/main/docs/en/admin-guide.md" rel="noopener">Admin Guide</a>
+          <a href="https://github.com/mulaifi/fanek/blob/main/docs/en/user-guide.md" rel="noopener">User Guide</a>
+          <a href="https://github.com/mulaifi/fanek/blob/main/docs/en/production-guide.md" rel="noopener">Production Guide</a>
+        </div>
+        <div class="footer-col">
+          <h4>التوثيق (العربية)</h4>
+          <a href="https://github.com/mulaifi/fanek/blob/main/docs/ar/admin-guide.md" rel="noopener">دليل المسؤول</a>
+          <a href="https://github.com/mulaifi/fanek/blob/main/docs/ar/user-guide.md" rel="noopener">دليل المستخدم</a>
+        </div>
+      </nav>
+    </div>
+    <div class="container footer-bottom">
+      <p>&copy; 2026 Fanek Contributors. Released under the MIT License.</p>
+      <p>Made in Kuwait 🇰🇼</p>
+    </div>
+  </footer>
+
+  <script src="main.js"></script>
+</body>
+</html>
