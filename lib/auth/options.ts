@@ -133,6 +133,7 @@ export async function getAuthOptions(): Promise<NextAuthOptions> {
           token.role = u.role;
           token.firstLogin = u.firstLogin;
           token.locale = (user as { locale?: string | null }).locale ?? null;
+          token.hasPassword = !!(user as { passwordHash?: string | null }).passwordHash;
           // Snapshot the invalidation watermark at issuance. Never refreshed after this.
           token[SVA_CLAIM] = toEpochMs(u.sessionsValidAfter);
         } else if (token.id) {
@@ -165,6 +166,7 @@ export async function getAuthOptions(): Promise<NextAuthOptions> {
           session.user.role = token.role;
           session.user.firstLogin = token.firstLogin;
           session.user.locale = (token.locale as string | null) ?? null;
+          session.user.hasPassword = token.hasPassword;
         }
         return session;
       },
