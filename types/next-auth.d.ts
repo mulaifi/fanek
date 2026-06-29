@@ -17,5 +17,11 @@ declare module 'next-auth/jwt' {
     role: 'ADMIN' | 'EDITOR' | 'VIEWER';
     firstLogin?: boolean;
     locale: string | null;
+    /**
+     * Millisecond-epoch snapshot of the user's `sessionsValidAfter` captured when the
+     * token was issued (at sign-in). Compared against the live DB value on every
+     * session read to revoke tokens issued before a password reset/change.
+     */
+    sva?: number;
   }
 }

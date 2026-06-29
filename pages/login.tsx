@@ -18,7 +18,7 @@ import { Loader2 } from 'lucide-react';
 export default function LoginPage() {
   const t = useTranslations();
   const router = useRouter();
-  const { error: queryError } = router.query;
+  const { error: queryError, passwordChanged } = router.query;
 
   const [orgName, setOrgName] = useState<string>('Fanek');
   const [orgLogo, setOrgLogo] = useState<string | null>(null);
@@ -109,6 +109,12 @@ export default function LoginPage() {
               <h2 className="text-xl font-bold text-center">{orgName}</h2>
               <p className="text-sm text-muted-foreground text-center">{t('auth.signInToAccount')}</p>
             </div>
+
+            {passwordChanged && !displayError && (
+              <Alert className="mb-4 border-green-200 bg-green-50 dark:bg-green-950/20">
+                <AlertDescription>{t('auth.passwordChangedNotice')}</AlertDescription>
+              </Alert>
+            )}
 
             {displayError && (
               <Alert variant="destructive" className="mb-4">

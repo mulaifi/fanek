@@ -99,7 +99,9 @@ export async function consumeResetToken(
     if (consumed.count !== 1) return false;
     await tx.user.update({
       where: { id: userId },
-      data: { passwordHash, firstLogin: false },
+      // sessionsValidAfter = now revokes every JWT issued before this reset, so a
+      // stolen/lingering token can no longer authenticate (see lib/auth/options.ts).
+      data: { passwordHash, firstLogin: false, sessionsValidAfter: now },
     });
     // Invalidate any other outstanding tokens for this user.
     await tx.passwordResetToken.deleteMany({ where: { userId, usedAt: null } });

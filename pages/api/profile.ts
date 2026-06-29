@@ -87,6 +87,10 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse): Promise
     const newHash = await hashPassword(newPassword);
     updateData.passwordHash = newHash;
     updateData.firstLogin = false;
+    // Revoke all existing JWT sessions (including this one) issued before the change,
+    // so a stolen token can no longer authenticate (see lib/auth/options.ts). The
+    // client signs the user out and prompts a fresh login with the new password.
+    updateData.sessionsValidAfter = new Date();
     result.firstLogin = false;
   }
 

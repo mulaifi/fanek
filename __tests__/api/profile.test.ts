@@ -114,11 +114,41 @@ describe('PUT /api/profile', () => {
     const { req, res } = mockReqRes({ body: { currentPassword: 'OldPass1!', newPassword: 'NewPass1!' } });
     await handler(req as never, res as never);
 
-    expect(mockPrisma.user.update).toHaveBeenCalledWith({
-      where: { id: 'u1' },
-      data: { passwordHash: 'newhash', firstLogin: false },
-    });
+    // Password change also stamps sessionsValidAfter to revoke existing JWT sessions.
+    const updateArg = mockPrisma.user.update.mock.calls[0][0];
+    expect(updateArg.where).toEqual({ id: 'u1' });
+    expect(updateArg.data.passwordHash).toBe('newhash');
+    expect(updateArg.data.firstLogin).toBe(false);
+    expect(updateArg.data.sessionsValidAfter).toBeInstanceOf(Date);
     expect(res.json).toHaveBeenCalledWith({ success: true, firstLogin: false });
+  });
+
+  test('stamps sessionsValidAfter to "now" on password change (invalidates existing sessions)', async () => {
+    mockPrisma.user.findUnique.mockResolvedValue({ id: 'u1', passwordHash: 'oldhash' });
+    mockVerifyPassword.mockResolvedValue(true);
+    mockCheckStrength.mockReturnValue({ valid: true, errors: [] });
+    mockHashPassword.mockResolvedValue('newhash');
+    mockPrisma.user.update.mockResolvedValue({});
+
+    const before = Date.now();
+    const { req, res } = mockReqRes({ body: { currentPassword: 'OldPass1!', newPassword: 'NewPass1!' } });
+    await handler(req as never, res as never);
+    const after = Date.now();
+
+    const sva = mockPrisma.user.update.mock.calls[0][0].data.sessionsValidAfter as Date;
+    expect(sva).toBeInstanceOf(Date);
+    expect(sva.getTime()).toBeGreaterThanOrEqual(before);
+    expect(sva.getTime()).toBeLessThanOrEqual(after);
+  });
+
+  test('does NOT set sessionsValidAfter when only the name changes', async () => {
+    mockPrisma.user.update.mockResolvedValue({ name: 'Just Name' });
+
+    const { req, res } = mockReqRes({ body: { name: 'Just Name' } });
+    await handler(req as never, res as never);
+
+    const updateArg = mockPrisma.user.update.mock.calls[0][0];
+    expect('sessionsValidAfter' in updateArg.data).toBe(false);
   });
 
   test('returns 400 for OAuth users with no passwordHash', async () => {
@@ -163,11 +193,13 @@ describe('PUT /api/profile', () => {
     });
     await handler(req as never, res as never);
 
-    // Single atomic update with all fields
-    expect(mockPrisma.user.update).toHaveBeenCalledWith({
-      where: { id: 'u1' },
-      data: { name: 'New Name', passwordHash: 'newhash', firstLogin: false },
-    });
+    // Single atomic update with all fields (incl. the session-invalidation stamp)
+    const updateArg = mockPrisma.user.update.mock.calls[0][0];
+    expect(updateArg.where).toEqual({ id: 'u1' });
+    expect(updateArg.data.name).toBe('New Name');
+    expect(updateArg.data.passwordHash).toBe('newhash');
+    expect(updateArg.data.firstLogin).toBe(false);
+    expect(updateArg.data.sessionsValidAfter).toBeInstanceOf(Date);
     expect(res.json).toHaveBeenCalledWith({ success: true, name: 'New Name', firstLogin: false });
   });
 
