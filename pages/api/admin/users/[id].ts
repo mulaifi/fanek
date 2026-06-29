@@ -85,7 +85,13 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse): Promise
       return;
     }
 
-    await prisma.user.delete({ where: { id } });
+    // AuditLog.userId is ON DELETE RESTRICT, so remove this user's own audit-log
+    // rows in the same transaction as the user. Otherwise deleting any user who
+    // has performed an audited action fails with a foreign-key violation.
+    await prisma.$transaction([
+      prisma.auditLog.deleteMany({ where: { userId: id } }),
+      prisma.user.delete({ where: { id } }),
+    ]);
 
     await logAudit({
       userId: req.session.user.id,
