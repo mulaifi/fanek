@@ -19,7 +19,8 @@ jest.mock('@/lib/prisma', () => ({
     session: {
       deleteMany: jest.fn(),
     },
-    auditLog: { create: jest.fn() },
+    auditLog: { create: jest.fn(), deleteMany: jest.fn() },
+    $transaction: jest.fn((ops) => Promise.all(ops)),
   },
 }));
 
@@ -227,6 +228,21 @@ describe('DELETE /api/admin/users/[id]', () => {
     expect(logAudit).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'DELETE', resource: 'user', resourceId: 'clxxxxxxxxxxxxxxxxuser0002' })
     );
+  });
+
+  test("clears the user's own audit-log rows in the same transaction (RESTRICT FK)", async () => {
+    // Regression: AuditLog.userId is ON DELETE RESTRICT, so deleting a user with
+    // audit history must remove their audit rows atomically or it fails with an FK error.
+    const existing = { id: 'clxxxxxxxxxxxxxxxxuser0002', name: 'Bob', email: 'bob@example.com', role: 'VIEWER' };
+    prisma.user.findUnique.mockResolvedValue(existing);
+    prisma.user.delete.mockResolvedValue({});
+    prisma.auditLog.deleteMany.mockResolvedValue({ count: 5 });
+    const { req, res } = mockReqRes({ method: 'DELETE', query: { id: 'clxxxxxxxxxxxxxxxxuser0002' } });
+    await idHandler(req, res);
+    expect(prisma.auditLog.deleteMany).toHaveBeenCalledWith({ where: { userId: 'clxxxxxxxxxxxxxxxxuser0002' } });
+    expect(prisma.user.delete).toHaveBeenCalledWith({ where: { id: 'clxxxxxxxxxxxxxxxxuser0002' } });
+    expect(prisma.$transaction).toHaveBeenCalled();
+    expect(res.json).toHaveBeenCalledWith({ success: true });
   });
 
   test('prevents deleting own account (self-delete)', async () => {
