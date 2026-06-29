@@ -7,6 +7,8 @@ declare module 'next-auth' {
       role: 'ADMIN' | 'EDITOR' | 'VIEWER';
       firstLogin?: boolean;
       locale: string | null;
+      /** True when the user has a local password (credentials sign-in). False for OAuth-only users. */
+      hasPassword?: boolean;
     } & DefaultSession['user'];
   }
 }
@@ -23,5 +25,7 @@ declare module 'next-auth/jwt' {
      * session read to revoke tokens issued before a password reset/change.
      */
     sva?: number;
+    /** True when the user has a local password (credentials sign-in). False for OAuth-only users. */
+    hasPassword?: boolean;
   }
 }

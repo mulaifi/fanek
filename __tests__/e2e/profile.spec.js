@@ -33,6 +33,12 @@ test.describe('Profile', () => {
     await expect(page.getByTestId('delete-account-button')).toBeVisible();
   });
 
+  test('delete dialog shows password input for credential users', async ({ page }) => {
+    await page.goto('/profile');
+    await page.getByTestId('delete-account-button').click();
+    await expect(page.getByTestId('delete-account-password')).toBeVisible();
+  });
+
   test('exports my data as a downloadable JSON file', async ({ page }) => {
     await page.goto('/profile');
     const downloadPromise = page.waitForEvent('download');

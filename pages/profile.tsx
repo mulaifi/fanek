@@ -313,19 +313,22 @@ function LanguageSelector() {
 
 interface DangerZoneProps {
   isAdmin: boolean;
+  hasPassword: boolean;
 }
 
-function DangerZone({ isAdmin }: DangerZoneProps) {
+function DangerZone({ isAdmin, hasPassword }: DangerZoneProps) {
   const t = useTranslations();
   const [dialogOpen, setDialogOpen] = useState<boolean>(false);
-  const [password, setPassword] = useState<string>('');
+  const [confirmation, setConfirmation] = useState<string>('');
   const [deleting, setDeleting] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
 
   async function handleDelete() {
     setError('');
-    if (!password) {
-      setError(t('profile.deletePasswordRequired'));
+    if (!confirmation) {
+      setError(
+        hasPassword ? t('profile.deletePasswordRequired') : t('profile.deleteEmailRequired')
+      );
       return;
     }
     setDeleting(true);
@@ -333,10 +336,13 @@ function DangerZone({ isAdmin }: DangerZoneProps) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let data: any;
     try {
+      const body = hasPassword
+        ? { password: confirmation }
+        : { emailConfirmation: confirmation };
       res = await fetch('/api/profile', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify(body),
       });
       data = await res.json().catch(() => ({}));
     } catch {
@@ -395,7 +401,7 @@ function DangerZone({ isAdmin }: DangerZoneProps) {
                   if (deleting) return;
                   setDialogOpen(open);
                   if (!open) {
-                    setPassword('');
+                    setConfirmation('');
                     setError('');
                   }
                 }}
@@ -409,15 +415,32 @@ function DangerZone({ isAdmin }: DangerZoneProps) {
                 <DialogContent>
                   <DialogHeader>
                     <DialogTitle>{t('profile.deleteDialogTitle')}</DialogTitle>
-                    <DialogDescription>{t('profile.deleteDialogDesc')}</DialogDescription>
+                    <DialogDescription>
+                      {hasPassword
+                        ? t('profile.deleteDialogDesc')
+                        : t('profile.deleteDialogDescOAuth')}
+                    </DialogDescription>
                   </DialogHeader>
                   <div className="flex flex-col gap-2">
-                    <PasswordInput
-                      label={t('profile.deleteConfirmPasswordLabel')}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      data-testid="delete-account-password"
-                    />
+                    {hasPassword ? (
+                      <PasswordInput
+                        label={t('profile.deleteConfirmPasswordLabel')}
+                        value={confirmation}
+                        onChange={(e) => setConfirmation(e.target.value)}
+                        data-testid="delete-account-password"
+                      />
+                    ) : (
+                      <div className="space-y-2">
+                        <Label htmlFor="delete-email-confirm">{t('profile.deleteConfirmEmailLabel')}</Label>
+                        <Input
+                          id="delete-email-confirm"
+                          type="email"
+                          value={confirmation}
+                          onChange={(e) => setConfirmation(e.target.value)}
+                          data-testid="delete-account-email"
+                        />
+                      </div>
+                    )}
                     {error && (
                       <Alert variant="destructive">
                         <AlertTitle>{t('common.error')}</AlertTitle>
@@ -457,6 +480,7 @@ export default function ProfilePage() {
   const { data: session, update } = useSession();
   const user = session?.user;
   const isFirstLogin = user?.firstLogin;
+  const hasPassword = user?.hasPassword ?? true;
 
   const roleColors: Record<string, string> = {
     ADMIN: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
@@ -525,25 +549,27 @@ export default function ProfilePage() {
         </Card>
       )}
 
-      <Card>
-        <CardContent className="pt-6">
-          <h3 className="text-sm font-semibold mb-2">{t('profile.changePassword')}</h3>
-          <Separator className="mb-4" />
-          <PasswordForm
-            successMessage={t('profile.passwordChangedRelogin')}
-            onSuccess={() => {
-              // Changing the password invalidates ALL JWT sessions, including this
-              // one (see lib/auth/options.ts). Sign the current device out and send
-              // the user to the login page to re-authenticate with the new password.
-              setTimeout(() => {
-                void signOut({ callbackUrl: '/login?passwordChanged=1' });
-              }, 1500);
-            }}
-          />
-        </CardContent>
-      </Card>
+      {hasPassword && (
+        <Card>
+          <CardContent className="pt-6">
+            <h3 className="text-sm font-semibold mb-2">{t('profile.changePassword')}</h3>
+            <Separator className="mb-4" />
+            <PasswordForm
+              successMessage={t('profile.passwordChangedRelogin')}
+              onSuccess={() => {
+                // Changing the password invalidates ALL JWT sessions, including this
+                // one (see lib/auth/options.ts). Sign the current device out and send
+                // the user to the login page to re-authenticate with the new password.
+                setTimeout(() => {
+                  void signOut({ callbackUrl: '/login?passwordChanged=1' });
+                }, 1500);
+              }}
+            />
+          </CardContent>
+        </Card>
+      )}
 
-      {!isFirstLogin && <DangerZone isAdmin={user?.role === 'ADMIN'} />}
+      {!isFirstLogin && <DangerZone isAdmin={user?.role === 'ADMIN'} hasPassword={hasPassword} />}
     </div>
   );
 
