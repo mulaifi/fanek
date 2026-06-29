@@ -172,10 +172,13 @@ describe('consumeResetToken (atomic)', () => {
     expect(updArg.where.expiresAt.gt).toBeInstanceOf(Date);
     expect(updArg.data.usedAt).toBeInstanceOf(Date);
 
-    expect(mockPrisma.user.update).toHaveBeenCalledWith({
-      where: { id: 'u1' },
-      data: { passwordHash: 'newhash', firstLogin: false },
-    });
+    // The password update also stamps sessionsValidAfter (= the consume timestamp)
+    // to revoke every JWT session issued before this reset.
+    const userUpdateArg = mockPrisma.user.update.mock.calls[0][0];
+    expect(userUpdateArg.where).toEqual({ id: 'u1' });
+    expect(userUpdateArg.data.passwordHash).toBe('newhash');
+    expect(userUpdateArg.data.firstLogin).toBe(false);
+    expect(userUpdateArg.data.sessionsValidAfter).toBeInstanceOf(Date);
     expect(mockPrisma.passwordResetToken.deleteMany).toHaveBeenCalledWith({
       where: { userId: 'u1', usedAt: null },
     });

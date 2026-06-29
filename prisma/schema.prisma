@@ -31,6 +31,10 @@ model User {
   firstLogin    Boolean   @default(true)
   lastActiveAt  DateTime?
   locale        String?
+  // Any JWT session issued before this instant is treated as invalid. Set to "now"
+  // whenever the password changes (reset or profile change) so existing tokens
+  // (including stolen ones) can no longer authenticate. Null = never invalidated.
+  sessionsValidAfter DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   auditLogs     AuditLog[]

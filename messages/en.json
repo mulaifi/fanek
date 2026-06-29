@@ -82,6 +82,7 @@
     "welcomeBack": "Welcome back",
     "signInToAccount": "Sign in to your account",
     "rateLimited": "Too many sign-in attempts. Please wait a few minutes and try again.",
+    "passwordChangedNotice": "Your password has been changed. Please sign in with your new password.",
     "forgotPassword": {
       "link": "Forgot password?",
       "title": "Forgot your password?",
@@ -502,6 +503,7 @@
     "nameUpdatedDesc": "Display name saved.",
     "passwordChanged": "Password changed successfully",
     "passwordChangedRedirecting": "Password changed successfully. Redirecting to dashboard...",
+    "passwordChangedRelogin": "Password changed successfully. For your security, all sessions have been signed out. Redirecting you to sign in with your new password...",
     "passwordsMismatch": "Passwords do not match",
     "incorrectPassword": "Current password is incorrect",
     "firstLoginTitle": "Set Your Password",

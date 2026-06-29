@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { useRouter } from 'next/router';
-import { useSession } from 'next-auth/react';
+import { useSession, signOut } from 'next-auth/react';
 import { getServerSession } from 'next-auth/next';
 import type { GetServerSidePropsContext } from 'next';
 import { useForm } from 'react-hook-form';
@@ -303,7 +302,6 @@ function LanguageSelector() {
 }
 
 export default function ProfilePage() {
-  const router = useRouter();
   const t = useTranslations();
   const { data: session, update } = useSession();
   const user = session?.user;
@@ -381,18 +379,14 @@ export default function ProfilePage() {
           <h3 className="text-sm font-semibold mb-2">{t('profile.changePassword')}</h3>
           <Separator className="mb-4" />
           <PasswordForm
-            successMessage={
-              isFirstLogin
-                ? t('profile.passwordChangedRedirecting')
-                : t('profile.passwordChanged')
-            }
-            onSuccess={(data) => {
-              if (data.firstLogin === false) {
-                setTimeout(async () => {
-                  await update({ firstLogin: false });
-                  router.replace('/dashboard');
-                }, 1500);
-              }
+            successMessage={t('profile.passwordChangedRelogin')}
+            onSuccess={() => {
+              // Changing the password invalidates ALL JWT sessions, including this
+              // one (see lib/auth/options.ts). Sign the current device out and send
+              // the user to the login page to re-authenticate with the new password.
+              setTimeout(() => {
+                void signOut({ callbackUrl: '/login?passwordChanged=1' });
+              }, 1500);
             }}
           />
         </CardContent>
