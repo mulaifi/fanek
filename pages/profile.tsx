@@ -8,10 +8,20 @@ import { z } from 'zod';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
 import { getAuthOptions } from '@/lib/auth/options';
+import { Download, Trash2 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PasswordInput } from '@/components/ui/password-input';
@@ -301,6 +311,147 @@ function LanguageSelector() {
   );
 }
 
+interface DangerZoneProps {
+  isAdmin: boolean;
+}
+
+function DangerZone({ isAdmin }: DangerZoneProps) {
+  const t = useTranslations();
+  const [dialogOpen, setDialogOpen] = useState<boolean>(false);
+  const [password, setPassword] = useState<string>('');
+  const [deleting, setDeleting] = useState<boolean>(false);
+  const [error, setError] = useState<string>('');
+
+  async function handleDelete() {
+    setError('');
+    if (!password) {
+      setError(t('profile.deletePasswordRequired'));
+      return;
+    }
+    setDeleting(true);
+    let res: Response;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let data: any;
+    try {
+      res = await fetch('/api/profile', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password }),
+      });
+      data = await res.json().catch(() => ({}));
+    } catch {
+      setDeleting(false);
+      setError(t('common.networkError'));
+      return;
+    }
+    if (!res.ok) {
+      setDeleting(false);
+      setError(data.error || t('profile.deleteFailed'));
+      return;
+    }
+    // Account is gone; end the session and send the user to the login page.
+    toast.success(t('profile.deleteSuccess'));
+    await signOut({ callbackUrl: '/login' });
+  }
+
+  return (
+    <Card className="border-destructive/50">
+      <CardContent className="pt-6">
+        <h3 className="text-sm font-semibold mb-2 text-destructive">{t('profile.dangerZone')}</h3>
+        <Separator className="mb-4" />
+        <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-2">
+            <p className="text-sm font-medium">{t('profile.exportTitle')}</p>
+            <p className="text-sm text-muted-foreground">{t('profile.exportDesc')}</p>
+            <div className="flex">
+              {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+              <a
+                href="/api/profile/export"
+                className={buttonVariants({ variant: 'outline' })}
+                data-testid="export-data-link"
+              >
+                <Download className="h-4 w-4 me-1" />
+                {t('profile.exportButton')}
+              </a>
+            </div>
+          </div>
+
+          <Separator />
+
+          <div className="flex flex-col gap-2">
+            <p className="text-sm font-medium">{t('profile.deleteTitle')}</p>
+            <p className="text-sm text-muted-foreground">{t('profile.deleteDesc')}</p>
+            {isAdmin && (
+              <Alert variant="destructive" className="mt-1">
+                <AlertDescription>{t('profile.deleteLastAdminWarning')}</AlertDescription>
+              </Alert>
+            )}
+            <div className="flex">
+              <Dialog
+                open={dialogOpen}
+                onOpenChange={(open) => {
+                  // Don't let Esc / outside-click dismiss the dialog while a delete
+                  // is in flight — that would hide an in-progress request or failure.
+                  if (deleting) return;
+                  setDialogOpen(open);
+                  if (!open) {
+                    setPassword('');
+                    setError('');
+                  }
+                }}
+              >
+                <DialogTrigger asChild>
+                  <Button variant="destructive" data-testid="delete-account-button">
+                    <Trash2 className="h-4 w-4 me-1" />
+                    {t('profile.deleteButton')}
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>{t('profile.deleteDialogTitle')}</DialogTitle>
+                    <DialogDescription>{t('profile.deleteDialogDesc')}</DialogDescription>
+                  </DialogHeader>
+                  <div className="flex flex-col gap-2">
+                    <PasswordInput
+                      label={t('profile.deleteConfirmPasswordLabel')}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      data-testid="delete-account-password"
+                    />
+                    {error && (
+                      <Alert variant="destructive">
+                        <AlertTitle>{t('common.error')}</AlertTitle>
+                        <AlertDescription>{error}</AlertDescription>
+                      </Alert>
+                    )}
+                  </div>
+                  <DialogFooter>
+                    <Button
+                      variant="outline"
+                      onClick={() => setDialogOpen(false)}
+                      disabled={deleting}
+                    >
+                      {t('common.cancel')}
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      onClick={handleDelete}
+                      disabled={deleting}
+                      data-testid="delete-account-confirm"
+                    >
+                      {deleting ? t('profile.deleting') : t('profile.deleteConfirmButton')}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function ProfilePage() {
   const t = useTranslations();
   const { data: session, update } = useSession();
@@ -391,6 +542,8 @@ export default function ProfilePage() {
           />
         </CardContent>
       </Card>
+
+      {!isFirstLogin && <DangerZone isAdmin={user?.role === 'ADMIN'} />}
     </div>
   );
 
