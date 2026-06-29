@@ -9,7 +9,13 @@ jest.mock('@/lib/prisma', () => ({
     user: {
       findUnique: jest.fn(),
       update: jest.fn(),
+      delete: jest.fn(),
+      count: jest.fn(),
     },
+    auditLog: {
+      deleteMany: jest.fn(),
+    },
+    $transaction: jest.fn(),
   },
 }));
 
@@ -51,11 +57,17 @@ function mockReqRes({ method = 'PUT', body = {} } = {}) {
   return { req, res };
 }
 
-const mockPrisma = prisma as {
+const mockPrisma = prisma as unknown as {
   user: {
     findUnique: jest.Mock;
     update: jest.Mock;
+    delete: jest.Mock;
+    count: jest.Mock;
   };
+  auditLog: {
+    deleteMany: jest.Mock;
+  };
+  $transaction: jest.Mock;
 };
 const mockVerifyPassword = verifyPassword as jest.Mock;
 const mockHashPassword = hashPassword as jest.Mock;
@@ -208,5 +220,114 @@ describe('PUT /api/profile', () => {
     await handler(req as never, res as never);
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.json.mock.calls[0][0].error).toMatch(/no update/i);
+  });
+});
+
+describe('DELETE /api/profile (self-service account deletion)', () => {
+  // The withAuth mock authenticates as user id 'u1'. The role used by the handler
+  // comes from the DB record returned by findUnique, so each test sets it there.
+
+  test('rejects when password confirmation is missing', async () => {
+    const { req, res } = mockReqRes({ method: 'DELETE', body: {} });
+    await handler(req as never, res as never);
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json.mock.calls[0][0].error).toMatch(/password confirmation is required/i);
+    expect(mockPrisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  test('rejects when the confirmation password is incorrect', async () => {
+    mockPrisma.user.findUnique.mockResolvedValue({ id: 'u1', role: 'VIEWER', passwordHash: 'hash' });
+    mockVerifyPassword.mockResolvedValue(false);
+    const { req, res } = mockReqRes({ method: 'DELETE', body: { password: 'wrong' } });
+    await handler(req as never, res as never);
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json.mock.calls[0][0].error).toMatch(/incorrect/i);
+    expect(mockPrisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  test('rejects OAuth users with no password hash', async () => {
+    mockPrisma.user.findUnique.mockResolvedValue({ id: 'u1', role: 'VIEWER', passwordHash: null });
+    const { req, res } = mockReqRes({ method: 'DELETE', body: { password: 'whatever' } });
+    await handler(req as never, res as never);
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json.mock.calls[0][0].error).toMatch(/oauth/i);
+    expect(mockPrisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  test('returns 404 when the user no longer exists', async () => {
+    mockPrisma.user.findUnique.mockResolvedValue(null);
+    const { req, res } = mockReqRes({ method: 'DELETE', body: { password: 'pw' } });
+    await handler(req as never, res as never);
+    expect(res.status).toHaveBeenCalledWith(404);
+    expect(mockPrisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  test('refuses to delete the last remaining admin (409)', async () => {
+    mockPrisma.user.findUnique.mockResolvedValue({ id: 'u1', role: 'ADMIN', passwordHash: 'hash' });
+    mockVerifyPassword.mockResolvedValue(true);
+    mockPrisma.user.count.mockResolvedValue(1);
+    const { req, res } = mockReqRes({ method: 'DELETE', body: { password: 'correct' } });
+    await handler(req as never, res as never);
+    expect(mockPrisma.user.count).toHaveBeenCalledWith({ where: { role: 'ADMIN' } });
+    expect(res.status).toHaveBeenCalledWith(409);
+    expect(res.json.mock.calls[0][0].error).toMatch(/only administrator/i);
+    expect(mockPrisma.$transaction).not.toHaveBeenCalled();
+    expect(mockPrisma.user.delete).not.toHaveBeenCalled();
+  });
+
+  test('allows an admin to delete when another admin remains', async () => {
+    mockPrisma.user.findUnique.mockResolvedValue({
+      id: 'u1',
+      email: 'admin@example.com',
+      role: 'ADMIN',
+      passwordHash: 'hash',
+    });
+    mockVerifyPassword.mockResolvedValue(true);
+    mockPrisma.user.count.mockResolvedValue(2);
+    mockPrisma.$transaction.mockResolvedValue([{ count: 3 }, {}]);
+    const { req, res } = mockReqRes({ method: 'DELETE', body: { password: 'correct' } });
+    await handler(req as never, res as never);
+
+    // Erases the user's own audit entries and the account itself, atomically.
+    expect(mockPrisma.auditLog.deleteMany).toHaveBeenCalledWith({ where: { userId: 'u1' } });
+    expect(mockPrisma.user.delete).toHaveBeenCalledWith({ where: { id: 'u1' } });
+    expect(mockPrisma.$transaction).toHaveBeenCalledTimes(1);
+    expect(res.json).toHaveBeenCalledWith({ success: true });
+  });
+
+  test('allows a non-admin to delete regardless of admin count', async () => {
+    mockPrisma.user.findUnique.mockResolvedValue({
+      id: 'u1',
+      email: 'viewer@example.com',
+      role: 'VIEWER',
+      passwordHash: 'hash',
+    });
+    mockVerifyPassword.mockResolvedValue(true);
+    mockPrisma.$transaction.mockResolvedValue([{ count: 0 }, {}]);
+    const { req, res } = mockReqRes({ method: 'DELETE', body: { password: 'correct' } });
+    await handler(req as never, res as never);
+
+    // No last-admin check needed for non-admins.
+    expect(mockPrisma.user.count).not.toHaveBeenCalled();
+    expect(mockPrisma.user.delete).toHaveBeenCalledWith({ where: { id: 'u1' } });
+    expect(res.json).toHaveBeenCalledWith({ success: true });
+  });
+
+  test('returns 429 when deletion attempts are rate limited', async () => {
+    mockCheck.mockReturnValue({ allowed: false, remaining: 0 });
+    const { req, res } = mockReqRes({ method: 'DELETE', body: { password: 'correct' } });
+    await handler(req as never, res as never);
+    expect(res.status).toHaveBeenCalledWith(429);
+    expect(res.json.mock.calls[0][0].error).toMatch(/too many/i);
+    expect(mockPrisma.$transaction).not.toHaveBeenCalled();
+  });
+});
+
+describe('unsupported methods on /api/profile', () => {
+  test('returns 405 for GET', async () => {
+    const { req, res } = mockReqRes({ method: 'GET', body: {} });
+    await handler(req as never, res as never);
+    expect(res.status).toHaveBeenCalledWith(405);
+    expect(res.setHeader).toHaveBeenCalledWith('Allow', 'PUT, DELETE');
   });
 });
