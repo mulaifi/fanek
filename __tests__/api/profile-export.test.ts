@@ -73,7 +73,7 @@ describe('GET /api/profile/export', () => {
   test('returns the user record and their audit logs as a JSON download', async () => {
     mockPrisma.user.findUnique.mockResolvedValue(safeUser);
     mockPrisma.auditLog.findMany.mockResolvedValue([
-      { id: 'a1', action: 'UPDATE', resource: 'customer', resourceId: 'c1', details: {}, createdAt: new Date() },
+      { id: 'a1', action: 'UPDATE', resource: 'customer', resourceId: 'c1', createdAt: new Date() },
     ]);
 
     const { req, res } = mockReqRes();
@@ -90,6 +90,42 @@ describe('GET /api/profile/export', () => {
     expect(sent.user.email).toBe('alice@example.com');
     expect(sent.auditLogs).toHaveLength(1);
     expect(sent.exportedAt).toEqual(expect.any(String));
+  });
+
+  test('sets no-store cache headers on the PII download', async () => {
+    mockPrisma.user.findUnique.mockResolvedValue(safeUser);
+    mockPrisma.auditLog.findMany.mockResolvedValue([]);
+
+    const { req, res } = mockReqRes();
+    await handler(req as never, res as never);
+
+    expect(res.setHeader).toHaveBeenCalledWith('Cache-Control', 'no-store');
+    expect(res.setHeader).toHaveBeenCalledWith('Pragma', 'no-cache');
+    expect(res.setHeader).toHaveBeenCalledWith('Expires', '0');
+  });
+
+  test('never exports audit-log details (may contain org-data snapshots)', async () => {
+    mockPrisma.user.findUnique.mockResolvedValue(safeUser);
+    // The query must scope columns so `details` (which can hold {before, after}
+    // org-data snapshots) is never read; a realistic row therefore has no `details`.
+    mockPrisma.auditLog.findMany.mockResolvedValue([
+      { id: 'a1', action: 'UPDATE', resource: 'customer', resourceId: 'c1', createdAt: new Date() },
+    ]);
+
+    const { req, res } = mockReqRes();
+    await handler(req as never, res as never);
+
+    // The select must NOT request `details` — this is what prevents the leak.
+    const select = mockPrisma.auditLog.findMany.mock.calls[0][0].select;
+    expect(select.details).toBeUndefined();
+    expect(select.action).toBe(true);
+    expect(select.resource).toBe(true);
+    expect(select.resourceId).toBe(true);
+    expect(select.createdAt).toBe(true);
+
+    // And the serialized entry carries no `details` property.
+    const sent = JSON.parse(res.send.mock.calls[0][0] as string);
+    expect(sent.auditLogs[0]).not.toHaveProperty('details');
   });
 
   test('selects only safe fields and never the password hash or session watermark', async () => {

@@ -390,6 +390,9 @@ function DangerZone({ isAdmin }: DangerZoneProps) {
               <Dialog
                 open={dialogOpen}
                 onOpenChange={(open) => {
+                  // Don't let Esc / outside-click dismiss the dialog while a delete
+                  // is in flight — that would hide an in-progress request or failure.
+                  if (deleting) return;
                   setDialogOpen(open);
                   if (!open) {
                     setPassword('');

@@ -29,6 +29,11 @@ const SELF_USER_SELECT = {
  * their account record (sans credentials) plus the audit-log entries attributed to
  * them. Organization data (customers, partners, services) is NOT personal data of
  * the requester and is intentionally excluded.
+ *
+ * The audit entries deliberately OMIT the `details` column: it stores `{ before,
+ * after }` snapshots that can contain organization data (e.g. customer/partner
+ * field values), which is not the requesting user's personal data. Only the action
+ * metadata (action, resource, resourceId, timestamp) is exported.
  */
 async function handler(req: AuthenticatedRequest, res: NextApiResponse): Promise<void> {
   if (req.method !== 'GET') {
@@ -49,12 +54,13 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse): Promise
 
   const auditLogs = await prisma.auditLog.findMany({
     where: { userId },
+    // `details` is intentionally excluded — it can hold org-data snapshots (see the
+    // doc comment above). Only action metadata is the requesting user's own data.
     select: {
       id: true,
       action: true,
       resource: true,
       resourceId: true,
-      details: true,
       createdAt: true,
     },
     orderBy: { createdAt: 'desc' },
@@ -78,6 +84,10 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse): Promise
 
   res.setHeader('Content-Type', 'application/json');
   res.setHeader('Content-Disposition', 'attachment; filename="fanek-my-data.json"');
+  // This response is a personal-data (PII) download — never cache it anywhere.
+  res.setHeader('Cache-Control', 'no-store');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
   res.status(200).send(JSON.stringify(payload, null, 2));
 }
 

@@ -12,6 +12,14 @@ const passwordChangeLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max:
 // 5 account-deletion attempts per 15 minutes per user (guards the password reconfirm)
 const deleteAccountLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 5 });
 
+/** Sentinel thrown inside the deletion transaction to abort a last-admin self-delete. */
+class LastAdminError extends Error {
+  constructor() {
+    super('LAST_ADMIN');
+    this.name = 'LastAdminError';
+  }
+}
+
 async function handlePut(req: AuthenticatedRequest, res: NextApiResponse): Promise<void> {
   const { currentPassword, newPassword, name, locale } = req.body as {
     currentPassword?: string;
@@ -152,33 +160,46 @@ async function handleDelete(req: AuthenticatedRequest, res: NextApiResponse): Pr
     return;
   }
 
-  // Last-admin safeguard: never let the only remaining Admin delete themselves and
-  // lock the whole organization out (mirrors the self-delete guard in the admin
-  // user route, adapted for the self-service case).
-  if (user.role === 'ADMIN') {
-    const adminCount = await prisma.user.count({ where: { role: 'ADMIN' } });
-    if (adminCount <= 1) {
+  // Last-admin safeguard + erasure run in a single INTERACTIVE transaction so the
+  // guard is atomic: without row locking, two concurrent "last admin" deletions
+  // could both read count > 0 and both proceed, locking the whole org out (TOCTOU).
+  // We read the role from the DB record above (never the session) and re-verify the
+  // admin count INSIDE the transaction while holding a row lock on the ADMIN rows.
+  try {
+    await prisma.$transaction(async (tx) => {
+      if (user.role === 'ADMIN') {
+        // Prisma `count` cannot emit `FOR UPDATE`, so lock the ADMIN rows with a raw
+        // query and count what we locked. Any concurrent self-deletion serializes
+        // behind this lock, so exactly one of two last-admins can win the race.
+        const lockedAdmins = await tx.$queryRaw<Array<{ id: string }>>`
+          SELECT id FROM "User" WHERE role = 'ADMIN' FOR UPDATE
+        `;
+        if (lockedAdmins.length <= 1) {
+          throw new LastAdminError();
+        }
+      }
+
+      // Erase the user's own audit entries (their personal data) and the account
+      // itself. Deleting the audit rows first also satisfies the RESTRICT FK.
+      await tx.auditLog.deleteMany({ where: { userId } });
+      await tx.user.delete({ where: { id: userId } });
+    });
+  } catch (err) {
+    if (err instanceof LastAdminError) {
       res.status(409).json({
         error:
           'You are the only administrator. Assign the Admin role to another user before deleting your account.',
       });
       return;
     }
+    throw err;
   }
 
-  // Durable, FK-independent record of the deletion (the AuditLog table cannot hold a
-  // row referencing a now-deleted user — see the doc comment above).
-  logger.info(
-    { deletedUserId: user.id, email: user.email, role: user.role },
-    'Self-service account deletion'
-  );
-
-  // Erase the user's own audit entries (their personal data) and the account itself
-  // atomically. Deleting the audit rows first also satisfies the RESTRICT FK.
-  await prisma.$transaction([
-    prisma.auditLog.deleteMany({ where: { userId } }),
-    prisma.user.delete({ where: { id: userId } }),
-  ]);
+  // Durable, FK-independent record of the deletion, written only AFTER the
+  // transaction has actually committed (the AuditLog table cannot hold a row
+  // referencing a now-deleted user — see the doc comment above). Email is
+  // deliberately NOT logged: persisting it would defeat the erasure this records.
+  logger.info({ deletedUserId: user.id, role: user.role }, 'Self-service account deletion');
 
   res.json({ success: true });
 }
