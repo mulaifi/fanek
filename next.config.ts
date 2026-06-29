@@ -1,4 +1,5 @@
 import type { NextConfig } from 'next';
+import bundleAnalyzer from '@next/bundle-analyzer';
 
 const isDev = process.env.NODE_ENV !== 'production';
 
@@ -18,6 +19,21 @@ const contentSecurityPolicy = [
   `connect-src 'self'${isDev ? ' ws:' : ''}`,
 ].join('; ');
 
+// Long-lived immutable caching for static media served from `public/` (logos,
+// favicons, fonts). Matched by file extension so HTML and API responses are never
+// affected. Next.js already sends immutable Cache-Control for its own
+// content-hashed `_next/static` bundles, so this only covers the un-hashed
+// `public/` assets. They change rarely and only via a redeploy; if one must change
+// immediately, ship it under a new filename.
+const immutableAssetCacheControl = 'public, max-age=31536000, immutable';
+
+// Wraps the config with @next/bundle-analyzer. It is a no-op unless ANALYZE=true,
+// so normal `next build` / `next dev` are unaffected. Run `npm run analyze` to
+// generate the interactive treemap reports under `.next/analyze/`.
+const withBundleAnalyzer = bundleAnalyzer({
+  enabled: process.env.ANALYZE === 'true',
+});
+
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
@@ -36,8 +52,15 @@ const nextConfig: NextConfig = {
           { key: 'Content-Security-Policy', value: contentSecurityPolicy },
         ],
       },
+      {
+        // Un-hashed static media in `public/`. Extension-scoped so it cannot match
+        // HTML routes or `/api/*`. Merges with (does not replace) the security
+        // headers above.
+        source: '/:path*(svg|png|jpg|jpeg|gif|webp|avif|ico|woff|woff2|ttf|otf)',
+        headers: [{ key: 'Cache-Control', value: immutableAssetCacheControl }],
+      },
     ];
   },
 };
 
-export default nextConfig;
+export default withBundleAnalyzer(nextConfig);

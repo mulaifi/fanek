@@ -177,6 +177,10 @@ export default function LoginPage() {
                   <img
                     src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
                     alt="Google"
+                    width={20}
+                    height={20}
+                    loading="lazy"
+                    decoding="async"
                     className="w-5 h-5 me-2"
                   />
                   {t('auth.signInWith', { provider: 'Google' })}

@@ -149,7 +149,14 @@ export default function SetupPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex flex-col items-center gap-2 mb-8">
-              <img src="/Fanek_logo_light.svg" alt="Fanek" className="w-16 h-16" />
+              <img
+                src="/Fanek_logo_light.svg"
+                alt="Fanek"
+                width={64}
+                height={64}
+                decoding="async"
+                className="w-16 h-16"
+              />
               <h2 className="text-xl font-bold text-center">{t('setup.title')}</h2>
               <p className="text-sm text-muted-foreground text-center">
                 {t('setup.setupDesc')}

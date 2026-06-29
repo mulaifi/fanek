@@ -32,6 +32,7 @@ CI fails if the suite fails, so coverage only protects us if it tracks the app.
 | `search.spec.js` | Spotlight search (seeds via API, searches via UI) |
 | `theme-i18n.spec.js` | Light/dark toggle, Arabic RTL ↔ English LTR |
 | `csp.spec.js` | No Content-Security-Policy violations across all pages |
+| `caching.spec.js` | Immutable long-lived `Cache-Control` on public static media; HTML not over-cached |
 | `api.spec.js` | `/api/health`, auth-endpoint rate limiting (429) |
 | `import.spec.js` | CSV import: customers happy path (upload/map/preview/commit), error row blocks commit, services tab (type select + customer resolution) |
 | `forgot-password.spec.js` | Email reset flow: request form generic success, reset form with invalid/missing token, login-page link hidden when SMTP unconfigured |
