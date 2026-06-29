@@ -24,7 +24,7 @@ CI fails if the suite fails, so coverage only protects us if it tracks the app.
 | `auth.setup.js` | Logs in once, saves `playwright/.auth/admin.json` storage state |
 | `fixtures.js` | Extends `test` with `cspViolations` / `consoleErrors` capture |
 | `constants.js` | Shared admin credentials + auth-state path |
-| `dashboard.spec.js` | Stat cards, charts, sidebar navigation |
+| `dashboard.spec.js` | Stat cards, charts, sidebar navigation, transient-503 retry recovery |
 | `customers.spec.js` | Customer list + full CRUD lifecycle, tabs, services, notes |
 | `partners.spec.js` | Partner list + full CRUD lifecycle (flat layout) |
 | `admin.spec.js` | Users (invite/actions), service catalog, settings, audit log |

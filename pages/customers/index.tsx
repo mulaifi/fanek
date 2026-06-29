@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/select';
 import { statusColors } from '@/lib/theme';
 import { DEFAULT_CUSTOMER_STATUSES } from '@/lib/constants';
+import { fetchWithRetry } from '@/lib/fetchWithRetry';
 import { toast } from 'sonner';
 
 const PAGE_SIZE = 25;
@@ -80,7 +81,7 @@ export default function CustomersIndexPage() {
     if (statusFilter) params.set('status', statusFilter);
     if (search) params.set('search', search);
 
-    fetch(`/api/customers?${params}`)
+    fetchWithRetry(`/api/customers?${params}`)
       .then((r) => {
         if (!r.ok) throw new Error('Failed to load');
         return r.json();
