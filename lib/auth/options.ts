@@ -83,6 +83,7 @@ export async function getAuthOptions(): Promise<NextAuthOptions> {
           role: user.role,
           firstLogin: user.firstLogin,
           locale: user.locale ?? null,
+          passwordHash: user.passwordHash,
           // Snapshotted into the JWT (SVA_CLAIM) by the jwt callback so the token
           // records its issuance point relative to the user's last password change.
           sessionsValidAfter: user.sessionsValidAfter ?? null,
