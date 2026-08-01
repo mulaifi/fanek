@@ -37,7 +37,7 @@ fi
 # --- 2. NEXTAUTH_URL default ---
 
 if [ -z "$NEXTAUTH_URL" ]; then
-  NEXTAUTH_URL="http://localhost:${PORT:-3000}"
+  NEXTAUTH_URL="http://localhost:${PORT:-8080}"
   export NEXTAUTH_URL
   echo "==> WARNING: NEXTAUTH_URL not set, defaulting to $NEXTAUTH_URL"
   echo "==> Set NEXTAUTH_URL for production deployments."
@@ -79,5 +79,5 @@ echo "==> Migrations complete"
 
 # --- 5. Start the app ---
 
-echo "==> Starting Fanek on port ${PORT:-3000}..."
+echo "==> Starting Fanek on port ${PORT:-8080}..."
 exec npm start
