@@ -1,6 +1,6 @@
 import type { NextApiResponse } from 'next';
 import type { AuthenticatedRequest } from '@/types';
-import { withAuth, methodNotAllowed } from '@/lib/auth/guard';
+import { withAdmin, methodNotAllowed } from '@/lib/auth/guard';
 import prisma from '@/lib/prisma';
 import { toCsv } from '@/lib/export';
 
@@ -28,4 +28,4 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse): Promise
   return res.send(csv);
 }
 
-export default withAuth(handler);
+export default withAdmin(handler);

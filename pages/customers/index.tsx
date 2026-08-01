@@ -42,6 +42,7 @@ export default function CustomersIndexPage() {
   const t = useTranslations();
   const format = useFormatter();
   const canCreate = ['ADMIN', 'EDITOR'].includes(session?.user?.role ?? '');
+  const canExport = session?.user?.role === 'ADMIN';
 
   const [records, setRecords] = useState<CustomerRow[]>([]);
   const [totalRecords, setTotalRecords] = useState<number>(0);
@@ -211,14 +212,16 @@ export default function CustomersIndexPage() {
                 </Button>
               </>
             )}
-            {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
-            <a
-              href="/api/customers/export"
-              className={buttonVariants({ variant: 'outline' })}
-            >
-              <Download className="h-4 w-4 me-1" />
-              {t('customers.exportCsv')}
-            </a>
+            {canExport && (
+              /* eslint-disable-next-line @next/next/no-html-link-for-pages */
+              <a
+                href="/api/customers/export"
+                className={buttonVariants({ variant: 'outline' })}
+              >
+                <Download className="h-4 w-4 me-1" />
+                {t('customers.exportCsv')}
+              </a>
+            )}
           </div>
         </div>
 
