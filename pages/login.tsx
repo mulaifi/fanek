@@ -80,7 +80,12 @@ export default function LoginPage() {
       setFormError(result.error === 'RateLimited' ? t('auth.rateLimited') : t('auth.invalidCredentials'));
       setSubmitting(false);
     } else {
-      router.replace('/dashboard');
+      // A full navigation rather than router.replace: _document.tsx sets
+      // <html lang/dir> during a server render, and a client-side route change
+      // does not produce one, so the account's language would not reach the
+      // first screen after sign-in. The Google path at handleGoogleSignIn
+      // already returns through a full page load.
+      window.location.assign('/dashboard');
     }
   }
 
