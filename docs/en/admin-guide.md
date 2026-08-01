@@ -37,7 +37,7 @@ That's it. The Docker entrypoint automatically:
 - Waits for PostgreSQL to be ready
 - Applies database migrations
 
-**Customization:** To override defaults, create a `.env` file in the project root before starting. Docker Compose picks it up automatically. See the [README](../../README.md) for all environment variables.
+**Customization:** To override defaults, create a `.env` file in the project root before starting. Docker Compose picks it up automatically. See [`.env.example`](../../.env.example) for every environment variable the code reads; the [README](../../README.md) lists the four most deployments need.
 
 **Going to production?** See the [Production Deployment Guide](production-guide.md) for reverse proxy setup, SSL, firewall configuration, backups, and ongoing maintenance.
 
@@ -236,7 +236,7 @@ The Client Secret is encrypted before being stored in the database. It is never 
 
 ### Statuses tab
 
-Customer statuses are the labels used to categorize your customers (e.g. Active, Inactive, Prospect, Churned). The starter template you chose during setup pre-populated an initial list.
+Customer statuses are the labels used to categorize your customers. Every new instance starts with the same five: Evaluation, Implementation, Active, Suspended, and Closed. Starter templates do not change them, they only pre-populate the service catalog.
 
 From this tab you can:
 
