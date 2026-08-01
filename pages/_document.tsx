@@ -1,7 +1,7 @@
 import { Html, Head, Main, NextScript } from 'next/document';
 import type { DocumentContext, DocumentInitialProps } from 'next/document';
 import { getDirection, getFontFamily } from '@/lib/i18n';
-import { resolveLocale } from '@/lib/localeServer';
+import { resolveLocaleWithSource, publishLocaleCookie } from '@/lib/localeServer';
 
 interface DocumentProps extends DocumentInitialProps {
   locale: string;
@@ -29,6 +29,10 @@ export default function Document({ locale }: DocumentProps) {
 
 Document.getInitialProps = async (ctx: DocumentContext): Promise<DocumentProps> => {
   const initialProps = await ctx.defaultGetInitialProps(ctx);
-  const locale = await resolveLocale(ctx.req);
+  const { locale, source } = await resolveLocaleWithSource(ctx.req);
+  // _app reads the language from the cookie, so the shell and the strings would
+  // otherwise disagree on a device that has never chosen one. Only a token-sourced
+  // answer is published: see resolveLocaleWithSource.
+  if (source === 'token') publishLocaleCookie(ctx.req, ctx.res, locale);
   return { ...initialProps, locale };
 };
