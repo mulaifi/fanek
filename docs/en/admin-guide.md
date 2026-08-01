@@ -63,6 +63,7 @@ Requirements: Node.js 20 or later, PostgreSQL 16 or later.
    - `DATABASE_URL` -- your PostgreSQL connection string
    - `NEXTAUTH_SECRET` -- generate with `openssl rand -hex 32`
    - `NEXTAUTH_URL` -- the URL where Fanek will be accessed
+   - `PORT` -- optional, the port `npm start` listens on. Defaults to 8080
 4. Apply the database schema:
    ```bash
    npx prisma migrate deploy
@@ -71,9 +72,9 @@ Requirements: Node.js 20 or later, PostgreSQL 16 or later.
    ```bash
    npm run build && npm start
    ```
-   For development: `npm run dev`
+   For development: `npm run dev`, which is always on port 3000 and ignores `PORT`.
 
-Open `http://localhost:8080` (or `http://localhost:3000` for development) and follow the setup wizard.
+Open `http://localhost:8080` (or `http://localhost:3000` for development) and follow the setup wizard. If you set `PORT`, use that port instead. On Windows, `npm start` cannot expand `PORT`, so run `npx next start -p 8080` there.
 
 
 ## 2. Setup Wizard
