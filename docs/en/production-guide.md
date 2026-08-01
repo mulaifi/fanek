@@ -945,7 +945,7 @@ journalctl -u fanek --no-pager -n 100
 **Common causes and fixes:**
 
 - **`DATABASE_URL` is incorrect or missing.** Check the `.env` file. For Docker, the `DATABASE_URL` is set in `docker-compose.yml` and should not be overridden in `.env`. For bare-metal, verify the username, password, host, and database name are correct.
-- **Port 8080 is already in use.** Another process is listening on the same port. Check with `sudo lsof -i :8080` and stop the conflicting process. Note that Fanek's listening port is fixed at 8080 by the `start` script in `package.json`, and setting `PORT` in `.env` does not move it. To serve Fanek on a different host port under Docker, map it in `docker-compose.override.yml` as `"9000:8080"` rather than setting `PORT`.
+- **Port 8080 is already in use.** Another process is listening on the same port. Check with `sudo lsof -i :8080` and stop the conflicting process, or move Fanek to a free port. Under Docker, set `PORT` in `.env`; it changes the listening port and the published mapping together. On bare-metal, edit the `-p` flag in the systemd unit from Section 2, because that unit passes the port to `next start` explicitly and an explicit flag beats `PORT`. Either way, point the reverse proxy at the new port.
 - **Node.js version is too old.** Fanek requires Node.js 20 or later. Check with `node --version`.
 
 ### 502 Bad Gateway
@@ -968,7 +968,7 @@ sudo systemctl status fanek
 **Common causes and fixes:**
 
 - **The app is not running.** Start it with `docker compose up -d` or `sudo systemctl start fanek`.
-- **The reverse proxy is pointed at the wrong port.** Fanek always listens on 8080. Verify the proxy forwards to `127.0.0.1:8080`, and that any Compose port mapping targets container port 8080.
+- **The reverse proxy is pointed at the wrong port.** Fanek listens on 8080 unless you changed it. Verify the proxy forwards to the port Fanek is actually on, and that it matches the `-p` flag in the systemd unit or the `PORT` value in `.env`.
 - **The `docker-compose.override.yml` binds to the wrong address.** The proxy must reach `127.0.0.1:8080`. If the override binds to a different address, update it.
 
 ### SSL certificate errors

@@ -105,8 +105,8 @@ Requires Node.js 20+ and PostgreSQL 16+. See the [Admin Guide](docs/en/admin-gui
 |----------|:--------:|-------------|
 | `DATABASE_URL` | Yes | PostgreSQL connection string |
 | `NEXTAUTH_SECRET` | Manual only | Random secret for session signing (auto-generated in Docker) |
-| `NEXTAUTH_URL` | Manual only | Full URL of the app. Under Docker Compose the entrypoint falls back to `http://localhost:8080`; set it explicitly for any other setup |
-| `PORT` | No | Port published by Docker Compose (default: 8080). It does not move the port the app listens on, which `npm start` fixes at 8080 |
+| `NEXTAUTH_URL` | Manual only | Full URL of the app. In Docker the entrypoint falls back to `http://localhost:$PORT`; set it explicitly for anything users reach by another address |
+| `PORT` | No | Port Fanek listens on, and the port Docker Compose publishes (default: 8080). Windows `cmd` cannot expand it, so `npm start` there needs an explicit `next start -p <port>` |
 
 These four are the ones most deployments touch. `.env.example` documents every variable the code reads, including `NODE_ENV`, `LOG_LEVEL`, `TRUST_PROXY`, and the `DB_POOL_*` pool settings.
 
