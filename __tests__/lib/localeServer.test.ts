@@ -13,14 +13,14 @@ afterEach(() => {
   process.env = { ...savedEnv };
 });
 
-function loadWith(env: Record<string, string | undefined>): LocaleServer {
+async function loadWith(env: Record<string, string | undefined>): Promise<LocaleServer> {
   for (const [k, v] of Object.entries(env)) {
     if (v === undefined) delete process.env[k];
     else process.env[k] = v;
   }
   let mod!: LocaleServer;
-  jest.isolateModules(() => {
-    mod = require('@/lib/localeServer') as LocaleServer;
+  await jest.isolateModulesAsync(async () => {
+    mod = (await import('@/lib/localeServer')) as LocaleServer;
   });
   return mod;
 }
@@ -55,41 +55,41 @@ function cookiesFrom(res: ReturnType<typeof mockRes>): string[] {
 }
 
 describe('isSecureRequest', () => {
-  test('ignores a spoofed X-Forwarded-Proto when TRUST_PROXY is unset', () => {
-    const { isSecureRequest } = loadWith({ TRUST_PROXY: undefined, NEXTAUTH_URL: 'http://app.example.com' });
+  test('ignores a spoofed X-Forwarded-Proto when TRUST_PROXY is unset', async () => {
+    const { isSecureRequest } = await loadWith({ TRUST_PROXY: undefined, NEXTAUTH_URL: 'http://app.example.com' });
     expect(isSecureRequest(mockReq({ headers: { 'x-forwarded-proto': 'https' } }))).toBe(false);
   });
 
-  test('honours X-Forwarded-Proto when TRUST_PROXY is set', () => {
-    const { isSecureRequest } = loadWith({ TRUST_PROXY: 'true', NEXTAUTH_URL: 'http://app.example.com' });
+  test('honours X-Forwarded-Proto when TRUST_PROXY is set', async () => {
+    const { isSecureRequest } = await loadWith({ TRUST_PROXY: 'true', NEXTAUTH_URL: 'http://app.example.com' });
     expect(isSecureRequest(mockReq({ headers: { 'x-forwarded-proto': 'https' } }))).toBe(true);
   });
 
-  test('reads only the first hop of a chained X-Forwarded-Proto', () => {
-    const { isSecureRequest } = loadWith({ TRUST_PROXY: '1', NEXTAUTH_URL: 'http://app.example.com' });
+  test('reads only the first hop of a chained X-Forwarded-Proto', async () => {
+    const { isSecureRequest } = await loadWith({ TRUST_PROXY: '1', NEXTAUTH_URL: 'http://app.example.com' });
     expect(isSecureRequest(mockReq({ headers: { 'x-forwarded-proto': 'https, http' } }))).toBe(true);
     expect(isSecureRequest(mockReq({ headers: { 'x-forwarded-proto': 'http, https' } }))).toBe(false);
   });
 
-  test('trusts an https NEXTAUTH_URL without any header', () => {
-    const { isSecureRequest } = loadWith({ TRUST_PROXY: undefined, NEXTAUTH_URL: 'https://app.example.com' });
+  test('trusts an https NEXTAUTH_URL without any header', async () => {
+    const { isSecureRequest } = await loadWith({ TRUST_PROXY: undefined, NEXTAUTH_URL: 'https://app.example.com' });
     expect(isSecureRequest(mockReq())).toBe(true);
   });
 
-  test('trusts a TLS socket when Node terminates HTTPS itself', () => {
-    const { isSecureRequest } = loadWith({ TRUST_PROXY: undefined, NEXTAUTH_URL: 'http://app.example.com' });
+  test('trusts a TLS socket when Node terminates HTTPS itself', async () => {
+    const { isSecureRequest } = await loadWith({ TRUST_PROXY: undefined, NEXTAUTH_URL: 'http://app.example.com' });
     expect(isSecureRequest(mockReq({ encrypted: true }))).toBe(true);
   });
 
-  test('plain HTTP with no signals is not secure', () => {
-    const { isSecureRequest } = loadWith({ TRUST_PROXY: undefined, NEXTAUTH_URL: 'http://app.example.com' });
+  test('plain HTTP with no signals is not secure', async () => {
+    const { isSecureRequest } = await loadWith({ TRUST_PROXY: undefined, NEXTAUTH_URL: 'http://app.example.com' });
     expect(isSecureRequest(mockReq())).toBe(false);
   });
 });
 
 describe('publishLocaleCookie', () => {
-  test('writes the locale with the attributes the client writer uses', () => {
-    const { publishLocaleCookie } = loadWith({ TRUST_PROXY: undefined, NEXTAUTH_URL: 'http://app.example.com' });
+  test('writes the locale with the attributes the client writer uses', async () => {
+    const { publishLocaleCookie } = await loadWith({ TRUST_PROXY: undefined, NEXTAUTH_URL: 'http://app.example.com' });
     const res = mockRes();
     publishLocaleCookie(mockReq(), res as never, 'ar');
 
@@ -101,25 +101,25 @@ describe('publishLocaleCookie', () => {
     expect(cookie).not.toContain('Secure');
   });
 
-  test('a spoofed header cannot make the cookie Secure on a plain-HTTP deployment', () => {
+  test('a spoofed header cannot make the cookie Secure on a plain-HTTP deployment', async () => {
     // A Secure cookie here would never be sent back, so the language would
     // silently stop persisting for that visitor.
-    const { publishLocaleCookie } = loadWith({ TRUST_PROXY: undefined, NEXTAUTH_URL: 'http://app.example.com' });
+    const { publishLocaleCookie } = await loadWith({ TRUST_PROXY: undefined, NEXTAUTH_URL: 'http://app.example.com' });
     const res = mockRes();
     publishLocaleCookie(mockReq({ headers: { 'x-forwarded-proto': 'https' } }), res as never, 'ar');
     expect(cookiesFrom(res)[0]).not.toContain('Secure');
   });
 
-  test('marks the cookie Secure on an https deployment', () => {
-    const { publishLocaleCookie } = loadWith({ TRUST_PROXY: undefined, NEXTAUTH_URL: 'https://app.example.com' });
+  test('marks the cookie Secure on an https deployment', async () => {
+    const { publishLocaleCookie } = await loadWith({ TRUST_PROXY: undefined, NEXTAUTH_URL: 'https://app.example.com' });
     const res = mockRes();
     publishLocaleCookie(mockReq(), res as never, 'ar');
     expect(cookiesFrom(res)[0]).toContain('Secure');
   });
 
-  test('appends rather than replacing cookies another writer already set', () => {
+  test('appends rather than replacing cookies another writer already set', async () => {
     // NextAuth sets its session cookies on this same response.
-    const { publishLocaleCookie } = loadWith({ TRUST_PROXY: undefined, NEXTAUTH_URL: 'http://app.example.com' });
+    const { publishLocaleCookie } = await loadWith({ TRUST_PROXY: undefined, NEXTAUTH_URL: 'http://app.example.com' });
     const res = mockRes({ existing: ['next-auth.session-token=abc; Path=/'] });
     publishLocaleCookie(mockReq(), res as never, 'ar');
 
@@ -129,8 +129,8 @@ describe('publishLocaleCookie', () => {
     expect(all[1]).toContain('NEXT_LOCALE=ar');
   });
 
-  test('appends when the existing header is a bare string', () => {
-    const { publishLocaleCookie } = loadWith({ TRUST_PROXY: undefined, NEXTAUTH_URL: 'http://app.example.com' });
+  test('appends when the existing header is a bare string', async () => {
+    const { publishLocaleCookie } = await loadWith({ TRUST_PROXY: undefined, NEXTAUTH_URL: 'http://app.example.com' });
     const res = mockRes({ existing: 'other=1; Path=/' });
     publishLocaleCookie(mockReq(), res as never, 'ar');
 
@@ -139,29 +139,29 @@ describe('publishLocaleCookie', () => {
     expect(all[0]).toContain('other=1');
   });
 
-  test('writes nothing when the request already carries the same locale', () => {
-    const { publishLocaleCookie } = loadWith({ TRUST_PROXY: undefined, NEXTAUTH_URL: 'http://app.example.com' });
+  test('writes nothing when the request already carries the same locale', async () => {
+    const { publishLocaleCookie } = await loadWith({ TRUST_PROXY: undefined, NEXTAUTH_URL: 'http://app.example.com' });
     const res = mockRes();
     publishLocaleCookie(mockReq({ cookie: 'NEXT_LOCALE=ar' }), res as never, 'ar');
     expect(cookiesFrom(res)).toHaveLength(0);
   });
 
-  test('overwrites when the request carries a different locale', () => {
-    const { publishLocaleCookie } = loadWith({ TRUST_PROXY: undefined, NEXTAUTH_URL: 'http://app.example.com' });
+  test('overwrites when the request carries a different locale', async () => {
+    const { publishLocaleCookie } = await loadWith({ TRUST_PROXY: undefined, NEXTAUTH_URL: 'http://app.example.com' });
     const res = mockRes();
     publishLocaleCookie(mockReq({ cookie: 'NEXT_LOCALE=en' }), res as never, 'ar');
     expect(cookiesFrom(res)[0]).toContain('NEXT_LOCALE=ar');
   });
 
-  test('writes nothing once the headers have gone out', () => {
-    const { publishLocaleCookie } = loadWith({ TRUST_PROXY: undefined, NEXTAUTH_URL: 'http://app.example.com' });
+  test('writes nothing once the headers have gone out', async () => {
+    const { publishLocaleCookie } = await loadWith({ TRUST_PROXY: undefined, NEXTAUTH_URL: 'http://app.example.com' });
     const res = mockRes({ headersSent: true });
     publishLocaleCookie(mockReq(), res as never, 'ar');
     expect(cookiesFrom(res)).toHaveLength(0);
   });
 
-  test('writes nothing without a request or a response, as during a static prerender', () => {
-    const { publishLocaleCookie } = loadWith({ TRUST_PROXY: undefined, NEXTAUTH_URL: 'http://app.example.com' });
+  test('writes nothing without a request or a response, as during a static prerender', async () => {
+    const { publishLocaleCookie } = await loadWith({ TRUST_PROXY: undefined, NEXTAUTH_URL: 'http://app.example.com' });
     const res = mockRes();
     publishLocaleCookie(undefined, res as never, 'ar');
     expect(cookiesFrom(res)).toHaveLength(0);
