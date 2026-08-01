@@ -66,6 +66,7 @@
    - `DATABASE_URL` -- سلسلة اتصال PostgreSQL
    - `NEXTAUTH_SECRET` -- ولّد بالأمر `openssl rand -hex 32`
    - `NEXTAUTH_URL` -- الرابط الذي سيُوصل منه إلى فنك
+   - `PORT` -- اختياري، المنفذ الذي يستمع عليه `npm start`. القيمة الافتراضية 8080
 4. طبّق مخطط قاعدة البيانات:
    ```bash
    npx prisma migrate deploy
@@ -74,9 +75,9 @@
    ```bash
    npm run build && npm start
    ```
-   للتطوير: `npm run dev`
+   للتطوير: `npm run dev`، وهو دائماً على المنفذ 3000 ويتجاهل `PORT`.
 
-افتح http://localhost:8080 (أو http://localhost:3000 في وضع التطوير) واتبع معالج الإعداد.
+افتح http://localhost:8080 (أو http://localhost:3000 في وضع التطوير) واتبع معالج الإعداد. إذا ضبطت `PORT`، فاستخدم ذلك المنفذ بدلاً منه. على ويندوز، لا يستطيع `npm start` توسيع `PORT`، فشغّل `npx next start -p 8080` هناك.
 
 
 ## 2. معالج الإعداد
