@@ -2,18 +2,23 @@ import customersHandler from '../../pages/api/import/customers';
 import servicesHandler from '../../pages/api/import/services';
 import * as auditLib from '@/lib/audit';
 
+type MockServiceType = {
+  id: string;
+  fieldSchema: { name: string; label: string; type: string; required: boolean }[];
+} | null;
+
 const mockState = {
   role: 'EDITOR' as string,
   existingCustomers: [] as { clientCode: string | null; name: string }[],
   createMany: jest.fn(),
-  serviceType: { id: 'ctype00000000000000000001', fieldSchema: [{ name: 'bandwidth', label: 'Bandwidth', type: 'number', required: true }] } as any,
+  serviceType: { id: 'ctype00000000000000000001', fieldSchema: [{ name: 'bandwidth', label: 'Bandwidth', type: 'number', required: true }] } as MockServiceType,
   svcCreateMany: jest.fn(),
   customers: [{ id: 'ccust0000000000000000001', clientCode: 'AC1', name: 'Acme' }] as { id: string; clientCode: string | null; name: string }[],
 };
 
 jest.mock('@/lib/auth/guard', () => ({
   withEditor: (h: unknown) => h,
-  methodNotAllowed: (res: any, allowed: string[]) => {
+  methodNotAllowed: (res: { setHeader: (k: string, v: string) => void; status: (n: number) => { json: (b: unknown) => void } }, allowed: string[]) => {
     res.setHeader('Allow', allowed.join(', '));
     res.status(405).json({ error: 'Method not allowed' });
   },
@@ -24,7 +29,7 @@ jest.mock('@/lib/prisma', () => ({
   __esModule: true,
   default: {
     customer: {
-      findMany: async (args?: any) =>
+      findMany: async (args?: { select?: { id?: boolean } }) =>
         args?.select?.id ? mockState.customers : mockState.existingCustomers,
       createMany: (...args: unknown[]) => mockState.createMany(...args),
     },
@@ -48,7 +53,7 @@ beforeEach(() => {
   mockState.role = 'EDITOR';
   mockState.existingCustomers = [];
   mockState.createMany = jest.fn().mockResolvedValue({ count: 1 });
-  mockState.serviceType = { id: 'ctype00000000000000000001', fieldSchema: [{ name: 'bandwidth', label: 'Bandwidth', type: 'number', required: true }] } as any;
+  mockState.serviceType = { id: 'ctype00000000000000000001', fieldSchema: [{ name: 'bandwidth', label: 'Bandwidth', type: 'number', required: true }] };
   mockState.svcCreateMany = jest.fn().mockResolvedValue({ count: 1 });
   mockState.customers = [{ id: 'ccust0000000000000000001', clientCode: 'AC1', name: 'Acme' }];
   (auditLib.logAudit as jest.Mock).mockClear();
@@ -60,7 +65,7 @@ describe('/api/import/customers', () => {
 
   test('dry-run returns a report without writing', async () => {
     const { req, res } = mockReqRes({ format: 'csv', data: csv, mapping, dryRun: true });
-    await (customersHandler as any)(req, res);
+    await customersHandler(req as never, res as never);
     expect(res.status).toHaveBeenCalledWith(200);
     expect(mockState.createMany).not.toHaveBeenCalled();
     const body = res.json.mock.calls[0][0];
@@ -70,7 +75,7 @@ describe('/api/import/customers', () => {
 
   test('commit writes via createMany and reports committed count', async () => {
     const { req, res } = mockReqRes({ format: 'csv', data: csv, mapping, dryRun: false });
-    await (customersHandler as any)(req, res);
+    await customersHandler(req as never, res as never);
     expect(mockState.createMany).toHaveBeenCalled();
     expect(res.json.mock.calls[0][0].committed).toBe(1);
   });
@@ -78,7 +83,7 @@ describe('/api/import/customers', () => {
   test('commit refuses when a row is invalid (atomic block)', async () => {
     const badCsv = 'Name,Client Code,Status\n,AC1,Active\n';
     const { req, res } = mockReqRes({ format: 'csv', data: badCsv, mapping, dryRun: false });
-    await (customersHandler as any)(req, res);
+    await customersHandler(req as never, res as never);
     expect(res.status).toHaveBeenCalledWith(400);
     expect(mockState.createMany).not.toHaveBeenCalled();
   });
@@ -86,33 +91,33 @@ describe('/api/import/customers', () => {
   test('unique-constraint race during commit returns 409', async () => {
     mockState.createMany = jest.fn().mockRejectedValue(Object.assign(new Error('dup'), { code: 'P2002' }));
     const { req, res } = mockReqRes({ format: 'csv', data: csv, mapping, dryRun: false });
-    await (customersHandler as any)(req, res);
+    await customersHandler(req as never, res as never);
     expect(res.status).toHaveBeenCalledWith(409);
   });
 
   test('invalid body (bad format) returns 400 without writing', async () => {
     const { req, res } = mockReqRes({ format: 'xml', data: 'x', mapping: {}, dryRun: true });
-    await (customersHandler as any)(req, res);
+    await customersHandler(req as never, res as never);
     expect(res.status).toHaveBeenCalledWith(400);
     expect(mockState.createMany).not.toHaveBeenCalled();
   });
 
   test('missing dryRun returns 400 without writing', async () => {
     const { req, res } = mockReqRes({ format: 'csv', data: csv, mapping });
-    await (customersHandler as any)(req, res);
+    await customersHandler(req as never, res as never);
     expect(res.status).toHaveBeenCalledWith(400);
     expect(mockState.createMany).not.toHaveBeenCalled();
   });
 
   test('non-POST returns 405', async () => {
     const { req, res } = mockReqRes({}, 'GET');
-    await (customersHandler as any)(req, res);
+    await customersHandler(req as never, res as never);
     expect(res.status).toHaveBeenCalledWith(405);
   });
 
   test('null body returns 400 without writing', async () => {
     const { req, res } = mockReqRes(null);
-    await (customersHandler as any)(req, res);
+    await customersHandler(req as never, res as never);
     expect(res.status).toHaveBeenCalledWith(400);
     expect(mockState.createMany).not.toHaveBeenCalled();
   });
@@ -120,7 +125,7 @@ describe('/api/import/customers', () => {
   test('duplicate mapping targets return 400 without writing', async () => {
     const dupMapping = { Name: 'name', AltName: 'name', Status: 'status' };
     const { req, res } = mockReqRes({ format: 'csv', data: csv, mapping: dupMapping, dryRun: true });
-    await (customersHandler as any)(req, res);
+    await customersHandler(req as never, res as never);
     expect(res.status).toHaveBeenCalledWith(400);
     expect(mockState.createMany).not.toHaveBeenCalled();
   });
@@ -133,7 +138,7 @@ describe('/api/import/services', () => {
 
   test('dry-run validates without writing', async () => {
     const { req, res } = mockReqRes({ format: 'csv', data: csv, mapping, serviceTypeId, dryRun: true });
-    await (servicesHandler as any)(req, res);
+    await servicesHandler(req as never, res as never);
     expect(res.json.mock.calls[0][0].canCommit).toBe(true);
     expect(mockState.svcCreateMany).not.toHaveBeenCalled();
   });
@@ -142,7 +147,7 @@ describe('/api/import/services', () => {
     const logAudit = auditLib.logAudit as jest.Mock;
     mockState.svcCreateMany = jest.fn().mockResolvedValue({ count: 1 });
     const { req, res } = mockReqRes({ format: 'csv', data: csv, mapping, serviceTypeId, dryRun: false });
-    await (servicesHandler as any)(req, res);
+    await servicesHandler(req as never, res as never);
     expect(mockState.svcCreateMany).toHaveBeenCalled();
     expect(res.json.mock.calls[0][0].committed).toBe(1);
     expect(logAudit).toHaveBeenCalledWith(
@@ -156,13 +161,13 @@ describe('/api/import/services', () => {
 
   test('rejects missing serviceTypeId', async () => {
     const { req, res } = mockReqRes({ format: 'csv', data: csv, mapping, dryRun: true });
-    await (servicesHandler as any)(req, res);
+    await servicesHandler(req as never, res as never);
     expect(res.status).toHaveBeenCalledWith(400);
   });
 
   test('rejects missing dryRun', async () => {
     const { req, res } = mockReqRes({ format: 'csv', data: csv, mapping, serviceTypeId });
-    await (servicesHandler as any)(req, res);
+    await servicesHandler(req as never, res as never);
     expect(res.status).toHaveBeenCalledWith(400);
     expect(mockState.svcCreateMany).not.toHaveBeenCalled();
   });
@@ -170,26 +175,26 @@ describe('/api/import/services', () => {
   test('rejects unknown service type', async () => {
     mockState.serviceType = null;
     const { req, res } = mockReqRes({ format: 'csv', data: csv, mapping, serviceTypeId, dryRun: true });
-    await (servicesHandler as any)(req, res);
+    await servicesHandler(req as never, res as never);
     expect(res.status).toHaveBeenCalledWith(400);
   });
 
   test('unique-constraint race during commit returns 409', async () => {
     mockState.svcCreateMany = jest.fn().mockRejectedValue(Object.assign(new Error('dup'), { code: 'P2002' }));
     const { req, res } = mockReqRes({ format: 'csv', data: csv, mapping, serviceTypeId, dryRun: false });
-    await (servicesHandler as any)(req, res);
+    await servicesHandler(req as never, res as never);
     expect(res.status).toHaveBeenCalledWith(409);
   });
 
   test('non-POST returns 405', async () => {
     const { req, res } = mockReqRes({}, 'GET');
-    await (servicesHandler as any)(req, res);
+    await servicesHandler(req as never, res as never);
     expect(res.status).toHaveBeenCalledWith(405);
   });
 
   test('null body returns 400 without writing', async () => {
     const { req, res } = mockReqRes(null);
-    await (servicesHandler as any)(req, res);
+    await servicesHandler(req as never, res as never);
     expect(res.status).toHaveBeenCalledWith(400);
     expect(mockState.svcCreateMany).not.toHaveBeenCalled();
   });
@@ -197,7 +202,7 @@ describe('/api/import/services', () => {
   test('duplicate mapping targets return 400 without writing', async () => {
     const dupMapping = { Customer: 'customerRef', AltCustomer: 'customerRef', Bandwidth: 'bandwidth' };
     const { req, res } = mockReqRes({ format: 'csv', data: csv, mapping: dupMapping, serviceTypeId, dryRun: true });
-    await (servicesHandler as any)(req, res);
+    await servicesHandler(req as never, res as never);
     expect(res.status).toHaveBeenCalledWith(400);
     expect(mockState.svcCreateMany).not.toHaveBeenCalled();
   });
@@ -210,7 +215,7 @@ describe('/api/import/services', () => {
     ];
     const refCsv = 'Customer,Bandwidth\nx1,100\n';
     const { req, res } = mockReqRes({ format: 'csv', data: refCsv, mapping, serviceTypeId, dryRun: true });
-    await (servicesHandler as any)(req, res);
+    await servicesHandler(req as never, res as never);
     expect(res.status).toHaveBeenCalledWith(200);
     const body = res.json.mock.calls[0][0];
     expect(body.canCommit).toBe(true);
@@ -226,7 +231,7 @@ describe('/api/import/services', () => {
     const dupCsv = 'Customer,Bandwidth\nDup Co,50\n';
     const dupMapping = { Customer: 'customerRef', Bandwidth: 'bandwidth' };
     const { req, res } = mockReqRes({ format: 'csv', data: dupCsv, mapping: dupMapping, serviceTypeId, dryRun: true });
-    await (servicesHandler as any)(req, res);
+    await servicesHandler(req as never, res as never);
     expect(res.status).toHaveBeenCalledWith(200);
     const body = res.json.mock.calls[0][0];
     expect(body.canCommit).toBe(false);
