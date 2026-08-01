@@ -25,17 +25,28 @@ import { getLocaleFromCookies, isValidLocale, DEFAULT_LOCALE, LOCALE_COOKIE, typ
 export async function resolveLocale(req?: IncomingMessage): Promise<Locale> {
   if (!req) return DEFAULT_LOCALE;
 
-  const token = await getToken({ req: req as never });
-  const profileLocale = (token as { locale?: string | null } | null)?.locale;
-  if (isValidLocale(profileLocale)) return profileLocale;
+  // Every lookup here is best-effort. This runs on the document render, including
+  // the static prerender of /404 and /500 during `next build`, where there is no
+  // database at all. Rendering in English beats failing to render.
+  try {
+    const token = await getToken({ req: req as never });
+    const profileLocale = (token as { locale?: string | null } | null)?.locale;
+    if (isValidLocale(profileLocale)) return profileLocale;
+  } catch {
+    /* unreadable token: fall through */
+  }
 
   const cookieHeader = req.headers.cookie;
   if (cookieHeader?.includes(`${LOCALE_COOKIE}=`)) {
     return getLocaleFromCookies(cookieHeader);
   }
 
-  const settings = await getSettings();
-  if (isValidLocale(settings?.defaultLocale)) return settings.defaultLocale;
+  try {
+    const settings = await getSettings();
+    if (isValidLocale(settings?.defaultLocale)) return settings.defaultLocale;
+  } catch {
+    /* no database, or no settings row yet: fall through */
+  }
 
   return DEFAULT_LOCALE;
 }
