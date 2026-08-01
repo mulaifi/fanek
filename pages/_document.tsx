@@ -1,6 +1,7 @@
 import { Html, Head, Main, NextScript } from 'next/document';
 import type { DocumentContext, DocumentInitialProps } from 'next/document';
-import { getLocaleFromCookies, getDirection, getFontFamily } from '@/lib/i18n';
+import { getDirection, getFontFamily } from '@/lib/i18n';
+import { resolveLocale } from '@/lib/localeServer';
 
 interface DocumentProps extends DocumentInitialProps {
   locale: string;
@@ -28,6 +29,6 @@ export default function Document({ locale }: DocumentProps) {
 
 Document.getInitialProps = async (ctx: DocumentContext): Promise<DocumentProps> => {
   const initialProps = await ctx.defaultGetInitialProps(ctx);
-  const locale = getLocaleFromCookies(ctx.req?.headers.cookie);
+  const locale = await resolveLocale(ctx.req);
   return { ...initialProps, locale };
 };
