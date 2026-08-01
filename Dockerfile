@@ -29,6 +29,8 @@ COPY --from=base /app/next.config.ts ./
 COPY docker/entrypoint.sh /app/docker/entrypoint.sh
 RUN chmod +x /app/docker/entrypoint.sh
 
-EXPOSE 3000
+ENV PORT=8080
+
+EXPOSE 8080
 
 ENTRYPOINT ["/app/docker/entrypoint.sh"]
