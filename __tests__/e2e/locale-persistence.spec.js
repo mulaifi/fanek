@@ -22,6 +22,10 @@ const { ADMIN } = require('./constants');
 // it silently carries the first device's session — which is the same blindness this
 // test exists to remove.
 
+// "Dashboard" in the Arabic messages. Asserting a translated string is what
+// separates "the page is in Arabic" from "the page claims to be in Arabic".
+const ARABIC_NAV_LABEL = 'لوحة المعلومات';
+
 async function storedLocale(email) {
   const pool = new Pool({ connectionString: process.env.DATABASE_URL });
   try {
@@ -69,8 +73,55 @@ test.describe('Profile locale across devices', () => {
       // (lib/auth/options.ts:136), so the render has everything it needs.
       await expect(secondPage.locator('html')).toHaveAttribute('lang', 'ar');
       await expect(secondPage.locator('html')).toHaveAttribute('dir', 'rtl');
+      // The attributes alone are not the feature. A right-to-left shell around
+      // English strings passes a lang/dir check and is still the wrong page.
+      await expect(secondPage.locator('body')).toContainText(ARABIC_NAV_LABEL);
+
+      // The Arabic strings above can only be there if the browser applied the
+      // Set-Cookie from _document before running the scripts that read it:
+      // pages/_app.tsx:36 has no other source. This asserts the cookie directly
+      // as well, so a regression says which half broke.
+      const published = await secondDevice.cookies();
+      expect(published.find((c) => c.name === 'NEXT_LOCALE')?.value).toBe('ar');
     } finally {
       await secondDevice.close();
+    }
+  });
+
+  test("a device's own choice is not overwritten by the profile", async ({ page, browser }) => {
+    // LocaleSwitcher.tsx:12 sets the cookie, then PUTs the profile, and swallows a
+    // failed PUT by design. That leaves cookie and profile disagreeing, and since
+    // _document now writes the cookie back on every render, a profile-wins order
+    // would silently undo the switch the user just made. This pins the order.
+    await page.goto('/dashboard');
+    await page.getByRole('button', { name: 'AR', exact: true }).click();
+    await expect(page.locator('html')).toHaveAttribute('lang', 'ar');
+    expect(await storedLocale(ADMIN.email)).toBe('ar');
+
+    const device = await browser.newContext({ storageState: undefined });
+    try {
+      const p = await device.newPage();
+      await p.goto('/login');
+      await p.fill('#email', ADMIN.email);
+      await p.getByLabel('Password', { exact: true }).fill(ADMIN.password);
+      await p.getByRole('button', { name: 'Sign in', exact: true }).click();
+      await expect(p).toHaveURL(/\/dashboard/, { timeout: 15000 });
+
+      // Stand in for a switch to English whose profile PUT never landed.
+      const kept = (await device.cookies()).filter((c) => c.name !== 'NEXT_LOCALE');
+      await device.clearCookies();
+      await device.addCookies([
+        ...kept,
+        { name: 'NEXT_LOCALE', value: 'en', domain: 'localhost', path: '/' },
+      ]);
+
+      await p.goto('/dashboard');
+      await expect(p.locator('html')).toHaveAttribute('lang', 'en');
+      await expect(p.locator('body')).toContainText('Dashboard');
+      const after = await device.cookies();
+      expect(after.find((c) => c.name === 'NEXT_LOCALE')?.value).toBe('en');
+    } finally {
+      await device.close();
     }
   });
 
@@ -108,6 +159,7 @@ test.describe('Profile locale across devices', () => {
       await oauthPage.goto('/dashboard');
       await expect(oauthPage.locator('html')).toHaveAttribute('lang', 'ar');
       await expect(oauthPage.locator('html')).toHaveAttribute('dir', 'rtl');
+      await expect(oauthPage.locator('body')).toContainText(ARABIC_NAV_LABEL);
     } finally {
       await oauthDevice.close();
     }
