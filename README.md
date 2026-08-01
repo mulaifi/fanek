@@ -84,6 +84,7 @@ Requires Node.js 20+ and PostgreSQL 16+. See the [Admin Guide](docs/en/admin-gui
 **العربية:**
 - [دليل المسؤول](docs/ar/admin-guide.md) -- التثبيت، الإعداد، إدارة المستخدمين، تهيئة كتالوج الخدمات
 - [دليل المستخدم](docs/ar/user-guide.md) -- الاستخدام اليومي: العملاء، الخدمات، الشركاء، البحث
+- [دليل النشر في الإنتاج](docs/ar/production-guide.md) -- الوكيل العكسي، SSL، جدار الحماية، النسخ الاحتياطي، والصيانة
 
 ## Tech Stack
 
