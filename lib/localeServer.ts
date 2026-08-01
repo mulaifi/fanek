@@ -75,6 +75,41 @@ export async function resolveLocaleWithSource(
   return { locale: DEFAULT_LOCALE, source: 'default' };
 }
 
+// X-Forwarded-Proto is caller-controlled and trivially spoofed when the app is
+// exposed directly, so it is only honored when TRUST_PROXY is set — the same rule
+// pages/api/auth/[...nextauth].ts:11-18, forgot-password.ts:18-23 and
+// reset-password.ts:12-17 apply to X-Forwarded-For.
+const TRUST_PROXY = process.env.TRUST_PROXY === 'true' || process.env.TRUST_PROXY === '1';
+
+/**
+ * Is this request being served over HTTPS?
+ *
+ * Getting this wrong costs the feature in both directions. A Secure cookie set on
+ * a plain-HTTP deployment is never sent back, so the language silently stops
+ * persisting; no Secure on an HTTPS deployment writes a cookie the client-side
+ * writer would have marked Secure, leaving two cookies that differ by attribute.
+ *
+ * Three sources, none of them caller-controlled unless the operator has said the
+ * header can be trusted:
+ *   1. NEXTAUTH_URL, which the operator sets and both production guides require
+ *   2. a TLS socket, for the case where Node terminates HTTPS itself
+ *   3. X-Forwarded-Proto, only behind TRUST_PROXY
+ */
+export function isSecureRequest(req: IncomingMessage): boolean {
+  const authUrl = process.env.NEXTAUTH_URL;
+  if (authUrl?.startsWith('https://')) return true;
+
+  if ((req.socket as { encrypted?: boolean } | undefined)?.encrypted) return true;
+
+  if (TRUST_PROXY) {
+    const proto = req.headers['x-forwarded-proto'];
+    const first = Array.isArray(proto) ? proto[0] : proto;
+    if (typeof first === 'string' && first.split(',')[0]!.trim() === 'https') return true;
+  }
+
+  return false;
+}
+
 /**
  * Publish the resolved locale to the NEXT_LOCALE cookie when the request did not
  * already carry it.
@@ -89,8 +124,12 @@ export async function resolveLocaleWithSource(
  * there when _app reads it, and every later request resolves from the cookie
  * without touching the token.
  *
- * Attributes match setLocaleCookie in lib/i18n.ts so the two writers cannot
- * produce cookies with different scopes or lifetimes.
+ * Name, path, lifetime and SameSite match setLocaleCookie in lib/i18n.ts, so the
+ * two writers address the same cookie. Secure is the one attribute they derive
+ * differently and cannot share: the client reads window.location.protocol, which
+ * this side has no access to, and this side reads the deployment configuration,
+ * which the client has no access to. isSecureRequest below is written to reach
+ * the same answer on every deployment the repo documents.
  */
 export function publishLocaleCookie(
   req: IncomingMessage | undefined,
@@ -104,7 +143,7 @@ export function publishLocaleCookie(
     return;
   }
 
-  const secure = (req.headers['x-forwarded-proto'] === 'https' ? ';Secure' : '');
+  const secure = isSecureRequest(req) ? ';Secure' : '';
   const cookie = `${LOCALE_COOKIE}=${locale};Path=/;Max-Age=${60 * 60 * 24 * 365};SameSite=Lax${secure}`;
 
   // Append rather than assign: NextAuth sets its own cookies on this response.
