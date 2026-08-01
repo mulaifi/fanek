@@ -50,9 +50,9 @@ That is what Fanek does. Nothing more, nothing less.
 | **Audit Log** | Structured logs for all data changes with user attribution and JSON detail |
 | **Global Search** | Spotlight-style search (Cmd+K) across customers, partners, and services |
 | **CSV/JSON Export** | Export customer and partner data for reporting and integrations |
-| **OAuth Support** | Enable Google or other OAuth providers via Admin Settings (no file edits) |
+| **OAuth Support** | Enable Google sign-in via Admin Settings (no file edits) |
 | **English and Arabic** | Full bilingual UI with RTL support; users switch language from the navigation bar |
-| **Dark/Light Mode** | Toggle between dark (default) and light themes |
+| **Dark/Light Mode** | Toggle between light (default) and dark themes, or follow the system setting |
 | **Docker Ready** | Ship and run with a single `docker compose up` |
 | **CLI Admin Tools** | `npm run reset-password` and `npm run list-users` for server-side admin |
 
@@ -104,8 +104,10 @@ Requires Node.js 20+ and PostgreSQL 16+. See the [Admin Guide](docs/en/admin-gui
 |----------|:--------:|-------------|
 | `DATABASE_URL` | Yes | PostgreSQL connection string |
 | `NEXTAUTH_SECRET` | Manual only | Random secret for session signing (auto-generated in Docker) |
-| `NEXTAUTH_URL` | Manual only | Full URL of the app (defaults to `http://localhost:8080` in Docker) |
-| `PORT` | No | HTTP port (default: 8080) |
+| `NEXTAUTH_URL` | Manual only | Full URL of the app. Under Docker Compose the entrypoint falls back to `http://localhost:8080`; set it explicitly for any other setup |
+| `PORT` | No | Port published by Docker Compose (default: 8080). It does not move the port the app listens on, which `npm start` fixes at 8080 |
+
+These four are the ones most deployments touch. `.env.example` documents every variable the code reads, including `NODE_ENV`, `LOG_LEVEL`, `TRUST_PROXY`, and the `DB_POOL_*` pool settings.
 
 ## Project Structure
 
