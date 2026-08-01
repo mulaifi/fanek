@@ -1,5 +1,6 @@
 import indexHandler from '../../pages/api/customers/index';
 import idHandler from '../../pages/api/customers/[id]';
+import exportHandler from '../../pages/api/customers/export';
 import prisma from '@/lib/prisma';
 import { logAudit } from '@/lib/audit';
 
@@ -25,6 +26,14 @@ jest.mock('@/lib/auth/guard', () => ({
     req.session = { user: { id: 'u1', role: req._testRole || 'ADMIN' } };
     return handler(req, res);
   },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  withAdmin: (handler: any) => (req: any, res: any) => {
+    req.session = { user: { id: 'u1', role: req._testRole || 'ADMIN' } };
+    if (req.session.user.role !== 'ADMIN') {
+      return res.status(403).json({ error: 'Forbidden: Admin access required' });
+    }
+    return handler(req, res);
+  },
 }));
 
 jest.mock('@/lib/settings', () => ({
@@ -36,6 +45,16 @@ jest.mock('@/lib/audit', () => ({ logAudit: jest.fn() }));
 jest.mock('@/lib/logger', () => ({
   __esModule: true,
   default: { info: jest.fn(), error: jest.fn(), warn: jest.fn() },
+}));
+
+jest.mock('csv-stringify/sync', () => ({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  stringify: jest.fn((rows: any[]) => {
+    if (rows.length === 0) return '';
+    const headers = Object.keys(rows[0]).join(',');
+    const lines = rows.map((r) => Object.values(r).join(','));
+    return [headers, ...lines].join('\n');
+  }),
 }));
 
 interface MockReqResOptions {
@@ -270,5 +289,63 @@ describe('DELETE /api/customers/[id]', () => {
     await idHandler(req, res);
     expect(res.status).toHaveBeenCalledWith(404);
     expect(prisma.customer.delete).not.toHaveBeenCalled();
+  });
+});
+
+// ---- GET /api/customers/export ----
+
+describe('GET /api/customers/export', () => {
+  test('returns CSV with correct columns', async () => {
+    const customers = [
+      {
+        id: 'clxxxxxxxxxxxxxxxxcust0001',
+        name: 'Acme Corp',
+        clientCode: 'ACME',
+        status: 'Active',
+        vertical: 'Retail',
+        contractNumber: 'C-1',
+        contractStart: new Date('2025-01-01'),
+        contractEnd: new Date('2025-12-31'),
+        createdAt: new Date('2025-01-15'),
+      },
+    ];
+    prisma.customer.findMany.mockResolvedValue(customers);
+    const { req, res } = mockReqRes({ query: {} });
+    await exportHandler(req, res);
+    expect(res.setHeader).toHaveBeenCalledWith('Content-Type', 'text/csv');
+    expect(res.setHeader).toHaveBeenCalledWith('Content-Disposition', 'attachment; filename="customers.csv"');
+    expect(res.send).toHaveBeenCalled();
+    const csvContent = res.send.mock.calls[0][0];
+    expect(csvContent).toContain('Client Code');
+    expect(csvContent).toContain('Contract Number');
+  });
+
+  test('filters by status when provided', async () => {
+    prisma.customer.findMany.mockResolvedValue([]);
+    const { req, res } = mockReqRes({ query: { status: 'Active' } });
+    await exportHandler(req, res);
+    expect(prisma.customer.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { status: 'Active' } })
+    );
+  });
+
+  test('returns 405 for non-GET methods', async () => {
+    const { req, res } = mockReqRes({ method: 'POST' });
+    await exportHandler(req, res);
+    expect(res.status).toHaveBeenCalledWith(405);
+  });
+
+  test('returns 403 for VIEWER role', async () => {
+    const { req, res } = mockReqRes({ role: 'VIEWER' });
+    await exportHandler(req, res);
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(prisma.customer.findMany).not.toHaveBeenCalled();
+  });
+
+  test('returns 403 for EDITOR role', async () => {
+    const { req, res } = mockReqRes({ role: 'EDITOR' });
+    await exportHandler(req, res);
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(prisma.customer.findMany).not.toHaveBeenCalled();
   });
 });

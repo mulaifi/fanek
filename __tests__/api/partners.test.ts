@@ -26,6 +26,14 @@ jest.mock('@/lib/auth/guard', () => ({
     req.session = { user: { id: 'u1', role: req._testRole || 'ADMIN' } };
     return handler(req, res);
   },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  withAdmin: (handler: any) => (req: any, res: any) => {
+    req.session = { user: { id: 'u1', role: req._testRole || 'ADMIN' } };
+    if (req.session.user.role !== 'ADMIN') {
+      return res.status(403).json({ error: 'Forbidden: Admin access required' });
+    }
+    return handler(req, res);
+  },
 }));
 
 jest.mock('@/lib/audit', () => ({ logAudit: jest.fn() }));
@@ -300,5 +308,19 @@ describe('GET /api/partners/export', () => {
     const { req, res } = mockReqRes({ method: 'POST' });
     await exportHandler(req, res);
     expect(res.status).toHaveBeenCalledWith(405);
+  });
+
+  test('returns 403 for VIEWER role', async () => {
+    const { req, res } = mockReqRes({ role: 'VIEWER' });
+    await exportHandler(req, res);
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(prisma.partner.findMany).not.toHaveBeenCalled();
+  });
+
+  test('returns 403 for EDITOR role', async () => {
+    const { req, res } = mockReqRes({ role: 'EDITOR' });
+    await exportHandler(req, res);
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(prisma.partner.findMany).not.toHaveBeenCalled();
   });
 });
